@@ -1,0 +1,9 @@
+node_modules/
+__pycache__/
+.env
+.env.local
+.next/
+.turbo/
+.vercel/
+*.pyc
+.DS_Store

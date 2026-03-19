@@ -33,18 +33,24 @@ Sistema web interno com:
 | **Admin** | Acesso total. Gerencia usuários, produtos, metas, regras e visualiza tudo |
 | **Gerente** | Cadastra produtos, lança produção, define metas, visualiza dashboards, exporta relatórios |
 | **Operador** | Lança produção diária e visualiza dashboards |
+| **Fábrica** | Visualiza pedidos recebidos, lança entregas diárias, acompanha saldo pendente |
 
 ### 4.2 Matriz de Permissões
 
-| Funcionalidade | Admin | Gerente | Operador |
-|----------------|-------|---------|----------|
-| Gerenciar usuários | ✅ | ❌ | ❌ |
-| Cadastrar/editar produtos | ✅ | ✅ | ❌ |
-| Lançar produção | ✅ | ✅ | ✅ |
-| Definir metas | ✅ | ✅ | ❌ |
-| Configurar regras de pontuação | ✅ | ❌ | ❌ |
-| Visualizar dashboards | ✅ | ✅ | ✅ |
-| Exportar relatórios (Excel/PDF) | ✅ | ✅ | ❌ |
+| Funcionalidade | Admin | Gerente | Operador | Fábrica |
+|----------------|-------|---------|----------|---------|
+| Gerenciar usuários | ✅ | ❌ | ❌ | ❌ |
+| Cadastrar/editar produtos | ✅ | ✅ | ❌ | ❌ |
+| Lançar produção | ✅ | ✅ | ✅ | ❌ |
+| Definir metas | ✅ | ✅ | ❌ | ❌ |
+| Configurar regras de pontuação | ✅ | ❌ | ❌ | ❌ |
+| Visualizar dashboards | ✅ | ✅ | ✅ | ❌ |
+| Exportar relatórios (Excel/PDF) | ✅ | ✅ | ❌ | ❌ |
+| Criar/editar pedidos | ✅ | ✅ | ❌ | ❌ |
+| Cancelar pedidos | ✅ | ❌ | ❌ | ❌ |
+| Lançar entregas | ✅ | ✅ | ❌ | ✅ |
+| Dashboard de pedidos | ✅ | ✅ | ❌ | ✅ |
+| Alterar prioridades | ✅ | ✅ | ❌ | ❌ |
 
 ## 5. Módulos Funcionais
 
@@ -139,6 +145,95 @@ Sistema web interno com:
 **FR-M6.2** Exportar dados de produção para Excel (.xlsx) com filtros aplicados
 **FR-M6.3** Exportar relatório de metas (atingimento por período)
 
+### M7 — Pedidos vs Produção (Controle de Entregas)
+
+> **Contexto:** O CD (Centro de Distribuição) envia pedidos semanais consolidados para a Fábrica. A fábrica entrega parcialmente ao longo da semana. Este módulo rastreia pedidos, entregas parciais e saldo pendente em tempo real.
+
+#### M7.1 — Gestão de Pedidos
+
+**FR-M7.1.1** Criação de pedido consolidado com:
+- Código gerado automaticamente (formato: `PED-{ANO}-{SEQ}`, ex: `PED-2026-012`)
+- Data de criação (automática)
+- Status: `aberto` | `parcial` | `concluido` | `cancelado`
+- Criado por (usuário logado, automático)
+
+**FR-M7.1.2** Itens do pedido:
+- Produto (seleção do catálogo existente via autocomplete)
+- Quantidade solicitada (inteiro > 0)
+- Prioridade: `normal` | `urgente` | `critico`
+- Ao selecionar produto, exibir: foto, nome, SKU
+
+**FR-M7.1.3** Permitir múltiplos itens no mesmo pedido (adicionar linhas)
+**FR-M7.1.4** Listagem de pedidos com filtros: status, período, produto
+**FR-M7.1.5** Visualização detalhada do pedido com progresso por item
+**FR-M7.1.6** Edição de pedido (somente status `aberto`, por Admin/Gerente)
+**FR-M7.1.7** Cancelamento de pedido (somente Admin)
+**FR-M7.1.8** Status do pedido atualiza automaticamente:
+- `aberto` → quando nenhuma entrega foi feita
+- `parcial` → quando há entregas mas falta itens
+- `concluido` → quando 100% de todos os itens foram entregues
+
+#### M7.2 — Lançamento de Entregas
+
+**FR-M7.2.1** Tela de lançamento de entrega com:
+- Seleção do pedido (lista de pedidos abertos/parciais)
+- Data da entrega (default: hoje)
+- Itens com quantidade entregue
+
+**FR-M7.2.2** Ao selecionar pedido, exibir itens pendentes com:
+- Produto (foto, nome, SKU)
+- Quantidade pedida
+- Já entregue (acumulado)
+- Saldo pendente
+- Prioridade (visual: ⚡ urgente, 🔴 crítico)
+
+**FR-M7.2.3** Input de quantidade entregue por item (não pode exceder saldo)
+**FR-M7.2.4** Permitir entrega parcial (não precisa entregar todos os itens)
+**FR-M7.2.5** Histórico de entregas por pedido com data e quantidades
+**FR-M7.2.6** Registro automático de quem fez o lançamento e timestamp
+**FR-M7.2.7** Edição de entrega (mesmo dia, pelo autor ou Admin)
+
+#### M7.3 — Dashboard de Acompanhamento
+
+**FR-M7.3.1** Cards resumo no topo:
+- Pedidos abertos (quantidade)
+- Itens pendentes (total de linhas com saldo > 0)
+- Progresso geral (% de todos os pedidos abertos)
+- Itens urgentes/críticos pendentes (quantidade)
+
+**FR-M7.3.2** Visão por Pedido (tabela detalhada):
+- Lista de pedidos abertos/parciais
+- Para cada pedido: código, data, status, % progresso (barra visual)
+- Expandir pedido → ver itens com: produto, pedido, entregue, falta, progresso, prioridade
+
+**FR-M7.3.3** Visão Consolidada (agrupada por produto):
+- Produto | Total Pedido (todos os pedidos) | Total Entregue | Falta | Nº Pedidos
+- Ordenado por saldo pendente (maior primeiro)
+- Destaque visual para itens urgentes/críticos
+
+**FR-M7.3.4** Filtros:
+- Status do pedido (aberto, parcial, concluído, todos)
+- Período de criação
+- Produto específico
+- Prioridade (normal, urgente, crítico)
+
+**FR-M7.3.5** Indicadores visuais de progresso por item:
+- Barra de progresso colorida (verde quando completo)
+- Badge de prioridade (⚡ urgente, 🔴 crítico)
+
+#### M7.4 — Perfil Fábrica
+
+**FR-M7.4.1** Novo perfil de acesso: `fabrica`
+**FR-M7.4.2** Permissões do perfil fábrica:
+- ✅ Visualizar pedidos destinados à produção
+- ✅ Lançar entregas diárias
+- ✅ Ver dashboard de acompanhamento (pedidos)
+- ❌ Criar/editar/cancelar pedidos
+- ❌ Alterar prioridades
+- ❌ Acessar módulos M1-M6
+- ❌ Gerenciar usuários, produtos, metas, regras
+- ❌ Exportar relatórios
+
 ## 6. Requisitos Não-Funcionais
 
 **NFR-1** Tempo de carregamento do dashboard < 2 segundos
@@ -169,7 +264,7 @@ Sistema web interno com:
 | id | UUID | PK |
 | email | string | único |
 | name | string | |
-| role | enum | admin, gerente, operador |
+| role | enum | admin, gerente, operador, fabrica |
 | is_active | boolean | soft delete |
 | created_at | timestamp | |
 
@@ -217,6 +312,39 @@ Sistema web interno com:
 | valid_from | date | início vigência |
 | valid_until | date | nullable |
 
+### orders
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | UUID | PK |
+| code | string | único, gerado: PED-{ANO}-{SEQ} |
+| status | enum | aberto, parcial, concluido, cancelado |
+| created_by | UUID | FK → users |
+| created_at | timestamp | |
+| updated_at | timestamp | |
+
+### order_items
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | UUID | PK |
+| order_id | UUID | FK → orders |
+| product_id | UUID | FK → products |
+| quantity | integer | quantidade solicitada > 0 |
+| delivered_quantity | integer | calculado via SUM(deliveries) |
+| priority | enum | normal, urgente, critico |
+| created_at | timestamp | |
+
+### deliveries
+| Campo | Tipo | Notas |
+|-------|------|-------|
+| id | UUID | PK |
+| order_item_id | UUID | FK → order_items |
+| quantity | integer | quantidade entregue > 0 |
+| delivery_date | date | data da entrega |
+| created_by | UUID | FK → users |
+| notes | text | observações (opcional) |
+| created_at | timestamp | |
+| updated_at | timestamp | |
+
 ## 9. Fases de Entrega
 
 ### Fase 1 — MVP (Estimativa: Epic 1)
@@ -244,7 +372,16 @@ Sistema web interno com:
 
 **Entrega:** Relatórios exportáveis e análise comparativa.
 
-### Fase 4 — Evolução (Futuro)
+### Fase 4 — Pedidos vs Produção (Epic 4) ⭐ PRIORIDADE
+- [ ] Perfil Fábrica (novo role + permissões)
+- [ ] CRUD de Pedidos (criar pedido consolidado com múltiplos itens)
+- [ ] Lançamento de Entregas (parcial, diário, com validação de saldo)
+- [ ] Dashboard de Acompanhamento (por pedido + consolidado)
+- [ ] Sistema de Prioridades (normal, urgente, crítico)
+
+**Entrega:** Controle completo de pedidos enviados vs entregas recebidas da fábrica.
+
+### Fase 5 — Evolução (Futuro)
 - [ ] Lançamento por turno
 - [ ] Notificações (meta atingida, abaixo do esperado)
 - [ ] Categorias de produtos

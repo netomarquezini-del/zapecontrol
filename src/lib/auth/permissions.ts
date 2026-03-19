@@ -18,6 +18,11 @@ const PERMISSIONS: Record<string, UserRole[]> = {
   'manage_scoring_rules': ['admin'],
   'view_dashboard': ['admin', 'gerente', 'operador'],
   'export_reports': ['admin', 'gerente'],
+  'manage_orders': ['admin', 'gerente'],
+  'cancel_orders': ['admin'],
+  'launch_deliveries': ['admin', 'gerente', 'fabrica'],
+  'view_orders_dashboard': ['admin', 'gerente', 'fabrica'],
+  'manage_priorities': ['admin', 'gerente'],
 }
 
 export async function getSessionUser(): Promise<SessionUser | null> {
@@ -49,5 +54,7 @@ export const MENU_PERMISSIONS: Record<string, UserRole[]> = {
   '/production': ['admin', 'gerente', 'operador'],
   '/goals': ['admin', 'gerente'],
   '/reports': ['admin', 'gerente'],
+  '/orders': ['admin', 'gerente', 'fabrica'],
+  '/orders/dashboard': ['admin', 'gerente', 'fabrica'],
   '/settings/users': ['admin'],
 }

@@ -14,6 +14,8 @@ import {
   FileSpreadsheet,
   Settings,
   Users,
+  ClipboardList,
+  BarChart3,
 } from 'lucide-react'
 
 const menuItems = [
@@ -22,6 +24,8 @@ const menuItems = [
   { href: '/production', label: 'Produção', icon: Factory },
   { href: '/goals', label: 'Metas', icon: Target },
   { href: '/reports', label: 'Relatórios', icon: FileSpreadsheet },
+  { href: '/orders', label: 'Pedidos', icon: ClipboardList },
+  { href: '/orders/dashboard', label: 'Acompanhamento', icon: BarChart3 },
   { href: '/settings/users', label: 'Usuários', icon: Users },
 ]
 

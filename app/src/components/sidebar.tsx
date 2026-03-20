@@ -21,6 +21,8 @@ import {
   Loader2,
   Check,
   AlertCircle,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 
 interface NavItem {
@@ -66,6 +68,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { permissions, isAdmin } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ comercial: true });
 
   // Filter nav items by permission
@@ -114,44 +117,75 @@ export default function Sidebar() {
       {/* Sidebar */}
       <aside
         className={`
-          fixed top-0 left-0 z-50 flex h-screen w-[260px] flex-col
+          fixed top-0 left-0 z-50 flex h-screen flex-col
           border-r border-[#222222] bg-[#0a0a0a]
-          transition-transform duration-300 ease-in-out
+          transition-all duration-300 ease-in-out
           lg:translate-x-0 lg:static lg:z-auto
-          ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
+          ${collapsed ? "w-[68px]" : "w-[260px]"}
+          ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
       >
         {/* Header */}
-        <div className="flex h-[72px] items-center justify-between px-6 border-b border-[#222222]">
+        <div className={`flex h-[72px] items-center border-b border-[#222222] ${collapsed ? "justify-center px-2" : "justify-between px-6"}`}>
           <Link href="/inicio" className="flex items-center gap-3 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-lime-400/8 border border-lime-400/15 group-hover:bg-lime-400/12 group-hover:border-lime-400/25 transition-all duration-300">
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-lime-400/8 border border-lime-400/15 group-hover:bg-lime-400/12 group-hover:border-lime-400/25 transition-all duration-300">
               <Zap size={16} className="text-lime-400" />
             </div>
-            <div className="flex items-baseline gap-0.5">
-              <span className="text-lg font-extrabold text-white tracking-tight">
-                ZAPE
-              </span>
-              <span className="text-sm font-thin text-zinc-600 tracking-tight">
-                control
-              </span>
-            </div>
+            {!collapsed && (
+              <div className="flex items-baseline gap-0.5">
+                <span className="text-lg font-extrabold text-white tracking-tight">ZAPE</span>
+                <span className="text-sm font-thin text-zinc-600 tracking-tight">control</span>
+              </div>
+            )}
           </Link>
 
           {/* Mobile close button */}
-          <button
-            onClick={() => setMobileOpen(false)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-600 hover:text-white transition-colors lg:hidden"
-            aria-label="Fechar menu"
-          >
-            <X size={16} />
-          </button>
+          {!collapsed && (
+            <button
+              onClick={() => setMobileOpen(false)}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-600 hover:text-white transition-colors lg:hidden"
+              aria-label="Fechar menu"
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
 
+        {/* Collapse toggle (desktop only) */}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="hidden lg:flex items-center justify-center py-2 text-zinc-700 hover:text-zinc-400 transition-colors cursor-pointer"
+          title={collapsed ? "Expandir menu" : "Minimizar menu"}
+        >
+          {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+        </button>
+
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+        <nav className={`flex-1 ${collapsed ? "px-2" : "px-4"} py-4 space-y-2 overflow-y-auto`}>
           {filteredGroups.map((group) => {
             const isOpen = openGroups[group.id] ?? false;
             const hasActiveChild = group.children.some((c) => isActive(c.href));
+
+            // Collapsed mode: show only icons
+            if (collapsed) {
+              return (
+                <div key={group.id} className="space-y-1">
+                  {group.children.map((item) => {
+                    const active = !item.external && isActive(item.href);
+                    const iconEl = <item.icon size={18} strokeWidth={active ? 2 : 1.5} />;
+                    const cls = `flex items-center justify-center w-full rounded-xl p-2.5 transition-all duration-200 ${
+                      active
+                        ? "bg-lime-400/8 text-lime-400 border border-lime-400/15"
+                        : "text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.03] border border-transparent"
+                    }`;
+                    if (item.external) {
+                      return <a key={item.href} href={item.href} target="_blank" rel="noopener noreferrer" className={cls} title={item.label}>{iconEl}</a>;
+                    }
+                    return <Link key={item.href} href={item.href} className={cls} title={item.label}>{iconEl}</Link>;
+                  })}
+                </div>
+              );
+            }
 
             return (
               <div key={group.id}>
@@ -237,12 +271,13 @@ export default function Sidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-[#222222] px-4 py-4 space-y-1">
+        <div className={`border-t border-[#222222] ${collapsed ? "px-2 py-3" : "px-4 py-4"} space-y-1`}>
           <button
             onClick={() => { setShowPasswordModal(true); setPwFeedback(null); setNewPassword(""); setConfirmPassword(""); }}
-            className="w-full flex items-center gap-3 rounded-xl px-3 py-2 text-[12px] font-semibold text-zinc-600 hover:text-zinc-300 hover:bg-white/[0.03] border border-transparent transition-all cursor-pointer"
+            className={`w-full flex items-center rounded-xl text-zinc-600 hover:text-zinc-300 hover:bg-white/[0.03] border border-transparent transition-all cursor-pointer ${collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2 text-[12px] font-semibold"}`}
+            title="Alterar Senha"
           >
-            <KeyRound size={14} /> Alterar Senha
+            <KeyRound size={14} /> {!collapsed && "Alterar Senha"}
           </button>
           <button
             onClick={async () => {
@@ -250,13 +285,16 @@ export default function Sidebar() {
               await getSupabase().auth.signOut();
               window.location.href = "/login";
             }}
-            className="w-full flex items-center gap-3 rounded-xl px-3 py-2 text-[12px] font-semibold text-zinc-600 hover:text-red-400 hover:bg-red-400/5 border border-transparent transition-all cursor-pointer"
+            className={`w-full flex items-center rounded-xl text-zinc-600 hover:text-red-400 hover:bg-red-400/5 border border-transparent transition-all cursor-pointer ${collapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2 text-[12px] font-semibold"}`}
+            title="Sair"
           >
-            <LogOut size={14} /> Sair
+            <LogOut size={14} /> {!collapsed && "Sair"}
           </button>
-          <p className="text-[10px] font-semibold text-zinc-700 tracking-widest uppercase px-3 pt-1">
-            ZapeControl v2.0
-          </p>
+          {!collapsed && (
+            <p className="text-[10px] font-semibold text-zinc-700 tracking-widest uppercase px-3 pt-1">
+              ZapeControl v2.0
+            </p>
+          )}
         </div>
       </aside>
 

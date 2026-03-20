@@ -79,7 +79,7 @@ export default function MovementTable({
 
   if (movements.length === 0) {
     return (
-      <div className="rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] p-8 text-center">
+      <div className="rounded-xl border border-[#222222] bg-[#111111] p-8 text-center">
         <p className="text-zinc-500">Nenhum lançamento encontrado para esta data.</p>
       </div>
     );
@@ -95,10 +95,10 @@ export default function MovementTable({
   };
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-[#1a1a1a] bg-[#0a0a0a]">
+    <div className="overflow-x-auto rounded-xl border border-[#222222] bg-[#111111]">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-[#1a1a1a] bg-[#080808]">
+          <tr className="border-b border-[#222222] bg-[#111111]">
             <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wide">
               Closer
             </th>
@@ -126,7 +126,7 @@ export default function MovementTable({
           {movements.map((m) => (
             <tr
               key={m.id}
-              className="border-b border-[#1a1a1a] last:border-0 hover:bg-white/[0.02] transition-colors"
+              className="border-b border-[#222222] last:border-0 hover:bg-white/[0.02] transition-colors"
             >
               <td className="px-4 py-3 font-medium text-white">
                 {m.closer_name || `Closer #${m.closer_id}`}
@@ -177,7 +177,7 @@ export default function MovementTable({
           ))}
         </tbody>
         <tfoot>
-          <tr className="border-t border-[#1a1a1a] bg-[#080808]">
+          <tr className="border-t border-[#222222] bg-[#111111]">
             <td className="px-4 py-3 text-sm font-bold text-white uppercase">
               Total
             </td>

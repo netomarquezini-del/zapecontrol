@@ -171,7 +171,7 @@ function EntityManager({
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
             placeholder={`Nome do ${label}`}
-            className="flex-1 rounded-xl border border-[#1a1a1a] bg-[#050505] px-4 py-2.5 text-sm font-semibold text-white placeholder-zinc-700 outline-none focus:border-lime-400/30 transition-colors"
+            className="flex-1 rounded-xl border border-[#222222] bg-[#0a0a0a] px-4 py-2.5 text-sm font-semibold text-white placeholder-zinc-700 outline-none focus:border-lime-400/30 transition-colors"
           />
           <button
             onClick={handleAdd}
@@ -221,7 +221,7 @@ function EntityManager({
                         if (e.key === "Escape") handleCancelEdit(row.id);
                       }}
                       autoFocus
-                      className="w-full rounded-lg border border-lime-400/30 bg-[#050505] px-3 py-1.5 text-sm font-semibold text-white outline-none"
+                      className="w-full rounded-lg border border-lime-400/30 bg-[#0a0a0a] px-3 py-1.5 text-sm font-semibold text-white outline-none"
                     />
                   ) : (
                     <span className="font-bold text-white">{row.name}</span>
@@ -406,14 +406,14 @@ function OrigemManager() {
         <div className="flex flex-col gap-3">
           <div className="flex gap-3">
             <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Nome da origem"
-              className="flex-1 rounded-xl border border-[#1a1a1a] bg-[#050505] px-4 py-2.5 text-sm font-semibold text-white placeholder-zinc-700 outline-none focus:border-lime-400/30 transition-colors" />
+              className="flex-1 rounded-xl border border-[#222222] bg-[#0a0a0a] px-4 py-2.5 text-sm font-semibold text-white placeholder-zinc-700 outline-none focus:border-lime-400/30 transition-colors" />
             <button onClick={handleAdd} disabled={saving || !newName.trim()}
               className="flex items-center gap-2 rounded-xl bg-lime-400/10 border border-lime-400/20 px-5 py-2.5 text-[13px] font-bold text-lime-400 hover:bg-lime-400/15 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
               {saving ? <Loader2 size={15} className="animate-spin" /> : <UserPlus size={15} />} Adicionar
             </button>
           </div>
           <input type="text" value={newSubs} onChange={(e) => setNewSubs(e.target.value)} placeholder="Sub-origens (separadas por virgula)" onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            className="rounded-xl border border-[#1a1a1a] bg-[#050505] px-4 py-2.5 text-sm font-semibold text-white placeholder-zinc-700 outline-none focus:border-lime-400/30 transition-colors" />
+            className="rounded-xl border border-[#222222] bg-[#0a0a0a] px-4 py-2.5 text-sm font-semibold text-white placeholder-zinc-700 outline-none focus:border-lime-400/30 transition-colors" />
         </div>
       </div>
 
@@ -425,7 +425,7 @@ function OrigemManager() {
               {row.editing ? (
                 <input type="text" value={row.editName}
                   onChange={(e) => setRows((p) => p.map((r) => r.id === row.id ? { ...r, editName: e.target.value } : r))}
-                  className="rounded-lg border border-lime-400/30 bg-[#050505] px-3 py-1.5 text-sm font-bold text-white outline-none flex-1 mr-3" />
+                  className="rounded-lg border border-lime-400/30 bg-[#0a0a0a] px-3 py-1.5 text-sm font-bold text-white outline-none flex-1 mr-3" />
               ) : (
                 <div className="flex items-center gap-2">
                   <span className="text-[13px] font-extrabold text-white">{row.name}</span>
@@ -453,7 +453,7 @@ function OrigemManager() {
                 <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600">Sub-origens</p>
                 <div className="flex flex-wrap gap-2">
                   {row.editSubs.map((sub, idx) => (
-                    <span key={idx} className="flex items-center gap-1.5 rounded-lg bg-[#0a0a0a] border border-[#1a1a1a] px-3 py-1.5 text-[12px] font-semibold text-zinc-300">
+                    <span key={idx} className="flex items-center gap-1.5 rounded-lg bg-[#111111] border border-[#222222] px-3 py-1.5 text-[12px] font-semibold text-zinc-300">
                       {sub}
                       <button onClick={() => removeEditSub(row.id, idx)} className="text-zinc-600 hover:text-red-400 transition-colors cursor-pointer"><X size={12} /></button>
                     </span>
@@ -468,7 +468,7 @@ function OrigemManager() {
                         (e.target as HTMLInputElement).value = "";
                       }
                     }}
-                    className="flex-1 rounded-lg border border-[#1a1a1a] bg-[#050505] px-3 py-1.5 text-[12px] font-semibold text-white placeholder-zinc-700 outline-none focus:border-lime-400/30" />
+                    className="flex-1 rounded-lg border border-[#222222] bg-[#0a0a0a] px-3 py-1.5 text-[12px] font-semibold text-white placeholder-zinc-700 outline-none focus:border-lime-400/30" />
                   <button
                     onClick={() => {
                       const input = document.getElementById(`sub-input-${row.id}`) as HTMLInputElement;
@@ -482,7 +482,7 @@ function OrigemManager() {
             ) : row.sub_origem.length > 0 ? (
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {row.sub_origem.map((sub, idx) => (
-                  <span key={idx} className="rounded-lg bg-[#0a0a0a] border border-[#1a1a1a] px-2.5 py-1 text-[11px] font-semibold text-zinc-400">
+                  <span key={idx} className="rounded-lg bg-[#111111] border border-[#222222] px-2.5 py-1 text-[11px] font-semibold text-zinc-400">
                     {sub}
                   </span>
                 ))}
@@ -525,7 +525,7 @@ export default function CadastrosPage() {
       </div>
 
       {/* Tab navigation */}
-      <div className="border-b border-[#1a1a1a]">
+      <div className="border-b border-[#222222]">
         <nav className="flex gap-1" aria-label="Tabs">
           {tabs.map((tab) => {
             const active = activeTab === tab.id;

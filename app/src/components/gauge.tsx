@@ -91,7 +91,7 @@ export default function Gauge({ value, max, levels, size = 260, label, formatVal
 
         {/* Needle */}
         <polygon points={`${needleTip.x},${needleTip.y} ${nb1.x},${nb1.y} ${nb2.x},${nb2.y}`} fill="#A3E635" filter={`url(#glow-${size})`} />
-        <circle cx={cx} cy={cy} r={7} fill="#0a0a0a" stroke="#A3E635" strokeWidth={2} />
+        <circle cx={cx} cy={cy} r={7} fill="#111111" stroke="#A3E635" strokeWidth={2} />
       </svg>
 
       {/* Value display */}

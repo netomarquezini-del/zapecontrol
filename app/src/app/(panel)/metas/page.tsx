@@ -104,15 +104,15 @@ function MetaModal({
     setSaving(false);
   };
 
-  const inputCls = "w-full rounded-lg border border-[#1a1a1a] bg-[#050505] pl-9 pr-3 py-2 text-sm font-bold text-white outline-none focus:border-lime-400/30 transition-colors";
-  const numCls = "w-full rounded-lg border border-[#1a1a1a] bg-[#050505] px-3 py-2 text-sm font-bold text-white outline-none focus:border-lime-400/30 transition-colors";
+  const inputCls = "w-full rounded-lg border border-[#222222] bg-[#0a0a0a] pl-9 pr-3 py-2 text-sm font-bold text-white outline-none focus:border-lime-400/30 transition-colors";
+  const numCls = "w-full rounded-lg border border-[#222222] bg-[#0a0a0a] px-3 py-2 text-sm font-bold text-white outline-none focus:border-lime-400/30 transition-colors";
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-8">
       <div className="fixed inset-0 bg-black/70 backdrop-blur-md" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-5xl rounded-2xl border border-[#1a1a1a] bg-[#050505] shadow-2xl">
+      <div className="relative z-10 w-full max-w-5xl rounded-2xl border border-[#222222] bg-[#0a0a0a] shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-[#1a1a1a]">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-[#222222]">
           <div>
             <h2 className="text-lg font-extrabold text-white tracking-tight">Lancar / Editar Metas</h2>
             <div className="flex items-center gap-3 mt-2">
@@ -141,7 +141,7 @@ function MetaModal({
             <p className="text-label mb-3">Metas Gerais de Vendas (R$)</p>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {NIVEIS.map((n) => (
-                <div key={n} className="rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] p-4">
+                <div key={n} className="rounded-xl border border-[#222222] bg-[#111111] p-4">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">{NIVEL_LABEL[n]}</span>
                   <div className="relative mt-2">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-zinc-600">R$</span>
@@ -157,17 +157,17 @@ function MetaModal({
           {closers.length > 0 && (
             <div>
               <p className="text-label mb-3">Metas por Closer (R$)</p>
-              <div className="overflow-x-auto rounded-xl border border-[#1a1a1a]">
+              <div className="overflow-x-auto rounded-xl border border-[#222222]">
                 <table className="w-full text-[12px]">
                   <thead>
-                    <tr className="bg-[#0a0a0a]" style={{ borderBottom: "1px solid #1a1a1a" }}>
+                    <tr className="bg-[#111111]" style={{ borderBottom: "1px solid #222222" }}>
                       <th className="text-left py-3 px-4 text-label">Closer</th>
                       {NIVEIS.map((n) => <th key={n} className="text-center py-3 px-2 text-label">{NIVEL_LABEL[n]}</th>)}
                     </tr>
                   </thead>
                   <tbody>
                     {closers.map((c) => (
-                      <tr key={c.id} style={{ borderBottom: "1px solid #1a1a1a" }}>
+                      <tr key={c.id} style={{ borderBottom: "1px solid #222222" }}>
                         <td className="py-3 px-4 font-bold text-white text-[13px]">{c.name}</td>
                         {NIVEIS.map((n) => (
                           <td key={n} className="py-2 px-2">
@@ -176,7 +176,7 @@ function MetaModal({
                               <input
                                 type="number" value={mc[c.id]?.[n] || ""} placeholder="0"
                                 onChange={(e) => setMc((p) => ({ ...p, [c.id]: { ...p[c.id], [n]: Number(e.target.value) } }))}
-                                className="w-28 rounded-lg border border-[#1a1a1a] bg-[#050505] pl-8 pr-2 py-1.5 text-[12px] font-bold text-white outline-none focus:border-lime-400/30"
+                                className="w-28 rounded-lg border border-[#222222] bg-[#0a0a0a] pl-8 pr-2 py-1.5 text-[12px] font-bold text-white outline-none focus:border-lime-400/30"
                               />
                             </div>
                           </td>
@@ -193,10 +193,10 @@ function MetaModal({
           {sdrs.length > 0 && (
             <div>
               <p className="text-label mb-3">Metas por SDR (agendamentos + reunioes)</p>
-              <div className="overflow-x-auto rounded-xl border border-[#1a1a1a]">
+              <div className="overflow-x-auto rounded-xl border border-[#222222]">
                 <table className="w-full text-[12px]">
                   <thead>
-                    <tr className="bg-[#0a0a0a]" style={{ borderBottom: "1px solid #1a1a1a" }}>
+                    <tr className="bg-[#111111]" style={{ borderBottom: "1px solid #222222" }}>
                       <th className="text-left py-3 px-4 text-label">SDR</th>
                       {NIVEIS.map((n) => (
                         <th key={n} className="text-center py-3 px-2 text-label">
@@ -210,7 +210,7 @@ function MetaModal({
                   </thead>
                   <tbody>
                     {sdrs.map((s) => (
-                      <tr key={s.id} style={{ borderBottom: "1px solid #1a1a1a" }}>
+                      <tr key={s.id} style={{ borderBottom: "1px solid #222222" }}>
                         <td className="py-3 px-4 font-bold text-white text-[13px]">{s.name}</td>
                         {NIVEIS.map((n) => (
                           <td key={n} className="py-2 px-2">
@@ -238,7 +238,7 @@ function MetaModal({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-3 px-6 py-5 border-t border-[#1a1a1a]">
+        <div className="flex justify-end gap-3 px-6 py-5 border-t border-[#222222]">
           <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-zinc-500 hover:text-white hover:bg-white/5 transition-colors cursor-pointer">Cancelar</button>
           <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-lime-400/10 border border-lime-400/20 text-[13px] font-bold text-lime-400 hover:bg-lime-400/15 transition-all cursor-pointer disabled:opacity-40">
             {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
@@ -347,7 +347,7 @@ export default function MetasPage() {
         <div className="flex items-center gap-3">
           <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
           {hasMetas && (
-            <button onClick={() => setShowModal(true)} className="flex items-center gap-2 rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] px-5 py-2.5 text-[13px] font-bold text-zinc-400 hover:text-white hover:border-lime-400/20 transition-all cursor-pointer">
+            <button onClick={() => setShowModal(true)} className="flex items-center gap-2 rounded-xl border border-[#222222] bg-[#111111] px-5 py-2.5 text-[13px] font-bold text-zinc-400 hover:text-white hover:border-lime-400/20 transition-all cursor-pointer">
               <Pencil size={15} /> Editar Metas
             </button>
           )}
@@ -379,7 +379,7 @@ export default function MetasPage() {
                 const meta = metasMensais.find((m) => m.nivel === n);
                 if (!meta) return null;
                 return (
-                  <div key={n} className="rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] p-5">
+                  <div key={n} className="rounded-xl border border-[#222222] bg-[#111111] p-5">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">{NIVEL_LABEL[n]}</span>
                     <p className="text-2xl font-extrabold mt-2 text-white">{formatCurrency(meta.meta_mensal_vendas)}</p>
                     <div className="flex items-center justify-between mt-3 rounded-lg bg-black/30 px-3 py-2">

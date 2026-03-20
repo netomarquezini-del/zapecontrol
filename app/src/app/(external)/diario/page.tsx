@@ -103,7 +103,7 @@ export default function DiarioPage() {
   return (
     <div className="min-h-screen bg-black">
       {/* Header */}
-      <header className="border-b border-[#1a1a1a] bg-black">
+      <header className="border-b border-[#222222] bg-black">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-lime-400/10 border border-lime-400/20">
@@ -134,7 +134,7 @@ export default function DiarioPage() {
         {/* TOP ROW: Main gauge + Recent entries */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Gauge */}
-          <div className="lg:col-span-2 rounded-2xl border border-[#1a1a1a] bg-[#050505] p-8 flex flex-col items-center justify-center">
+          <div className="lg:col-span-2 rounded-2xl border border-[#222222] bg-[#0a0a0a] p-8 flex flex-col items-center justify-center">
             <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-600 mb-8">Meta Geral do Dia</p>
             <Gauge
               value={totalDia}
@@ -147,7 +147,7 @@ export default function DiarioPage() {
             {/* Level legend */}
             <div className="flex items-center gap-8 mt-10">
               {gaugeLevels.map((l) => (
-                <div key={l.label} className="flex items-center gap-3 rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] px-4 py-3">
+                <div key={l.label} className="flex items-center gap-3 rounded-xl border border-[#222222] bg-[#111111] px-4 py-3">
                   <div className="w-4 h-4 rounded-full" style={{ background: l.color, boxShadow: `0 0 10px ${l.color}40` }} />
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500">{l.label}</p>
@@ -159,7 +159,7 @@ export default function DiarioPage() {
           </div>
 
           {/* Recent entries */}
-          <div className="rounded-2xl border border-[#1a1a1a] bg-[#050505] p-6 flex flex-col">
+          <div className="rounded-2xl border border-[#222222] bg-[#0a0a0a] p-6 flex flex-col">
             <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-600 mb-5">Ultimas Vendas</p>
             {recentEntries.length === 0 ? (
               <div className="flex-1 flex items-center justify-center">
@@ -168,14 +168,14 @@ export default function DiarioPage() {
             ) : (
               <div className="space-y-3 flex-1">
                 {recentEntries.map((e) => (
-                  <div key={e.id} className="rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] px-4 py-3">
+                  <div key={e.id} className="rounded-xl border border-[#222222] bg-[#111111] px-4 py-3">
                     <p className="text-[12px] font-bold text-zinc-400">{closerMap.get(e.closer_id)}</p>
                     <p className="text-[20px] font-extrabold text-lime-400">{fmtBRL(e.valor)}</p>
                   </div>
                 ))}
               </div>
             )}
-            <div className="border-t border-[#1a1a1a] pt-4 mt-4">
+            <div className="border-t border-[#222222] pt-4 mt-4">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600">{entries.length} venda{entries.length !== 1 ? 's' : ''}</span>
                 <span className="text-[22px] font-extrabold text-lime-400">{fmtBRL(totalDia)}</span>
@@ -193,7 +193,7 @@ export default function DiarioPage() {
                 <div key={c.id} className={`rounded-2xl border p-6 flex flex-col items-center transition-all duration-500 ${
                   c.levels.length > 0 && c.total >= c.levels[c.levels.length - 1].value
                     ? 'border-lime-400/30 bg-gradient-to-b from-lime-400/[0.06] to-transparent'
-                    : 'border-[#1a1a1a] bg-[#050505]'
+                    : 'border-[#222222] bg-[#0a0a0a]'
                 }`}>
                   <p className="text-[14px] font-extrabold text-white mb-1">{c.name}</p>
                   <p className="text-[11px] font-bold text-zinc-600 mb-4">{c.numVendas} venda{c.numVendas !== 1 ? 's' : ''}</p>

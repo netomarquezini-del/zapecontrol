@@ -73,12 +73,12 @@ export default function DatePicker({ startDate, endDate, onChange }: {
 
   return (
     <div ref={ref} className="relative">
-      <button onClick={() => setOpen(!open)} className="flex items-center gap-2 rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] px-4 py-2.5 text-[13px] font-bold text-white hover:border-lime-400/20 transition-all cursor-pointer">
+      <button onClick={() => setOpen(!open)} className="flex items-center gap-2 rounded-xl border border-[#222222] bg-[#111111] px-4 py-2.5 text-[13px] font-bold text-white hover:border-lime-400/20 transition-all cursor-pointer">
         <CalendarDays size={14} className="text-lime-400" />
         {label}
       </button>
       {open && (
-        <div className="absolute top-full mt-2 right-0 z-50 rounded-2xl border border-[#1a1a1a] bg-[#050505] shadow-2xl min-w-[280px]">
+        <div className="absolute top-full mt-2 right-0 z-50 rounded-2xl border border-[#222222] bg-[#0a0a0a] shadow-2xl min-w-[280px]">
           <div className="p-3 space-y-0.5">
             <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-600 px-2 pb-2">Periodo</p>
             {PRESETS.map((p) => (
@@ -87,16 +87,16 @@ export default function DatePicker({ startDate, endDate, onChange }: {
               </button>
             ))}
           </div>
-          <div className="border-t border-[#1a1a1a] p-3 space-y-3">
+          <div className="border-t border-[#222222] p-3 space-y-3">
             <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-600 px-1">Personalizado</p>
             <div className="flex items-center gap-2">
               <div className="flex-1">
                 <label className="text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-700 block mb-1 px-1">De</label>
-                <input type="date" value={tempStart} onChange={(e) => setTempStart(e.target.value)} className="w-full rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] px-3 py-2 text-[12px] font-bold text-white outline-none focus:border-lime-400/30 [color-scheme:dark]" />
+                <input type="date" value={tempStart} onChange={(e) => setTempStart(e.target.value)} className="w-full rounded-lg border border-[#222222] bg-[#111111] px-3 py-2 text-[12px] font-bold text-white outline-none focus:border-lime-400/30 [color-scheme:dark]" />
               </div>
               <div className="flex-1">
                 <label className="text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-700 block mb-1 px-1">Ate</label>
-                <input type="date" value={tempEnd} onChange={(e) => setTempEnd(e.target.value)} className="w-full rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] px-3 py-2 text-[12px] font-bold text-white outline-none focus:border-lime-400/30 [color-scheme:dark]" />
+                <input type="date" value={tempEnd} onChange={(e) => setTempEnd(e.target.value)} className="w-full rounded-lg border border-[#222222] bg-[#111111] px-3 py-2 text-[12px] font-bold text-white outline-none focus:border-lime-400/30 [color-scheme:dark]" />
               </div>
             </div>
             <button onClick={() => { onChange(tempStart, tempEnd); setOpen(false); }} className="w-full rounded-xl bg-lime-400/10 border border-lime-400/20 py-2.5 text-[12px] font-extrabold text-lime-400 hover:bg-lime-400/15 transition-all cursor-pointer">
@@ -128,12 +128,12 @@ export function MonthPicker({ value, onChange }: { value: string; onChange: (v: 
 
   return (
     <div ref={ref} className="relative">
-      <button onClick={() => setOpen(!open)} className="flex items-center gap-2 rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] px-4 py-2.5 text-[13px] font-bold text-white hover:border-lime-400/20 transition-all cursor-pointer">
+      <button onClick={() => setOpen(!open)} className="flex items-center gap-2 rounded-xl border border-[#222222] bg-[#111111] px-4 py-2.5 text-[13px] font-bold text-white hover:border-lime-400/20 transition-all cursor-pointer">
         <CalendarDays size={14} className="text-lime-400" />
         <span className="capitalize">{label}</span>
       </button>
       {open && (
-        <div className="absolute top-full mt-2 right-0 z-50 rounded-2xl border border-[#1a1a1a] bg-[#050505] shadow-2xl p-4 min-w-[240px]">
+        <div className="absolute top-full mt-2 right-0 z-50 rounded-2xl border border-[#222222] bg-[#0a0a0a] shadow-2xl p-4 min-w-[240px]">
           <div className="flex items-center justify-between mb-4">
             <button onClick={() => setViewYear((y) => y - 1)} className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"><ChevronLeft size={16} /></button>
             <span className="text-sm font-bold text-white">{viewYear}</span>

@@ -74,7 +74,7 @@ export default function DiarioRegistroPage() {
 
   return (
     <div className="min-h-screen bg-black">
-      <header className="border-b border-[#1a1a1a] bg-black">
+      <header className="border-b border-[#222222] bg-black">
         <div className="max-w-xl mx-auto px-5 py-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-lime-400/8 border border-lime-400/15">
@@ -94,7 +94,7 @@ export default function DiarioRegistroPage() {
           <div>
             <label className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600 block mb-2">Closer</label>
             <select value={formCloser} onChange={(e) => setFormCloser(e.target.value === '' ? '' : Number(e.target.value))}
-              className="w-full rounded-2xl border border-[#1a1a1a] bg-[#0a0a0a] px-5 py-4 text-[15px] font-bold text-white outline-none focus:border-lime-400/30 transition-colors [color-scheme:dark] cursor-pointer">
+              className="w-full rounded-2xl border border-[#222222] bg-[#111111] px-5 py-4 text-[15px] font-bold text-white outline-none focus:border-lime-400/30 transition-colors [color-scheme:dark] cursor-pointer">
               <option value="">Selecione o closer...</option>
               {closers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
@@ -107,7 +107,7 @@ export default function DiarioRegistroPage() {
                 type="number" value={formValor} onChange={(e) => setFormValor(e.target.value === '' ? '' : Number(e.target.value))}
                 onKeyDown={(e) => e.key === 'Enter' && addEntry()}
                 placeholder="0,00"
-                className="w-full rounded-2xl border border-[#1a1a1a] bg-[#0a0a0a] pl-12 pr-5 py-4 text-[22px] font-extrabold text-white outline-none focus:border-lime-400/30 transition-colors"
+                className="w-full rounded-2xl border border-[#222222] bg-[#111111] pl-12 pr-5 py-4 text-[22px] font-extrabold text-white outline-none focus:border-lime-400/30 transition-colors"
               />
             </div>
           </div>
@@ -122,7 +122,7 @@ export default function DiarioRegistroPage() {
           <div className="space-y-3">
             <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600">Vendas de hoje</p>
             {[...entries].reverse().map((e) => (
-              <div key={e.id} className="flex items-center justify-between rounded-2xl border border-[#1a1a1a] bg-[#0a0a0a] px-5 py-4">
+              <div key={e.id} className="flex items-center justify-between rounded-2xl border border-[#222222] bg-[#111111] px-5 py-4">
                 <div>
                   <p className="text-[14px] font-extrabold text-white">{closerMap.get(e.closer_id)}</p>
                   <p className="text-[18px] font-extrabold text-lime-400">{fmtBRL(e.valor)}</p>
@@ -132,7 +132,7 @@ export default function DiarioRegistroPage() {
                 </button>
               </div>
             ))}
-            <div className="flex items-center justify-between pt-4 border-t border-[#1a1a1a]">
+            <div className="flex items-center justify-between pt-4 border-t border-[#222222]">
               <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-zinc-600">Total — {entries.length} venda{entries.length !== 1 ? 's' : ''}</span>
               <span className="text-[20px] font-extrabold text-lime-400">{fmtBRL(totalDia)}</span>
             </div>

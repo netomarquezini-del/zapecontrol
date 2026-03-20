@@ -157,7 +157,7 @@ export default function AcompanhamentoPage() {
     const colorMeta = pctMeta >= 100 ? 'bg-lime-400' : pctMeta >= 70 ? 'bg-yellow-500' : 'bg-red-500'
     const colorEsp = pctEsperada >= 100 ? 'bg-lime-400' : pctEsperada >= 70 ? 'bg-yellow-500' : 'bg-red-500'
     return (
-      <div className={`rounded-xl border p-5 transition-all duration-300 ${pctMeta >= 100 ? 'border-lime-400/20 bg-lime-400/[0.03]' : 'border-[#1a1a1a] bg-[#0a0a0a]'}`}>
+      <div className={`rounded-xl border p-5 transition-all duration-300 ${pctMeta >= 100 ? 'border-lime-400/20 bg-lime-400/[0.03]' : 'border-[#222222] bg-[#111111]'}`}>
         <div className="flex items-center justify-between mb-4">
           <span className="text-[13px] font-extrabold text-white">{label}</span>
           <span className={`text-[15px] font-extrabold ${pctMeta >= 100 ? 'text-lime-400' : 'text-white'}`}>{actual}</span>
@@ -169,7 +169,7 @@ export default function AcompanhamentoPage() {
               <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-600">Meta mensal: {metaVal}</span>
               <span className={`text-[11px] font-extrabold ${pctMeta >= 100 ? 'text-lime-400' : 'text-zinc-400'}`}>{pctMeta.toFixed(1)}%</span>
             </div>
-            <div className="h-2 rounded-full bg-[#1a1a1a] overflow-hidden">
+            <div className="h-2 rounded-full bg-[#222222] overflow-hidden">
               <div className={`h-full rounded-full ${colorMeta} transition-all duration-700`} style={{ width: `${Math.min(pctMeta, 100)}%` }} />
             </div>
           </div>
@@ -179,7 +179,7 @@ export default function AcompanhamentoPage() {
               <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-700">Esperado hoje: {esperadoVal}</span>
               <span className={`text-[11px] font-extrabold ${pctEsperada >= 100 ? 'text-lime-400' : 'text-zinc-500'}`}>{pctEsperada.toFixed(1)}%</span>
             </div>
-            <div className="h-2 rounded-full bg-[#1a1a1a] overflow-hidden">
+            <div className="h-2 rounded-full bg-[#222222] overflow-hidden">
               <div className={`h-full rounded-full ${colorEsp} transition-all duration-700 opacity-60`} style={{ width: `${Math.min(pctEsperada, 100)}%` }} />
             </div>
           </div>
@@ -211,7 +211,7 @@ export default function AcompanhamentoPage() {
             Meta Diaria
           </a>
           <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
-          <div className="flex rounded-xl border border-[#1a1a1a] overflow-hidden">
+          <div className="flex rounded-xl border border-[#222222] overflow-hidden">
             {NIVEIS.map((n) => (
               <button
                 key={n}
@@ -238,7 +238,7 @@ export default function AcompanhamentoPage() {
               <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-600 mb-1">Vendas vs Meta</p>
               <p className="text-xl font-extrabold text-lime-400">{fmtBRL(closerTotal.vendas)}</p>
               <p className="text-[10px] font-semibold text-zinc-600 mt-1">Meta: {fmtBRL(closerTotal.meta)}</p>
-              <div className="w-full h-1.5 rounded-full bg-[#1a1a1a] mt-2">
+              <div className="w-full h-1.5 rounded-full bg-[#222222] mt-2">
                 <div className={`h-full rounded-full transition-all duration-700 ${closerTotal.meta > 0 && closerTotal.vendas >= closerTotal.meta ? 'bg-lime-400' : 'bg-yellow-500'}`} style={{ width: `${Math.min(closerTotal.meta > 0 ? (closerTotal.vendas / closerTotal.meta) * 100 : 0, 100)}%` }} />
               </div>
             </div>
@@ -253,7 +253,7 @@ export default function AcompanhamentoPage() {
               <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-600 mb-1">Agend. vs Meta SDR</p>
               <p className="text-xl font-extrabold text-white">{sdrTotal.agend}</p>
               <p className="text-[10px] font-semibold text-zinc-600 mt-1">Meta: {sdrTotal.meta}</p>
-              <div className="w-full h-1.5 rounded-full bg-[#1a1a1a] mt-2">
+              <div className="w-full h-1.5 rounded-full bg-[#222222] mt-2">
                 <div className={`h-full rounded-full transition-all duration-700 ${sdrTotal.meta > 0 && sdrTotal.agend >= sdrTotal.meta ? 'bg-lime-400' : 'bg-yellow-500'}`} style={{ width: `${Math.min(sdrTotal.meta > 0 ? (sdrTotal.agend / sdrTotal.meta) * 100 : 0, 100)}%` }} />
               </div>
             </div>
@@ -310,14 +310,14 @@ export default function AcompanhamentoPage() {
 
           {/* CLOSER DETAILED TABLE */}
           <div className="card overflow-hidden">
-            <div className="px-6 py-4 border-b border-[#1a1a1a] flex items-center gap-2.5">
+            <div className="px-6 py-4 border-b border-[#222222] flex items-center gap-2.5">
               <Trophy size={15} className="text-lime-400" />
               <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600">Detalhamento Closers</p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr style={{ borderBottom: '1px solid #1a1a1a' }}>
+                  <tr style={{ borderBottom: '1px solid #222222' }}>
                     <th className={`text-left ${th}`}>#</th>
                     <th className={`text-left ${th}`}>Closer</th>
                     <th className={`text-right ${th}`}>Meta</th>
@@ -332,9 +332,9 @@ export default function AcompanhamentoPage() {
                 </thead>
                 <tbody>
                   {closerStats.map((c, i) => (
-                    <tr key={c.id} style={{ borderBottom: '1px solid #1a1a1a' }} className="hover:bg-white/[0.02] transition-colors">
+                    <tr key={c.id} style={{ borderBottom: '1px solid #222222' }} className="hover:bg-white/[0.02] transition-colors">
                       <td className={td}>
-                        <span className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold" style={{ background: i === 0 ? 'rgba(163,230,53,0.12)' : '#1a1a1a', color: i === 0 ? '#A3E635' : '#71717a' }}>{i + 1}</span>
+                        <span className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold" style={{ background: i === 0 ? 'rgba(163,230,53,0.12)' : '#222222', color: i === 0 ? '#A3E635' : '#71717a' }}>{i + 1}</span>
                       </td>
                       <td className={`${td} font-extrabold text-white`}>{c.name}</td>
                       <td className={`${td} text-right font-semibold text-zinc-500`}>{fmtBRL(c.metaMensal)}</td>
@@ -354,14 +354,14 @@ export default function AcompanhamentoPage() {
 
           {/* SDR DETAILED TABLE */}
           <div className="card overflow-hidden">
-            <div className="px-6 py-4 border-b border-[#1a1a1a] flex items-center gap-2.5">
+            <div className="px-6 py-4 border-b border-[#222222] flex items-center gap-2.5">
               <Headphones size={15} className="text-lime-400" />
               <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600">Detalhamento SDRs</p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr style={{ borderBottom: '1px solid #1a1a1a' }}>
+                  <tr style={{ borderBottom: '1px solid #222222' }}>
                     <th className={`text-left ${th}`}>#</th>
                     <th className={`text-left ${th}`}>SDR</th>
                     <th className={`text-right ${th}`}>Meta Agend</th>
@@ -380,9 +380,9 @@ export default function AcompanhamentoPage() {
                 </thead>
                 <tbody>
                   {sdrStats.map((s, i) => (
-                    <tr key={s.id} style={{ borderBottom: '1px solid #1a1a1a' }} className="hover:bg-white/[0.02] transition-colors">
+                    <tr key={s.id} style={{ borderBottom: '1px solid #222222' }} className="hover:bg-white/[0.02] transition-colors">
                       <td className={td}>
-                        <span className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold" style={{ background: i === 0 ? 'rgba(163,230,53,0.12)' : '#1a1a1a', color: i === 0 ? '#A3E635' : '#71717a' }}>{i + 1}</span>
+                        <span className="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold" style={{ background: i === 0 ? 'rgba(163,230,53,0.12)' : '#222222', color: i === 0 ? '#A3E635' : '#71717a' }}>{i + 1}</span>
                       </td>
                       <td className={`${td} font-extrabold text-white`}>{s.name}</td>
                       <td className={`${td} text-right font-semibold text-zinc-500`}>{s.metaMensal}</td>

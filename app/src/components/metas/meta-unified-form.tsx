@@ -302,7 +302,7 @@ export default function MetaUnifiedForm({ selectedMonth }: { selectedMonth: stri
                         setMetasGerais((prev) => ({ ...prev, [nivel]: Number(e.target.value) }))
                       }
                       placeholder="0"
-                      className="w-full rounded-lg border border-[#1a1a1a] bg-[#050505] px-3 py-2 text-lg font-extrabold text-white outline-none focus:border-lime-400/30 transition-colors"
+                      className="w-full rounded-lg border border-[#222222] bg-[#0a0a0a] px-3 py-2 text-lg font-extrabold text-white outline-none focus:border-lime-400/30 transition-colors"
                     />
                   </div>
                   <div className="flex items-center justify-between rounded-lg bg-black/30 px-3 py-2">
@@ -350,7 +350,7 @@ export default function MetaUnifiedForm({ selectedMonth }: { selectedMonth: stri
                             setMetasClosers((prev) => ({ ...prev, [c.id]: Number(e.target.value) }))
                           }
                           placeholder="0"
-                          className="w-40 rounded-lg border border-[#1a1a1a] bg-[#050505] px-3 py-1.5 text-sm font-bold text-white outline-none focus:border-lime-400/30 transition-colors"
+                          className="w-40 rounded-lg border border-[#222222] bg-[#0a0a0a] px-3 py-1.5 text-sm font-bold text-white outline-none focus:border-lime-400/30 transition-colors"
                         />
                       </td>
                       <td className="py-3 px-5 text-right font-extrabold text-lime-400">
@@ -399,7 +399,7 @@ export default function MetaUnifiedForm({ selectedMonth }: { selectedMonth: stri
                           placeholder="0"
                           min={0}
                           step={1}
-                          className="w-40 rounded-lg border border-[#1a1a1a] bg-[#050505] px-3 py-1.5 text-sm font-bold text-white outline-none focus:border-lime-400/30 transition-colors"
+                          className="w-40 rounded-lg border border-[#222222] bg-[#0a0a0a] px-3 py-1.5 text-sm font-bold text-white outline-none focus:border-lime-400/30 transition-colors"
                         />
                       </td>
                       <td className="py-3 px-5 text-right font-extrabold text-lime-400">

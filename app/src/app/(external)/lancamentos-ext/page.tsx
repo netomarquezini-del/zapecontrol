@@ -167,12 +167,12 @@ export default function LancamentosExtPage() {
 
   const th = "py-3.5 px-4 text-[10px] font-bold uppercase tracking-[0.08em] text-zinc-600";
   const td = "py-3 px-4 text-[13px]";
-  const selectCls = "rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] px-3 py-2 text-[12px] font-bold text-white outline-none focus:border-lime-400/30 transition-colors [color-scheme:dark] cursor-pointer";
+  const selectCls = "rounded-xl border border-[#222222] bg-[#111111] px-3 py-2 text-[12px] font-bold text-white outline-none focus:border-lime-400/30 transition-colors [color-scheme:dark] cursor-pointer";
 
   return (
     <div className="min-h-screen bg-black">
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-[#1a1a1a] bg-black/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-10 border-b border-[#222222] bg-black/90 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-lime-400/8 border border-lime-400/15">
@@ -259,7 +259,7 @@ export default function LancamentosExtPage() {
                 <div className="card overflow-hidden">
                   <table className="w-full">
                     <thead>
-                      <tr style={{ borderBottom: "1px solid #1a1a1a" }}>
+                      <tr style={{ borderBottom: "1px solid #222222" }}>
                         <th className={`text-left ${th}`}>Data</th>
                         <th className={`text-left ${th}`}>Closer</th>
                         <th className={`text-center ${th}`}>Agend.</th>
@@ -273,7 +273,7 @@ export default function LancamentosExtPage() {
                     </thead>
                     <tbody>
                       {filtered.map((m) => (
-                        <tr key={m.id} style={{ borderBottom: "1px solid #1a1a1a" }} className="hover:bg-white/[0.02] transition-colors">
+                        <tr key={m.id} style={{ borderBottom: "1px solid #222222" }} className="hover:bg-white/[0.02] transition-colors">
                           <td className={`${td} font-semibold text-zinc-500`}>{m.data}</td>
                           <td className={`${td} font-extrabold text-white`}>{m.closer_name}</td>
                           <td className={`${td} text-center font-semibold text-zinc-300`}>{sumQtdFiltered(m.agendamentos)}</td>
@@ -294,7 +294,7 @@ export default function LancamentosExtPage() {
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr className="bg-[#080808]" style={{ borderTop: "2px solid #1a1a1a" }}>
+                      <tr className="bg-[#111111]" style={{ borderTop: "2px solid #222222" }}>
                         <td className={`${td} font-extrabold text-white text-[10px] uppercase tracking-[0.1em]`} colSpan={2}>Total</td>
                         <td className={`${td} text-center font-extrabold text-white`}>{t.agend}</td>
                         <td className={`${td} text-center font-extrabold text-white`}>{t.reun}</td>
@@ -353,7 +353,7 @@ export default function LancamentosExtPage() {
                 <div className="card overflow-hidden">
                   <table className="w-full">
                     <thead>
-                      <tr style={{ borderBottom: "1px solid #1a1a1a" }}>
+                      <tr style={{ borderBottom: "1px solid #222222" }}>
                         <th className={`text-left ${th}`}>SDR</th>
                         <th className={`text-center ${th}`}>Agend.</th>
                         <th className={`text-center ${th}`}>Reunioes</th>
@@ -365,7 +365,7 @@ export default function LancamentosExtPage() {
                     </thead>
                     <tbody>
                       {sdrRows.map((r) => (
-                        <tr key={r.id} style={{ borderBottom: "1px solid #1a1a1a" }} className="hover:bg-white/[0.02] transition-colors">
+                        <tr key={r.id} style={{ borderBottom: "1px solid #222222" }} className="hover:bg-white/[0.02] transition-colors">
                           <td className={`${td} font-extrabold text-white`}>{r.name}</td>
                           <td className={`${td} text-center font-semibold text-zinc-300`}>{r.agend}</td>
                           <td className={`${td} text-center font-semibold text-zinc-300`}>{r.reun}</td>
@@ -377,7 +377,7 @@ export default function LancamentosExtPage() {
                       ))}
                     </tbody>
                     <tfoot>
-                      <tr className="bg-[#080808]" style={{ borderTop: "2px solid #1a1a1a" }}>
+                      <tr className="bg-[#111111]" style={{ borderTop: "2px solid #222222" }}>
                         <td className={`${td} font-extrabold text-white text-[10px] uppercase tracking-[0.1em]`}>Total</td>
                         <td className={`${td} text-center font-extrabold text-white`}>{sdrTotals.agend}</td>
                         <td className={`${td} text-center font-extrabold text-white`}>{sdrTotals.reun}</td>

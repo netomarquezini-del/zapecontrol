@@ -245,10 +245,10 @@ export default function SdrMetas({
       )}
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-[#1a1a1a] bg-[#0a0a0a]">
+      <div className="overflow-x-auto rounded-xl border border-[#222222] bg-[#111111]">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-[#1a1a1a]">
+            <tr className="border-b border-[#222222]">
               <th className="px-5 py-3.5 text-left text-[11px] font-medium uppercase tracking-wider text-zinc-500">
                 SDR
               </th>

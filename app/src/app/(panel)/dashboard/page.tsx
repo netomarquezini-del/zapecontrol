@@ -428,7 +428,7 @@ export default function DashboardPage() {
                     </span>
                   </div>
                   <div className="flex flex-col gap-2">
-                    <div className={`w-full h-1.5 rounded-full ${progressPercent >= 100 ? 'bg-black/15' : 'bg-[#1a1a1a]'}`}>
+                    <div className={`w-full h-1.5 rounded-full ${progressPercent >= 100 ? 'bg-black/15' : 'bg-[#222222]'}`}>
                       <div
                         className={`h-full rounded-full transition-all duration-700 ease-out ${
                           progressPercent >= 100 ? 'bg-black/40' : progressPercent >= 70 ? 'bg-yellow-500' : 'bg-red-500'
@@ -535,7 +535,7 @@ export default function DashboardPage() {
                           <div className="flex items-center gap-4">
                             <span className="text-[12px] font-bold text-zinc-400 min-w-[110px]">{step.label}</span>
                             <div className="flex-1 relative">
-                              <div className="h-10 rounded-lg bg-[#1a1a1a] overflow-hidden">
+                              <div className="h-10 rounded-lg bg-[#222222] overflow-hidden">
                                 <div
                                   className="h-full rounded-lg bg-lime-400/20 transition-all duration-700 flex items-center justify-end pr-3"
                                   style={{ width: `${Math.max(pct, 3)}%` }}
@@ -574,7 +574,7 @@ export default function DashboardPage() {
                       return (
                         <div key={o.name} className="flex items-center gap-3">
                           <span className="text-[12px] font-bold text-white min-w-[120px] truncate">{o.name}</span>
-                          <div className="flex-1 h-2 rounded-full bg-[#1a1a1a] overflow-hidden">
+                          <div className="flex-1 h-2 rounded-full bg-[#222222] overflow-hidden">
                             <div className="h-full rounded-full bg-lime-400/50 transition-all duration-500" style={{ width: `${pct}%` }} />
                           </div>
                           <span className="text-[12px] font-extrabold text-lime-400 min-w-[90px] text-right">{formatCurrency(o.value)}</span>
@@ -601,7 +601,7 @@ export default function DashboardPage() {
                       return (
                         <div key={s.name} className="flex items-center gap-3">
                           <span className="text-[12px] font-bold text-white min-w-[120px] truncate">{s.name}</span>
-                          <div className="flex-1 h-2 rounded-full bg-[#1a1a1a] overflow-hidden">
+                          <div className="flex-1 h-2 rounded-full bg-[#222222] overflow-hidden">
                             <div className="h-full rounded-full bg-lime-400/50 transition-all duration-500" style={{ width: `${pct}%` }} />
                           </div>
                           <span className="text-[12px] font-extrabold text-lime-400 min-w-[90px] text-right">{formatCurrency(s.valor)}</span>

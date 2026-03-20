@@ -128,7 +128,7 @@ export default function LancamentosPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] px-4 py-2.5">
+          <div className="flex items-center gap-2 rounded-xl border border-[#222222] bg-[#111111] px-4 py-2.5">
             <CalendarDays size={15} className="text-lime-400" />
             <input
               type="date"

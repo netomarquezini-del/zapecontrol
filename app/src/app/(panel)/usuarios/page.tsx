@@ -130,8 +130,8 @@ export default function UsuariosPage() {
   const togglePerm = (perms: string[], perm: string) =>
     perms.includes(perm) ? perms.filter((p) => p !== perm) : [...perms, perm]
 
-  const selectCls = "rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] px-4 py-2.5 text-[13px] font-bold text-white outline-none focus:border-lime-400/30 transition-colors cursor-pointer"
-  const inputCls = "w-full rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] px-4 py-2.5 text-[13px] font-semibold text-white placeholder-zinc-700 outline-none focus:border-lime-400/30 transition-colors"
+  const selectCls = "rounded-xl border border-[#222222] bg-[#111111] px-4 py-2.5 text-[13px] font-bold text-white outline-none focus:border-lime-400/30 transition-colors cursor-pointer"
+  const inputCls = "w-full rounded-xl border border-[#222222] bg-[#111111] px-4 py-2.5 text-[13px] font-semibold text-white placeholder-zinc-700 outline-none focus:border-lime-400/30 transition-colors"
 
   return (
     <div className="space-y-8">
@@ -163,8 +163,8 @@ export default function UsuariosPage() {
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="fixed inset-0 bg-black/70 backdrop-blur-md" onClick={() => setShowForm(false)} />
-          <div className="relative z-10 w-full max-w-lg rounded-2xl border border-[#1a1a1a] bg-[#050505] shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-5 border-b border-[#1a1a1a]">
+          <div className="relative z-10 w-full max-w-lg rounded-2xl border border-[#222222] bg-[#0a0a0a] shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-[#222222]">
               <h2 className="text-lg font-extrabold text-white">Novo Usuario</h2>
               <button onClick={() => setShowForm(false)} className="rounded-lg p-2 text-zinc-600 hover:text-white hover:bg-white/5 cursor-pointer"><X size={18} /></button>
             </div>
@@ -192,14 +192,14 @@ export default function UsuariosPage() {
                 <div className="flex flex-wrap gap-2">
                   {PAGES.map((p) => (
                     <button key={p.id} type="button" onClick={() => setFormPerms(togglePerm(formPerms, p.id))}
-                      className={`rounded-lg px-3 py-1.5 text-[11px] font-bold transition-all cursor-pointer ${formPerms.includes(p.id) ? 'bg-lime-400/10 text-lime-400 border border-lime-400/20' : 'bg-[#0a0a0a] text-zinc-600 border border-[#1a1a1a]'}`}>
+                      className={`rounded-lg px-3 py-1.5 text-[11px] font-bold transition-all cursor-pointer ${formPerms.includes(p.id) ? 'bg-lime-400/10 text-lime-400 border border-lime-400/20' : 'bg-[#111111] text-zinc-600 border border-[#222222]'}`}>
                       {p.label}
                     </button>
                   ))}
                 </div>
               </div>
             </div>
-            <div className="flex justify-end gap-3 px-6 py-5 border-t border-[#1a1a1a]">
+            <div className="flex justify-end gap-3 px-6 py-5 border-t border-[#222222]">
               <button onClick={() => setShowForm(false)} className="px-5 py-2.5 rounded-xl text-[13px] font-bold text-zinc-500 hover:text-white cursor-pointer">Cancelar</button>
               <button onClick={handleCreate} disabled={saving || !formName || !formEmail || !formPassword}
                 className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-lime-400/10 border border-lime-400/20 text-[13px] font-bold text-lime-400 hover:bg-lime-400/15 cursor-pointer disabled:opacity-40">
@@ -262,7 +262,7 @@ export default function UsuariosPage() {
                 </div>
 
                 {isEditing ? (
-                  <div className="space-y-3 mt-4 pt-4 border-t border-[#1a1a1a]">
+                  <div className="space-y-3 mt-4 pt-4 border-t border-[#222222]">
                     <div>
                       <label className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600 block mb-1.5">Funcao</label>
                       <select value={editRole} onChange={(e) => setEditRole(e.target.value)} className={selectCls}>
@@ -274,7 +274,7 @@ export default function UsuariosPage() {
                       <div className="flex flex-wrap gap-2">
                         {PAGES.map((p) => (
                           <button key={p.id} type="button" onClick={() => setEditPerms(togglePerm(editPerms, p.id))}
-                            className={`rounded-lg px-3 py-1.5 text-[11px] font-bold transition-all cursor-pointer ${editPerms.includes(p.id) ? 'bg-lime-400/10 text-lime-400 border border-lime-400/20' : 'bg-[#0a0a0a] text-zinc-600 border border-[#1a1a1a]'}`}>
+                            className={`rounded-lg px-3 py-1.5 text-[11px] font-bold transition-all cursor-pointer ${editPerms.includes(p.id) ? 'bg-lime-400/10 text-lime-400 border border-lime-400/20' : 'bg-[#111111] text-zinc-600 border border-[#222222]'}`}>
                             {p.label}
                           </button>
                         ))}
@@ -284,7 +284,7 @@ export default function UsuariosPage() {
                 ) : (
                   <div className="flex flex-wrap gap-1.5">
                     {(u.permissions || []).map((p) => (
-                      <span key={p} className="rounded-lg bg-[#0a0a0a] border border-[#1a1a1a] px-2.5 py-1 text-[10px] font-bold text-zinc-500">
+                      <span key={p} className="rounded-lg bg-[#111111] border border-[#222222] px-2.5 py-1 text-[10px] font-bold text-zinc-500">
                         {PAGES.find((pg) => pg.id === p)?.label || p}
                       </span>
                     ))}

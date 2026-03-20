@@ -56,7 +56,7 @@ export default function LoginPage() {
           <input
             type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
             placeholder="seu@email.com" autoComplete="email"
-            className="w-full rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] px-4 py-3.5 text-[14px] font-semibold text-white placeholder-zinc-700 outline-none focus:border-lime-400/30 transition-colors"
+            className="w-full rounded-xl border border-[#222222] bg-[#111111] px-4 py-3.5 text-[14px] font-semibold text-white placeholder-zinc-700 outline-none focus:border-lime-400/30 transition-colors"
           />
         </div>
 
@@ -65,7 +65,7 @@ export default function LoginPage() {
           <input
             type="password" value={password} onChange={(e) => setPassword(e.target.value)} required
             placeholder="••••••••" autoComplete="current-password"
-            className="w-full rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] px-4 py-3.5 text-[14px] font-semibold text-white placeholder-zinc-700 outline-none focus:border-lime-400/30 transition-colors"
+            className="w-full rounded-xl border border-[#222222] bg-[#111111] px-4 py-3.5 text-[14px] font-semibold text-white placeholder-zinc-700 outline-none focus:border-lime-400/30 transition-colors"
           />
         </div>
 

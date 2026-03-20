@@ -3,11 +3,11 @@
 :root {
   /* ZAPE Identity — Dark Premium */
   --bg-primary: #000000;
-  --bg-secondary: #050505;
-  --bg-card: #0a0a0a;
-  --bg-card-hover: #111111;
-  --border-color: #1a1a1a;
-  --border-color-light: #242424;
+  --bg-secondary: #080808;
+  --bg-card: #111111;
+  --bg-card-hover: #181818;
+  --border-color: #222222;
+  --border-color-light: #2a2a2a;
   --text-primary: #ffffff;
   --text-secondary: #a1a1aa;
   --text-muted: #52525b;

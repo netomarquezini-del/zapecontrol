@@ -74,7 +74,7 @@ export default function Sidebar() {
       {/* Mobile toggle button */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="fixed top-5 left-5 z-50 flex h-10 w-10 items-center justify-center rounded-xl bg-[#0a0a0a] border border-[#1a1a1a] text-zinc-400 hover:text-white hover:border-lime-400/20 transition-all lg:hidden"
+        className="fixed top-5 left-5 z-50 flex h-10 w-10 items-center justify-center rounded-xl bg-[#111111] border border-[#222222] text-zinc-400 hover:text-white hover:border-lime-400/20 transition-all lg:hidden"
         aria-label="Abrir menu"
       >
         <Menu size={18} />
@@ -92,14 +92,14 @@ export default function Sidebar() {
       <aside
         className={`
           fixed top-0 left-0 z-50 flex h-screen w-[260px] flex-col
-          border-r border-[#1a1a1a] bg-[#050505]
+          border-r border-[#222222] bg-[#0a0a0a]
           transition-transform duration-300 ease-in-out
           lg:translate-x-0 lg:static lg:z-auto
           ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
         {/* Header */}
-        <div className="flex h-[72px] items-center justify-between px-6 border-b border-[#1a1a1a]">
+        <div className="flex h-[72px] items-center justify-between px-6 border-b border-[#222222]">
           <Link href="/" className="flex items-center gap-3 group">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-lime-400/8 border border-lime-400/15 group-hover:bg-lime-400/12 group-hover:border-lime-400/25 transition-all duration-300">
               <Zap size={16} className="text-lime-400" />
@@ -161,7 +161,7 @@ export default function Sidebar() {
                     isOpen ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0"
                   }`}
                 >
-                  <div className="ml-3 pl-3 border-l border-[#1a1a1a] space-y-0.5 mt-1 mb-2">
+                  <div className="ml-3 pl-3 border-l border-[#222222] space-y-0.5 mt-1 mb-2">
                     {group.children.map((item) => {
                       const active = !item.external && isActive(item.href);
                       const cls = `
@@ -214,7 +214,7 @@ export default function Sidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-[#1a1a1a] px-4 py-4 space-y-2">
+        <div className="border-t border-[#222222] px-4 py-4 space-y-2">
           <button
             onClick={async () => {
               const { getSupabase } = await import("@/lib/supabase");

@@ -8,6 +8,7 @@ import { Loader2 } from 'lucide-react'
 // Routes that require specific permissions
 // If a route is NOT listed here, it's accessible to ALL logged-in users
 const RESTRICTED_ROUTES: Record<string, string> = {
+  '/dashboard': 'dashboard',
   '/acompanhamento': 'acompanhamento',
   '/lancamentos-ext': 'lancamentos',
   '/metas': 'metas',
@@ -17,7 +18,7 @@ const RESTRICTED_ROUTES: Record<string, string> = {
   '/diario-registro': 'diario',
 }
 
-// Dashboard, home, lancamentos(panel) are always accessible to any logged-in user
+// /inicio is always accessible to any logged-in user
 
 const PERM_TO_ROUTE: Record<string, string> = {
   dashboard: '/dashboard',
@@ -90,8 +91,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
           // User has the required permission
           setAuthorized(true)
         } else {
-          // No permission — redirect to dashboard (always accessible)
-          router.replace('/dashboard')
+          // No permission — redirect to inicio (always accessible)
+          router.replace('/inicio')
         }
       } catch {
         router.replace('/login')

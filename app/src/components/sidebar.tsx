@@ -69,12 +69,12 @@ export default function Sidebar() {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ comercial: true });
 
   // Filter nav items by permission
-  // Dashboard is always visible. Other items filtered by permission.
+  // Filter nav items by permission. Items without perm are always visible.
   const filteredGroups = navGroups.map((group) => ({
     ...group,
     children: group.children.filter((item) => {
       if (isAdmin) return true;
-      if (!item.perm || item.perm === 'dashboard') return true; // dashboard always visible
+      if (!item.perm) return true;
       return permissions.includes(item.perm);
     }),
   })).filter((group) => group.children.length > 0);
@@ -85,8 +85,7 @@ export default function Sidebar() {
   const [pwFeedback, setPwFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
   const isActive = (href: string) => {
-    if (href === "/dashboard") return pathname === "/" || pathname === "/dashboard";
-    return pathname.startsWith(href);
+    return pathname === href;
   };
 
   const toggleGroup = (id: string) => {
@@ -124,7 +123,7 @@ export default function Sidebar() {
       >
         {/* Header */}
         <div className="flex h-[72px] items-center justify-between px-6 border-b border-[#222222]">
-          <Link href="/" className="flex items-center gap-3 group">
+          <Link href="/inicio" className="flex items-center gap-3 group">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-lime-400/8 border border-lime-400/15 group-hover:bg-lime-400/12 group-hover:border-lime-400/25 transition-all duration-300">
               <Zap size={16} className="text-lime-400" />
             </div>

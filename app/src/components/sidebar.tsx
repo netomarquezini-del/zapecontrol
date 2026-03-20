@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/components/auth-guard";
 import {
   LayoutDashboard,
   FileEdit,
@@ -27,6 +28,7 @@ interface NavItem {
   label: string;
   icon: typeof LayoutDashboard;
   external?: boolean;
+  perm?: string; // permission ID required
 }
 
 interface NavGroup {
@@ -34,6 +36,7 @@ interface NavGroup {
   label: string;
   icon: typeof Briefcase;
   children: NavItem[];
+  perm?: string; // if set, whole group requires this perm
 }
 
 const navGroups: NavGroup[] = [
@@ -42,11 +45,11 @@ const navGroups: NavGroup[] = [
     label: "Comercial",
     icon: Briefcase,
     children: [
-      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/acompanhamento", label: "Acompanhamento", icon: BarChart3 },
-      { href: "/lancamentos-ext", label: "Lancamentos", icon: FileEdit, external: true },
-      { href: "/metas", label: "Metas", icon: Target },
-      { href: "/cadastros", label: "Cadastros", icon: Users },
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, perm: "dashboard" },
+      { href: "/acompanhamento", label: "Acompanhamento", icon: BarChart3, perm: "acompanhamento" },
+      { href: "/lancamentos-ext", label: "Lancamentos", icon: FileEdit, external: true, perm: "lancamentos" },
+      { href: "/metas", label: "Metas", icon: Target, perm: "metas" },
+      { href: "/cadastros", label: "Cadastros", icon: Users, perm: "cadastros" },
     ],
   },
   {
@@ -54,15 +57,26 @@ const navGroups: NavGroup[] = [
     label: "Configuracoes",
     icon: Shield,
     children: [
-      { href: "/usuarios", label: "Usuarios", icon: Users },
+      { href: "/usuarios", label: "Usuarios", icon: Users, perm: "usuarios" },
     ],
   },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { permissions, isAdmin } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ comercial: true });
+
+  // Filter nav items by permission
+  const filteredGroups = navGroups.map((group) => ({
+    ...group,
+    children: group.children.filter((item) => {
+      if (isAdmin) return true;
+      if (!item.perm) return true;
+      return permissions.includes(item.perm);
+    }),
+  })).filter((group) => group.children.length > 0);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -135,7 +149,7 @@ export default function Sidebar() {
 
         {/* Navigation */}
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-          {navGroups.map((group) => {
+          {filteredGroups.map((group) => {
             const isOpen = openGroups[group.id] ?? false;
             const hasActiveChild = group.children.some((c) => isActive(c.href));
 

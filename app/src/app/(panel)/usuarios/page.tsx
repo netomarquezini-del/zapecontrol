@@ -76,30 +76,18 @@ export default function UsuariosPage() {
     setSaving(true)
 
     try {
-      // Create auth user via Supabase (using service role indirectly — we call signUp)
-      const supabase = getSupabase()
-      const { data: authData, error: authErr } = await supabase.auth.signUp({
-        email: formEmail,
-        password: formPassword,
-        options: { data: { name: formName, role: formRole } },
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: formName, email: formEmail, password: formPassword, role: formRole, permissions: formPerms }),
       })
+      const data = await res.json()
 
-      if (authErr) { showFb('error', 'Erro auth: ' + authErr.message); setSaving(false); return }
-
-      const authId = authData.user?.id
-      if (!authId) { showFb('error', 'Erro: user ID nao retornado'); setSaving(false); return }
-
-      // Create app_users row
-      const { error: dbErr } = await supabase.from('app_users').insert({
-        auth_id: authId,
-        email: formEmail,
-        name: formName,
-        role: formRole,
-        permissions: formPerms,
-        active: true,
-      })
-
-      if (dbErr) { showFb('error', 'Erro db: ' + dbErr.message); setSaving(false); return }
+      if (!res.ok || data.error) {
+        showFb('error', 'Erro: ' + (data.error || 'Falha ao criar'))
+        setSaving(false)
+        return
+      }
 
       showFb('success', `Usuario ${formName} criado!`)
       setShowForm(false)

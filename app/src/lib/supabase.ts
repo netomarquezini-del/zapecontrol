@@ -1,17 +1,29 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+let _supabase: SupabaseClient | null = null;
 
 /**
  * Browser / public client — uses the anon key.
- * Safe to use in client components and server components that only need
- * row-level-security–scoped reads.
+ * Lazy-initialized to avoid build-time errors when env vars are missing.
  */
-export const supabase: SupabaseClient = createClient(
-  supabaseUrl,
-  supabaseAnonKey
-);
+export function getSupabase(): SupabaseClient {
+  if (!_supabase) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !key) {
+      throw new Error("NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set.");
+    }
+    _supabase = createClient(url, key);
+  }
+  return _supabase;
+}
+
+/** @deprecated Use getSupabase() instead */
+export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
+  get(_target, prop) {
+    return (getSupabase() as unknown as Record<string | symbol, unknown>)[prop];
+  },
+});
 
 /**
  * Service-role client — bypasses RLS.
@@ -25,7 +37,11 @@ export function getServiceSupabase(): SupabaseClient {
       "SUPABASE_SERVICE_ROLE_KEY is not set. The service-role client can only be used server-side."
     );
   }
-  return createClient(supabaseUrl, serviceRoleKey, {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url) {
+    throw new Error("NEXT_PUBLIC_SUPABASE_URL is not set.");
+  }
+  return createClient(url, serviceRoleKey, {
     auth: { persistSession: false },
   });
 }

@@ -1,16 +1,13 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect, useCallback } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabase } from "@/lib/supabase";
 import { format } from "date-fns";
-import { Plus, CalendarDays, RefreshCw } from "lucide-react";
+import { Plus, CalendarDays, RefreshCw, Loader2 } from "lucide-react";
 import MovementForm from "@/components/lancamentos/movement-form";
 import MovementTable from "@/components/lancamentos/movement-table";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 interface SdrMetric {
   sdr_id: number;
@@ -51,8 +48,8 @@ export default function LancamentosPage() {
 
   const fetchMovements = useCallback(async () => {
     setLoading(true);
+    const supabase = getSupabase();
 
-    // Fetch movements for the selected date
     const { data: movs, error } = await supabase
       .from("movements")
       .select("*")
@@ -60,13 +57,12 @@ export default function LancamentosPage() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Erro ao buscar lançamentos:", error);
+      console.error("Erro ao buscar lancamentos:", error);
       setMovements([]);
       setLoading(false);
       return;
     }
 
-    // Fetch closers to resolve names
     const { data: closers } = await supabase.from("closers").select("id, name");
     const closerMap = new Map(
       (closers ?? []).map((c: { id: number; name: string }) => [c.id, c.name])
@@ -109,7 +105,6 @@ export default function LancamentosPage() {
     fetchMovements();
   };
 
-  // Format display date
   const displayDate = (() => {
     try {
       const [year, month, day] = selectedDate.split("-");
@@ -120,64 +115,59 @@ export default function LancamentosPage() {
   })();
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-white sm:text-3xl">
-            Lançamentos
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-xl font-extrabold text-white tracking-tight">
+            Lancamentos
           </h1>
-          <p className="mt-1 text-sm text-zinc-400">
-            Gerencie os lançamentos diários dos closers.
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-600 mt-1">
+            Registros diarios dos closers
           </p>
         </div>
 
-        {/* Controls */}
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2">
-              <CalendarDays size={18} className="text-emerald-400" />
-              <input
-                type="date"
-                className="border-0 bg-transparent text-sm text-white focus:outline-none"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-              />
-            </div>
-            <span className="text-sm text-zinc-400">{displayDate}</span>
-            <button
-              onClick={fetchMovements}
-              className="rounded-lg p-2 text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
-              title="Atualizar"
-            >
-              <RefreshCw size={16} />
-            </button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] px-4 py-2.5">
+            <CalendarDays size={15} className="text-lime-400" />
+            <input
+              type="date"
+              className="border-0 bg-transparent text-sm font-semibold text-white focus:outline-none [color-scheme:dark]"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+            />
           </div>
+          <span className="text-[11px] font-semibold text-zinc-600">{displayDate}</span>
+          <button
+            onClick={fetchMovements}
+            className="rounded-xl p-2.5 text-zinc-600 hover:text-lime-400 hover:bg-lime-400/5 border border-transparent hover:border-lime-400/15 transition-all duration-200 cursor-pointer"
+            title="Atualizar"
+          >
+            <RefreshCw size={15} />
+          </button>
           <button
             onClick={handleNewEntry}
-            className="flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-900/30 hover:bg-emerald-700 transition-colors"
+            className="flex items-center gap-2 rounded-xl bg-lime-400/10 border border-lime-400/20 px-5 py-2.5 text-[13px] font-bold text-lime-400 hover:bg-lime-400/15 transition-all duration-200 cursor-pointer"
           >
-            <Plus size={18} />
-            Novo Lançamento
+            <Plus size={16} />
+            Novo Lancamento
           </button>
         </div>
-
-        {/* Content */}
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="flex items-center gap-3 text-zinc-500">
-              <RefreshCw size={20} className="animate-spin" />
-              <span className="text-sm">Carregando lançamentos...</span>
-            </div>
-          </div>
-        ) : (
-          <MovementTable
-            movements={movements}
-            onEdit={handleEdit}
-            onDeleted={handleSaved}
-          />
-        )}
       </div>
+
+      {/* Content */}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-32 gap-4">
+          <Loader2 size={28} className="animate-spin text-lime-400" />
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-600">Carregando lancamentos</span>
+        </div>
+      ) : (
+        <MovementTable
+          movements={movements}
+          onEdit={handleEdit}
+          onDeleted={handleSaved}
+        />
+      )}
 
       {/* Form Modal */}
       {showForm && (

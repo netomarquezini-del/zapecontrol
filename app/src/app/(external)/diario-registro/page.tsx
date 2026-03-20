@@ -1,0 +1,144 @@
+'use client'
+
+export const dynamic = 'force-dynamic'
+
+import { useState, useEffect } from 'react'
+import { getSupabase } from '@/lib/supabase'
+import { format } from 'date-fns'
+import { Zap, Plus, Trash2, Loader2, Check } from 'lucide-react'
+
+interface Closer { id: number; name: string }
+interface DailyEntry { id: string; closer_id: number; valor: number; timestamp: number }
+
+const fmtBRL = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
+
+function getStorageKey() {
+  return `zape-diario-${format(new Date(), 'yyyy-MM-dd')}`
+}
+
+export default function DiarioRegistroPage() {
+  const today = format(new Date(), 'yyyy-MM-dd')
+  const [closers, setClosers] = useState<Closer[]>([])
+  const [loading, setLoading] = useState(true)
+  const [entries, setEntries] = useState<DailyEntry[]>([])
+  const [formCloser, setFormCloser] = useState<number | ''>('')
+  const [formValor, setFormValor] = useState<number | ''>('')
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    async function load() {
+      const supabase = getSupabase()
+      const { data } = await supabase.from('closers').select('id, name').order('name')
+      setClosers((data ?? []) as Closer[])
+      setLoading(false)
+    }
+    load()
+    const stored = localStorage.getItem(getStorageKey())
+    if (stored) setEntries(JSON.parse(stored))
+  }, [])
+
+  const saveEntries = (newEntries: DailyEntry[]) => {
+    setEntries(newEntries)
+    localStorage.setItem(getStorageKey(), JSON.stringify(newEntries))
+  }
+
+  const addEntry = () => {
+    if (!formCloser || !formValor) return
+    const entry: DailyEntry = {
+      id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      closer_id: Number(formCloser),
+      valor: Number(formValor),
+      timestamp: Date.now(),
+    }
+    saveEntries([...entries, entry])
+    setFormCloser('')
+    setFormValor('')
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  const removeEntry = (id: string) => {
+    saveEntries(entries.filter((e) => e.id !== id))
+  }
+
+  const closerMap = new Map(closers.map((c) => [c.id, c.name]))
+  const totalDia = entries.reduce((s, e) => s + e.valor, 0)
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 size={28} className="animate-spin text-lime-400" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-black">
+      <header className="border-b border-[#1a1a1a] bg-black">
+        <div className="max-w-xl mx-auto px-5 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-lime-400/8 border border-lime-400/15">
+              <Zap size={16} className="text-lime-400" />
+            </div>
+            <div>
+              <span className="text-lg font-extrabold text-white tracking-tight">Registrar Venda</span>
+              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-700">{today.split('-').reverse().join('/')}</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-xl mx-auto px-5 py-8 space-y-6">
+        {/* Form */}
+        <div className="space-y-4">
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600 block mb-2">Closer</label>
+            <select value={formCloser} onChange={(e) => setFormCloser(e.target.value === '' ? '' : Number(e.target.value))}
+              className="w-full rounded-2xl border border-[#1a1a1a] bg-[#0a0a0a] px-5 py-4 text-[15px] font-bold text-white outline-none focus:border-lime-400/30 transition-colors [color-scheme:dark] cursor-pointer">
+              <option value="">Selecione o closer...</option>
+              {closers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600 block mb-2">Valor da Venda</label>
+            <div className="relative">
+              <span className="absolute left-5 top-1/2 -translate-y-1/2 text-[15px] font-bold text-zinc-600">R$</span>
+              <input
+                type="number" value={formValor} onChange={(e) => setFormValor(e.target.value === '' ? '' : Number(e.target.value))}
+                onKeyDown={(e) => e.key === 'Enter' && addEntry()}
+                placeholder="0,00"
+                className="w-full rounded-2xl border border-[#1a1a1a] bg-[#0a0a0a] pl-12 pr-5 py-4 text-[22px] font-extrabold text-white outline-none focus:border-lime-400/30 transition-colors"
+              />
+            </div>
+          </div>
+          <button onClick={addEntry} disabled={!formCloser || !formValor}
+            className="w-full flex items-center justify-center gap-3 rounded-2xl bg-lime-400 py-4 text-[15px] font-extrabold text-black hover:bg-lime-300 transition-all cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed">
+            {saved ? <><Check size={20} /> Registrado!</> : <><Plus size={20} /> Registrar Venda</>}
+          </button>
+        </div>
+
+        {/* Entries */}
+        {entries.length > 0 && (
+          <div className="space-y-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600">Vendas de hoje</p>
+            {[...entries].reverse().map((e) => (
+              <div key={e.id} className="flex items-center justify-between rounded-2xl border border-[#1a1a1a] bg-[#0a0a0a] px-5 py-4">
+                <div>
+                  <p className="text-[14px] font-extrabold text-white">{closerMap.get(e.closer_id)}</p>
+                  <p className="text-[18px] font-extrabold text-lime-400">{fmtBRL(e.valor)}</p>
+                </div>
+                <button onClick={() => removeEntry(e.id)} className="rounded-xl p-3 text-zinc-700 hover:text-red-400 hover:bg-red-400/5 transition-colors cursor-pointer">
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+            <div className="flex items-center justify-between pt-4 border-t border-[#1a1a1a]">
+              <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-zinc-600">Total — {entries.length} venda{entries.length !== 1 ? 's' : ''}</span>
+              <span className="text-[20px] font-extrabold text-lime-400">{fmtBRL(totalDia)}</span>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  )
+}

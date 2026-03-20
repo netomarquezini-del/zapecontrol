@@ -1,13 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabase } from "@/lib/supabase";
 import { Loader2, Check, AlertCircle, Save, Pencil, X } from "lucide-react";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 interface Closer {
   id: string;
@@ -52,6 +47,7 @@ export default function CloserMetas({
   } | null>(null);
 
   const fetchData = useCallback(async () => {
+    const supabase = getSupabase();
     setLoading(true);
     setEditingId(null);
 
@@ -126,6 +122,7 @@ export default function CloserMetas({
   };
 
   const saveRow = async (closerId: string) => {
+    const supabase = getSupabase();
     if (!mesId) {
       setFeedback({
         type: "error",
@@ -169,6 +166,7 @@ export default function CloserMetas({
   };
 
   const saveAll = async () => {
+    const supabase = getSupabase();
     if (!mesId) {
       setFeedback({
         type: "error",
@@ -239,7 +237,7 @@ export default function CloserMetas({
         <div
           className={`flex items-center gap-2 rounded-lg px-4 py-3 text-sm ${
             feedback.type === "success"
-              ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+              ? "bg-lime-500/10 border border-lime-500/20 text-lime-400"
               : "bg-red-500/10 border border-red-500/20 text-red-400"
           }`}
         >
@@ -298,7 +296,7 @@ export default function CloserMetas({
                             Number(e.target.value)
                           )
                         }
-                        className="w-36 rounded-md border border-[#333] bg-[#111] px-3 py-1.5 text-sm text-white outline-none focus:border-emerald-500/40"
+                        className="w-36 rounded-md border border-[#333] bg-[#111] px-3 py-1.5 text-sm text-white outline-none focus:border-lime-500/40"
                       />
                     ) : (
                       <span className="text-sm text-zinc-300">
@@ -318,7 +316,7 @@ export default function CloserMetas({
                             Number(e.target.value)
                           )
                         }
-                        className="w-36 rounded-md border border-[#333] bg-[#111] px-3 py-1.5 text-sm text-white outline-none focus:border-emerald-500/40"
+                        className="w-36 rounded-md border border-[#333] bg-[#111] px-3 py-1.5 text-sm text-white outline-none focus:border-lime-500/40"
                       />
                     ) : (
                       <span className="text-sm text-zinc-300">
@@ -333,7 +331,7 @@ export default function CloserMetas({
                           <button
                             onClick={() => saveRow(row.closer.id)}
                             disabled={isSaving}
-                            className="flex h-8 items-center gap-1.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 px-3 text-xs font-medium text-emerald-400 hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
+                            className="flex h-8 items-center gap-1.5 rounded-md bg-lime-500/10 border border-lime-500/20 px-3 text-xs font-medium text-lime-400 hover:bg-lime-500/20 transition-colors disabled:opacity-50"
                           >
                             {isSaving ? (
                               <Loader2 size={12} className="animate-spin" />
@@ -372,7 +370,7 @@ export default function CloserMetas({
         <button
           onClick={saveAll}
           disabled={savingAll}
-          className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-5 py-2.5 text-sm font-medium text-emerald-400 hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 rounded-lg bg-lime-500/10 border border-lime-500/20 px-5 py-2.5 text-sm font-medium text-lime-400 hover:bg-lime-500/20 transition-colors disabled:opacity-50"
         >
           {savingAll ? (
             <Loader2 size={16} className="animate-spin" />

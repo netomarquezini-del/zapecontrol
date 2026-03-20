@@ -1,14 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabase } from "@/lib/supabase";
 import { format, parse } from "date-fns";
 import { Plus, Trash2, Save, Loader2, X } from "lucide-react";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 const formatBRL = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
@@ -96,6 +91,7 @@ export default function MovementForm({
   // Load reference data
   useEffect(() => {
     async function load() {
+      const supabase = getSupabase();
       const [c, s, o, sv] = await Promise.all([
         supabase.from("closers").select("*").order("name"),
         supabase.from("sdrs").select("*").order("name"),
@@ -210,8 +206,16 @@ export default function MovementForm({
   };
 
   const handleSave = async () => {
+    const supabase = getSupabase();
     if (!closerId) {
       setToast({ type: "error", msg: "Selecione um Closer." });
+      return;
+    }
+
+    // Validate ganhos — servico is required
+    const ganhosSemServico = ganhos.filter((g) => g.valor > 0 && !g.servico_id);
+    if (ganhosSemServico.length > 0) {
+      setToast({ type: "error", msg: "Todas as vendas precisam ter um Servico selecionado." });
       return;
     }
 
@@ -267,9 +271,9 @@ export default function MovementForm({
   };
 
   const inputClass =
-    "w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500";
+    "w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500";
   const selectClass =
-    "w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500";
+    "w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500";
   const labelClass = "block text-xs font-medium text-zinc-400 mb-1";
 
   return (
@@ -294,7 +298,7 @@ export default function MovementForm({
             <div
               className={`rounded-lg px-4 py-3 text-sm font-medium ${
                 toast.type === "success"
-                  ? "bg-emerald-900/50 text-emerald-300 border border-emerald-700"
+                  ? "bg-lime-900/50 text-lime-300 border border-lime-700"
                   : "bg-red-900/50 text-red-300 border border-red-700"
               }`}
             >
@@ -332,7 +336,7 @@ export default function MovementForm({
 
           {/* Step 2: SDR Metrics */}
           <div>
-            <h3 className="mb-3 text-sm font-semibold text-emerald-400 uppercase tracking-wide">
+            <h3 className="mb-3 text-sm font-semibold text-lime-400 uppercase tracking-wide">
               Métricas por SDR
             </h3>
             <div className="overflow-x-auto rounded-lg border border-zinc-700">
@@ -366,7 +370,7 @@ export default function MovementForm({
                             <input
                               type="number"
                               min={0}
-                              className="w-20 mx-auto block rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-center text-sm text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                              className="w-20 mx-auto block rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-center text-sm text-white focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500"
                               value={sdrMetrics[sdr.id]?.[field] ?? 0}
                               onChange={(e) =>
                                 updateSdrMetric(
@@ -396,13 +400,13 @@ export default function MovementForm({
           {/* Step 3: Ganhos (Sales) */}
           <div>
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-emerald-400 uppercase tracking-wide">
+              <h3 className="text-sm font-semibold text-lime-400 uppercase tracking-wide">
                 Ganhos (Vendas)
               </h3>
               <button
                 type="button"
                 onClick={addGanho}
-                className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 transition-colors"
+                className="flex items-center gap-1.5 rounded-lg bg-lime-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-lime-700 transition-colors"
               >
                 <Plus size={14} />
                 Adicionar Venda
@@ -531,7 +535,7 @@ export default function MovementForm({
                       </div>
                     </div>
                     {ganho.valor > 0 && (
-                      <div className="mt-2 text-right text-xs text-emerald-400 font-medium">
+                      <div className="mt-2 text-right text-xs text-lime-400 font-medium">
                         {formatBRL(ganho.valor)}
                       </div>
                     )}
@@ -541,7 +545,7 @@ export default function MovementForm({
             </div>
 
             {ganhos.length > 0 && (
-              <div className="mt-3 text-right text-sm font-semibold text-emerald-400">
+              <div className="mt-3 text-right text-sm font-semibold text-lime-400">
                 Total Vendas:{" "}
                 {formatBRL(ganhos.reduce((sum, g) => sum + (g.valor || 0), 0))}
               </div>
@@ -561,7 +565,7 @@ export default function MovementForm({
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 rounded-lg bg-lime-600 px-5 py-2 text-sm font-medium text-white hover:bg-lime-700 disabled:opacity-50 transition-colors"
             >
               {saving ? (
                 <Loader2 size={16} className="animate-spin" />

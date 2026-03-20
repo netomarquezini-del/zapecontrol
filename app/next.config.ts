@@ -1,9 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  turbopack: {
-    root: '/root/zapecontrol/app',
-  },
+  allowedDevOrigins: [
+    "http://187.77.240.222",
+    "http://187.77.240.222:3000",
+    "187.77.240.222",
+  ],
 };
 
 export default nextConfig;

@@ -1,20 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #111111;
-  --bg-card: #161616;
-  --bg-card-hover: #1c1c1c;
-  --border-color: #222222;
-  --border-color-light: #2a2a2a;
-  --text-primary: #f0f0f0;
+  /* ZAPE Identity — Dark Premium */
+  --bg-primary: #000000;
+  --bg-secondary: #050505;
+  --bg-card: #0a0a0a;
+  --bg-card-hover: #111111;
+  --border-color: #1a1a1a;
+  --border-color-light: #242424;
+  --text-primary: #ffffff;
   --text-secondary: #a1a1aa;
-  --text-muted: #71717a;
-  --accent: #10b981;
-  --accent-hover: #059669;
-  --accent-subtle: rgba(16, 185, 129, 0.1);
-  --accent-border: rgba(16, 185, 129, 0.2);
-  --sidebar-width: 256px;
+  --text-muted: #52525b;
+  --accent: #A3E635;
+  --accent-hover: #84CC16;
+  --accent-subtle: rgba(163, 230, 53, 0.06);
+  --accent-border: rgba(163, 230, 53, 0.12);
+  --sidebar-width: 260px;
 }
 
 @theme inline {
@@ -31,19 +32,53 @@ body {
   background: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Utility classes for the design system */
+/* Premium card system */
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 16px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .card:hover {
   border-color: var(--border-color-light);
+  box-shadow: 0 0 0 1px var(--border-color-light);
 }
 
 .accent-glow {
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+  box-shadow: 0 0 30px rgba(163, 230, 53, 0.08), 0 0 60px rgba(163, 230, 53, 0.04);
+}
+
+/* Premium typography utilities */
+.text-display {
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+
+.text-headline {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.text-label {
+  font-weight: 600;
+  font-size: 0.6875rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Subtle gradient overlay for premium depth */
+.gradient-subtle {
+  background: linear-gradient(
+    180deg,
+    rgba(163, 230, 53, 0.03) 0%,
+    transparent 100%
+  );
 }

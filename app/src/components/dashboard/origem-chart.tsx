@@ -12,7 +12,7 @@ interface OrigemChartProps {
 }
 
 const COLORS = [
-  '#10b981',
+  '#A3E635',
   '#3b82f6',
   '#f59e0b',
   '#ef4444',
@@ -32,16 +32,16 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: { name
   const item = payload[0]
   return (
     <div
-      className="rounded-lg px-3 py-2 text-sm shadow-lg border"
+      className="rounded-xl px-4 py-3 text-sm border backdrop-blur-sm"
       style={{
-        background: 'var(--bg-card)',
+        background: 'rgba(10, 10, 10, 0.95)',
         borderColor: 'var(--border-color-light)',
         color: 'var(--text-primary)',
       }}
     >
-      <p className="font-medium">{item.name}</p>
-      <p style={{ color: '#10b981' }}>{formatCurrency(item.value)}</p>
-      <p style={{ color: 'var(--text-muted)' }}>{(item.payload.percent * 100).toFixed(1)}%</p>
+      <p className="font-bold text-[13px] mb-1">{item.name}</p>
+      <p className="font-extrabold" style={{ color: '#A3E635' }}>{formatCurrency(item.value)}</p>
+      <p className="text-[11px] font-semibold mt-0.5" style={{ color: 'var(--text-muted)' }}>{(item.payload.percent * 100).toFixed(1)}%</p>
     </div>
   )
 }
@@ -49,10 +49,10 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: { name
 function CustomLegend({ payload }: { payload?: { value: string; color: string }[] }) {
   if (!payload) return null
   return (
-    <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2 justify-center">
+    <div className="flex flex-wrap gap-x-4 gap-y-2 mt-3 justify-center">
       {payload.map((entry, index) => (
-        <div key={index} className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--text-secondary)' }}>
-          <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: entry.color }} />
+        <div key={index} className="flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: 'var(--text-secondary)' }}>
+          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: entry.color }} />
           <span className="truncate max-w-[120px]">{entry.value}</span>
         </div>
       ))}
@@ -62,13 +62,13 @@ function CustomLegend({ payload }: { payload?: { value: string; color: string }[
 
 export default function OrigemChart({ data }: OrigemChartProps) {
   return (
-    <div className="card p-5">
-      <h3 className="text-base font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
+    <div className="card p-6">
+      <h3 className="text-sm font-bold uppercase tracking-wider mb-6" style={{ color: 'var(--text-secondary)' }}>
         Vendas por Origem
       </h3>
       {data.length === 0 ? (
-        <div className="h-[300px] flex items-center justify-center" style={{ color: 'var(--text-muted)' }}>
-          Nenhum dado disponível
+        <div className="h-[300px] flex items-center justify-center text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>
+          Nenhum dado disponivel
         </div>
       ) : (
         <div className="h-[320px]">
@@ -78,14 +78,14 @@ export default function OrigemChart({ data }: OrigemChartProps) {
                 data={data}
                 cx="50%"
                 cy="45%"
-                innerRadius={60}
-                outerRadius={100}
-                paddingAngle={2}
+                innerRadius={65}
+                outerRadius={105}
+                paddingAngle={3}
                 dataKey="value"
                 stroke="none"
               >
                 {data.map((_entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} fillOpacity={0.85} />
                 ))}
               </Pie>
               <Tooltip content={<CustomTooltip />} />

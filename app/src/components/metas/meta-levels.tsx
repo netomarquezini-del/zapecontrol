@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabase } from "@/lib/supabase";
 import {
   Loader2,
   Check,
@@ -10,11 +10,6 @@ import {
   X,
   Sparkles,
 } from "lucide-react";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 interface MetaMensal {
   id: string;
@@ -97,6 +92,7 @@ export default function MetaLevels({
   } | null>(null);
 
   const fetchMetas = useCallback(async () => {
+    const supabase = getSupabase();
     setLoading(true);
     const { data, error } = await supabase
       .from("metas_mensais")
@@ -129,6 +125,7 @@ export default function MetaLevels({
   }, [feedback]);
 
   const generateFromTemplate = async () => {
+    const supabase = getSupabase();
     setGenerating(true);
     try {
       // Fetch templates
@@ -188,6 +185,7 @@ export default function MetaLevels({
   };
 
   const saveEdit = async (id: string) => {
+    const supabase = getSupabase();
     setSaving(true);
     const { error } = await supabase
       .from("metas_mensais")
@@ -230,7 +228,7 @@ export default function MetaLevels({
         <button
           onClick={generateFromTemplate}
           disabled={generating}
-          className="flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-5 py-2.5 text-sm font-medium text-emerald-400 hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 rounded-lg bg-lime-500/10 border border-lime-500/20 px-5 py-2.5 text-sm font-medium text-lime-400 hover:bg-lime-500/20 transition-colors disabled:opacity-50"
         >
           {generating ? (
             <Loader2 size={16} className="animate-spin" />
@@ -250,7 +248,7 @@ export default function MetaLevels({
         <div
           className={`flex items-center gap-2 rounded-lg px-4 py-3 text-sm ${
             feedback.type === "success"
-              ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
+              ? "bg-lime-500/10 border border-lime-500/20 text-lime-400"
               : "bg-red-500/10 border border-red-500/20 text-red-400"
           }`}
         >
@@ -316,7 +314,7 @@ export default function MetaLevels({
                         meta_mensal_vendas: Number(e.target.value),
                       }))
                     }
-                    className="w-full rounded-md border border-[#333] bg-[#111] px-3 py-1.5 text-lg font-bold text-white outline-none focus:border-emerald-500/40"
+                    className="w-full rounded-md border border-[#333] bg-[#111] px-3 py-1.5 text-lg font-bold text-white outline-none focus:border-lime-500/40"
                   />
                 ) : (
                   <p className={`text-xl font-bold ${config.text}`}>
@@ -340,7 +338,7 @@ export default function MetaLevels({
                         meta_diaria_vendas: Number(e.target.value),
                       }))
                     }
-                    className="w-full rounded-md border border-[#333] bg-[#111] px-3 py-1.5 text-lg font-bold text-white outline-none focus:border-emerald-500/40"
+                    className="w-full rounded-md border border-[#333] bg-[#111] px-3 py-1.5 text-lg font-bold text-white outline-none focus:border-lime-500/40"
                   />
                 ) : (
                   <p className={`text-xl font-bold ${config.text}`}>
@@ -354,7 +352,7 @@ export default function MetaLevels({
                 <button
                   onClick={() => saveEdit(meta.id)}
                   disabled={saving}
-                  className="w-full flex items-center justify-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 rounded-lg bg-lime-500/10 border border-lime-500/20 px-4 py-2 text-sm font-medium text-lime-400 hover:bg-lime-500/20 transition-colors disabled:opacity-50"
                 >
                   {saving ? (
                     <Loader2 size={14} className="animate-spin" />

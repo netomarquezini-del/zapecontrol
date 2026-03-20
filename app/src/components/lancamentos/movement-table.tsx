@@ -1,13 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { getSupabase } from "@/lib/supabase";
 import { Pencil, Trash2, Loader2 } from "lucide-react";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 const formatBRL = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
@@ -66,6 +61,7 @@ export default function MovementTable({
   const [confirmId, setConfirmId] = useState<number | null>(null);
 
   const handleDelete = async (id: number) => {
+    const supabase = getSupabase();
     if (confirmId !== id) {
       setConfirmId(id);
       return;
@@ -147,7 +143,7 @@ export default function MovementTable({
               <td className="px-3 py-3 text-center text-zinc-300">
                 {sumQuantidade(m.noshows)}
               </td>
-              <td className="px-3 py-3 text-right font-medium text-emerald-400">
+              <td className="px-3 py-3 text-right font-medium text-lime-400">
                 {formatBRL(sumValor(m.ganhos))}
               </td>
               <td className="px-4 py-3">
@@ -197,7 +193,7 @@ export default function MovementTable({
             <td className="px-3 py-3 text-center font-bold text-white">
               {totals.noshows}
             </td>
-            <td className="px-3 py-3 text-right font-bold text-emerald-400">
+            <td className="px-3 py-3 text-right font-bold text-lime-400">
               {formatBRL(totals.vendas)}
             </td>
             <td />

@@ -5,10 +5,10 @@ import { getSupabase } from '@/lib/supabase'
 import { useRouter, usePathname } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 
-const ROUTE_PERMISSIONS: Record<string, string> = {
-  '/dashboard': 'dashboard',
+// Routes that require specific permissions
+// If a route is NOT listed here, it's accessible to ALL logged-in users
+const RESTRICTED_ROUTES: Record<string, string> = {
   '/acompanhamento': 'acompanhamento',
-  '/lancamentos': 'lancamentos',
   '/lancamentos-ext': 'lancamentos',
   '/metas': 'metas',
   '/cadastros': 'cadastros',
@@ -17,7 +17,8 @@ const ROUTE_PERMISSIONS: Record<string, string> = {
   '/diario-registro': 'diario',
 }
 
-// Permission-to-first-route mapping (for redirect)
+// Dashboard, home, lancamentos(panel) are always accessible to any logged-in user
+
 const PERM_TO_ROUTE: Record<string, string> = {
   dashboard: '/dashboard',
   acompanhamento: '/acompanhamento',
@@ -79,20 +80,18 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
           return
         }
 
-        // Check permission for current route
-        const requiredPerm = ROUTE_PERMISSIONS[pathname] || null
+        // Check if this route is restricted
+        const requiredPerm = RESTRICTED_ROUTES[pathname]
 
-        if (!requiredPerm || userPerms.includes(requiredPerm)) {
+        if (!requiredPerm) {
+          // Route is not restricted — everyone can access (dashboard, home, etc)
+          setAuthorized(true)
+        } else if (userPerms.includes(requiredPerm)) {
+          // User has the required permission
           setAuthorized(true)
         } else {
-          // Redirect to first allowed page
-          const firstAllowed = userPerms.find((p) => PERM_TO_ROUTE[p])
-          if (firstAllowed) {
-            router.replace(PERM_TO_ROUTE[firstAllowed])
-          } else {
-            // No permissions at all — just show denied
-            setAuthorized(false)
-          }
+          // No permission — redirect to dashboard (always accessible)
+          router.replace('/dashboard')
         }
       } catch {
         router.replace('/login')

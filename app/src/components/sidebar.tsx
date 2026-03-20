@@ -69,11 +69,12 @@ export default function Sidebar() {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ comercial: true });
 
   // Filter nav items by permission
+  // Dashboard is always visible. Other items filtered by permission.
   const filteredGroups = navGroups.map((group) => ({
     ...group,
     children: group.children.filter((item) => {
       if (isAdmin) return true;
-      if (!item.perm) return true;
+      if (!item.perm || item.perm === 'dashboard') return true; // dashboard always visible
       return permissions.includes(item.perm);
     }),
   })).filter((group) => group.children.length > 0);

@@ -271,22 +271,22 @@ export default function MovementForm({
   };
 
   const inputClass =
-    "w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500";
+    "w-full rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-lime-400/30 focus:outline-none";
   const selectClass =
-    "w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500";
+    "w-full rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] px-3 py-2 text-sm text-white focus:border-lime-400/30 focus:outline-none";
   const labelClass = "block text-xs font-medium text-zinc-400 mb-1";
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-4 pt-10">
-      <div className="w-full max-w-4xl rounded-2xl border border-zinc-700 bg-zinc-900 shadow-2xl">
+      <div className="w-full max-w-4xl rounded-2xl border border-[#1a1a1a] bg-[#050505] shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-zinc-700 px-6 py-4">
+        <div className="flex items-center justify-between border-b border-[#1a1a1a] px-6 py-4">
           <h2 className="text-lg font-semibold text-white">
             {editingMovement ? "Editar Lançamento" : "Novo Lançamento"}
           </h2>
           <button
             onClick={onClose}
-            className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+            className="rounded-lg p-1 text-zinc-400 hover:bg-white/5 hover:text-white"
           >
             <X size={20} />
           </button>
@@ -339,10 +339,10 @@ export default function MovementForm({
             <h3 className="mb-3 text-sm font-semibold text-lime-400 uppercase tracking-wide">
               Métricas por SDR
             </h3>
-            <div className="overflow-x-auto rounded-lg border border-zinc-700">
+            <div className="overflow-x-auto rounded-lg border border-[#1a1a1a]">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-zinc-700 bg-zinc-800/50">
+                  <tr className="border-b border-[#1a1a1a] bg-[#0a0a0a]">
                     <th className="px-4 py-3 text-left text-xs font-medium text-zinc-400 uppercase">
                       SDR
                     </th>
@@ -362,7 +362,7 @@ export default function MovementForm({
                 </thead>
                 <tbody>
                   {sdrs.map((sdr) => (
-                    <tr key={sdr.id} className="border-b border-zinc-800 last:border-0">
+                    <tr key={sdr.id} className="border-b border-[#1a1a1a] last:border-0">
                       <td className="px-4 py-2 text-white font-medium">{sdr.name}</td>
                       {(["agendamentos", "reunioes", "reagendamentos", "noshows"] as const).map(
                         (field) => (
@@ -370,7 +370,7 @@ export default function MovementForm({
                             <input
                               type="number"
                               min={0}
-                              className="w-20 mx-auto block rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-center text-sm text-white focus:border-lime-500 focus:outline-none focus:ring-1 focus:ring-lime-500"
+                              className="w-20 mx-auto block rounded-md border border-[#1a1a1a] bg-[#0a0a0a] px-2 py-1.5 text-center text-sm text-white focus:border-lime-400/30 focus:outline-none"
                               value={sdrMetrics[sdr.id]?.[field] ?? 0}
                               onChange={(e) =>
                                 updateSdrMetric(
@@ -425,7 +425,7 @@ export default function MovementForm({
                 return (
                   <div
                     key={idx}
-                    className="rounded-lg border border-zinc-700 bg-zinc-800/50 p-4"
+                    className="rounded-lg border border-[#1a1a1a] bg-[#0a0a0a] p-4"
                   >
                     <div className="mb-2 flex items-center justify-between">
                       <span className="text-xs font-medium text-zinc-400">
@@ -553,11 +553,11 @@ export default function MovementForm({
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 border-t border-zinc-700 pt-4">
+          <div className="flex items-center justify-end gap-3 border-t border-[#1a1a1a] pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-zinc-600 px-4 py-2 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition-colors"
+              className="rounded-lg border border-[#1a1a1a] px-4 py-2 text-sm font-medium text-zinc-300 hover:bg-white/5 transition-colors"
             >
               Cancelar
             </button>

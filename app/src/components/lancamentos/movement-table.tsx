@@ -79,7 +79,7 @@ export default function MovementTable({
 
   if (movements.length === 0) {
     return (
-      <div className="rounded-xl border border-zinc-700 bg-zinc-900 p-8 text-center">
+      <div className="rounded-xl border border-[#1a1a1a] bg-[#0a0a0a] p-8 text-center">
         <p className="text-zinc-500">Nenhum lançamento encontrado para esta data.</p>
       </div>
     );
@@ -95,10 +95,10 @@ export default function MovementTable({
   };
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-zinc-700 bg-zinc-900">
+    <div className="overflow-x-auto rounded-xl border border-[#1a1a1a] bg-[#0a0a0a]">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-zinc-700 bg-zinc-800/60">
+          <tr className="border-b border-[#1a1a1a] bg-[#080808]">
             <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wide">
               Closer
             </th>
@@ -126,7 +126,7 @@ export default function MovementTable({
           {movements.map((m) => (
             <tr
               key={m.id}
-              className="border-b border-zinc-800 last:border-0 hover:bg-zinc-800/40 transition-colors"
+              className="border-b border-[#1a1a1a] last:border-0 hover:bg-white/[0.02] transition-colors"
             >
               <td className="px-4 py-3 font-medium text-white">
                 {m.closer_name || `Closer #${m.closer_id}`}
@@ -150,7 +150,7 @@ export default function MovementTable({
                 <div className="flex items-center justify-center gap-1">
                   <button
                     onClick={() => onEdit(m)}
-                    className="rounded-lg p-1.5 text-zinc-400 hover:bg-zinc-700 hover:text-white transition-colors"
+                    className="rounded-lg p-1.5 text-zinc-400 hover:bg-white/5 hover:text-white transition-colors"
                     title="Editar"
                   >
                     <Pencil size={15} />
@@ -161,7 +161,7 @@ export default function MovementTable({
                     className={`rounded-lg p-1.5 transition-colors ${
                       confirmId === m.id
                         ? "bg-red-900/40 text-red-400 hover:bg-red-900/60"
-                        : "text-zinc-400 hover:bg-zinc-700 hover:text-red-400"
+                        : "text-zinc-400 hover:bg-white/5 hover:text-red-400"
                     }`}
                     title={confirmId === m.id ? "Clique novamente para confirmar" : "Excluir"}
                   >
@@ -177,7 +177,7 @@ export default function MovementTable({
           ))}
         </tbody>
         <tfoot>
-          <tr className="border-t border-zinc-600 bg-zinc-800/60">
+          <tr className="border-t border-[#1a1a1a] bg-[#080808]">
             <td className="px-4 py-3 text-sm font-bold text-white uppercase">
               Total
             </td>

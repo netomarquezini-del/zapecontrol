@@ -22,6 +22,7 @@ const RESTRICTED_ROUTES: Record<string, string> = {
   '/cs-analytics': 'cs-monitor',
   '/cs-consultores': 'cs-monitor',
   '/cs-clientes': 'cs-monitor',
+  '/cs-comunidade': 'cs-monitor',
 }
 
 // /inicio is always accessible to any logged-in user

@@ -105,6 +105,15 @@ const STATUS_LABELS: Record<string, string> = {
   critical: 'CRÍTICO',
 }
 
+type GroupFilter = 'all' | 'consultoria' | 'aceleracao' | 'shopee-ads'
+
+const FILTER_OPTIONS: { key: GroupFilter; label: string }[] = [
+  { key: 'all', label: 'Todos' },
+  { key: 'consultoria', label: 'Consultoria' },
+  { key: 'aceleracao', label: 'Prog. Aceleração' },
+  { key: 'shopee-ads', label: 'Shopee ADS' },
+]
+
 const CLIENT_STATUS_DOT: Record<string, string> = {
   Ativo: 'bg-lime-400 shadow-[0_0_6px_rgba(163,230,53,0.5)]',
   Inativo: 'bg-zinc-600',
@@ -132,18 +141,19 @@ export default function CsAnalyticsPage() {
   const [loading, setLoading] = useState(true)
   const [periodFrom, setPeriodFrom] = useState<Date>(() => getTodayStartSP())
   const [periodTo, setPeriodTo] = useState<Date>(() => new Date())
+  const [filter, setFilter] = useState<GroupFilter>('all')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/cs/analytics?from=${periodFrom.toISOString()}&to=${periodTo.toISOString()}`)
+      const res = await fetch(`/api/cs/analytics?from=${periodFrom.toISOString()}&to=${periodTo.toISOString()}&filter=${filter}`)
       const data = await res.json()
       setAnalytics(data)
     } catch (e) {
       console.error('Failed to fetch analytics:', e)
     }
     setLoading(false)
-  }, [periodFrom, periodTo])
+  }, [periodFrom, periodTo, filter])
 
   useEffect(() => {
     fetchData()
@@ -187,11 +197,29 @@ export default function CsAnalyticsPage() {
           </div>
         </div>
 
-        <PeriodSelector
-          from={periodFrom}
-          to={periodTo}
-          onChange={(f, t) => { setPeriodFrom(f); setPeriodTo(t) }}
-        />
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1 rounded-xl border border-[#222222] bg-[#111111] p-1">
+            {FILTER_OPTIONS.map((opt) => (
+              <button
+                key={opt.key}
+                onClick={() => setFilter(opt.key)}
+                className={`rounded-lg px-3 py-2 text-[12px] font-bold transition-all cursor-pointer ${
+                  filter === opt.key
+                    ? 'bg-lime-400/10 text-lime-400 border border-lime-400/20'
+                    : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          <PeriodSelector
+            from={periodFrom}
+            to={periodTo}
+            onChange={(f, t) => { setPeriodFrom(f); setPeriodTo(t) }}
+          />
+        </div>
       </div>
 
       {loading ? (

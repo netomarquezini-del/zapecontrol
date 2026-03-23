@@ -16,6 +16,43 @@ export async function GET(req: NextRequest) {
     const period = searchParams.get('period') || 'today'
     const fromParam = searchParams.get('from')
     const toParam = searchParams.get('to')
+    const filterParam = searchParams.get('filter') || 'all'
+
+    const ACELERACAO_ID = '120363401620622735-group'
+    const SHOPEE_ADS_IDS = [
+      '120363422457783091-group',
+      '120363407332110646-group',
+      '120363407280170820-group',
+      '120363404311146540-group',
+      '120363424726740000-group',
+    ]
+    const COMMUNITY_IDS = [ACELERACAO_ID, ...SHOPEE_ADS_IDS]
+
+    // Helper to apply group filter to a Supabase query builder
+    function applyGroupFilter<T>(query: T): T {
+      const q = query as any
+      if (filterParam === 'consultoria') {
+        return q.not('group_id', 'in', `(${COMMUNITY_IDS.join(',')})`)
+      } else if (filterParam === 'aceleracao') {
+        return q.eq('group_id', ACELERACAO_ID)
+      } else if (filterParam === 'shopee-ads') {
+        return q.in('group_id', SHOPEE_ADS_IDS)
+      }
+      return q
+    }
+
+    // Helper to apply filter to cs_groups queries (uses 'id' instead of 'group_id')
+    function applyGroupFilterOnGroups<T>(query: T): T {
+      const q = query as any
+      if (filterParam === 'consultoria') {
+        return q.not('id', 'in', `(${COMMUNITY_IDS.join(',')})`)
+      } else if (filterParam === 'aceleracao') {
+        return q.eq('id', ACELERACAO_ID)
+      } else if (filterParam === 'shopee-ads') {
+        return q.in('id', SHOPEE_ADS_IDS)
+      }
+      return q
+    }
 
     const now = new Date()
     const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0)
@@ -43,36 +80,36 @@ export async function GET(req: NextRequest) {
       negativeRes,
     ] = await Promise.all([
       // Groups
-      supabase.from('cs_groups').select('id, name, last_activity').eq('is_active', true),
+      applyGroupFilterOnGroups(supabase.from('cs_groups').select('id, name, last_activity').eq('is_active', true)),
       // Messages today
-      supabase.from('cs_messages').select('id', { count: 'exact', head: true }).gte('timestamp', todayStart.toISOString()),
+      applyGroupFilter(supabase.from('cs_messages').select('id', { count: 'exact', head: true }).gte('timestamp', todayStart.toISOString())),
       // Messages yesterday
-      supabase.from('cs_messages').select('id', { count: 'exact', head: true }).gte('timestamp', yesterdayStart.toISOString()).lt('timestamp', todayStart.toISOString()),
+      applyGroupFilter(supabase.from('cs_messages').select('id', { count: 'exact', head: true }).gte('timestamp', yesterdayStart.toISOString()).lt('timestamp', todayStart.toISOString())),
       // Messages this week
-      supabase.from('cs_messages').select('id', { count: 'exact', head: true }).gte('timestamp', weekStart.toISOString()),
+      applyGroupFilter(supabase.from('cs_messages').select('id', { count: 'exact', head: true }).gte('timestamp', weekStart.toISOString())),
       // Messages last week
-      supabase.from('cs_messages').select('id', { count: 'exact', head: true }).gte('timestamp', lastWeekStart.toISOString()).lt('timestamp', weekStart.toISOString()),
+      applyGroupFilter(supabase.from('cs_messages').select('id', { count: 'exact', head: true }).gte('timestamp', lastWeekStart.toISOString()).lt('timestamp', weekStart.toISOString())),
       // Team messages today
-      supabase.from('cs_messages').select('id', { count: 'exact', head: true }).eq('is_team_member', true).gte('timestamp', todayStart.toISOString()),
+      applyGroupFilter(supabase.from('cs_messages').select('id', { count: 'exact', head: true }).eq('is_team_member', true).gte('timestamp', todayStart.toISOString())),
       // All messages in period (for detailed analysis)
-      supabase.from('cs_messages')
+      applyGroupFilter(supabase.from('cs_messages')
         .select('id, group_id, sender_name, sender_phone, is_team_member, content, message_type, timestamp')
         .gte('timestamp', periodStart.toISOString())
         .lte('timestamp', periodEnd.toISOString())
         .order('timestamp', { ascending: true })
-        .limit(10000),
+        .limit(10000)),
       // Peak hours (last 7 days)
-      supabase.from('cs_messages')
+      applyGroupFilter(supabase.from('cs_messages')
         .select('timestamp')
         .gte('timestamp', weekStart.toISOString())
-        .limit(10000),
+        .limit(10000)),
       // Negative keywords
-      supabase.from('cs_messages')
+      applyGroupFilter(supabase.from('cs_messages')
         .select('group_id, sender_name, content, timestamp')
         .eq('is_team_member', false)
         .gte('timestamp', weekStart.toISOString())
         .or('content.ilike.%cancelar%,content.ilike.%cancelamento%,content.ilike.%insatisfeito%,content.ilike.%problema%,content.ilike.%reclamar%,content.ilike.%péssimo%,content.ilike.%horrível%,content.ilike.%decepcionado%,content.ilike.%devolver%,content.ilike.%reembolso%')
-        .limit(100),
+        .limit(100)),
     ])
 
     const groups = groupsRes.data || []
@@ -297,11 +334,11 @@ export async function GET(req: NextRequest) {
     }
 
     // We need last week data separately
-    const { data: lastWeekMsgs } = await supabase.from('cs_messages')
+    const { data: lastWeekMsgs } = await applyGroupFilter(supabase.from('cs_messages')
       .select('group_id')
       .gte('timestamp', lastWeekStart.toISOString())
       .lt('timestamp', weekStart.toISOString())
-      .limit(10000)
+      .limit(10000))
 
     for (const m of (lastWeekMsgs || [])) {
       lastWeekByGroup[m.group_id] = (lastWeekByGroup[m.group_id] || 0) + 1

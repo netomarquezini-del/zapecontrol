@@ -19,6 +19,7 @@ const RESTRICTED_ROUTES: Record<string, string> = {
   '/cs-monitor': 'cs-monitor',
   '/cs-healthscore': 'cs-monitor',
   '/cs-relatorios': 'cs-monitor',
+  '/cs-analytics': 'cs-monitor',
 }
 
 // /inicio is always accessible to any logged-in user

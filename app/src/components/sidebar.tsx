@@ -66,7 +66,7 @@ const navGroups: NavGroup[] = [
       { href: "/cs-analytics", label: "Analytics Geral", icon: BarChart3, perm: "cs-monitor" },
       { href: "/cs-consultores", label: "Consultores", icon: Users, perm: "cs-monitor" },
       { href: "/cs-clientes", label: "Clientes", icon: HeartHandshake, perm: "cs-monitor" },
-      { href: "/cs-comunidade", label: "Comunidade", icon: Users, perm: "cs-monitor" },
+      { href: "/cs-comunidade", label: "Prog. Aceleração", icon: Users, perm: "cs-monitor" },
       { href: "/cs-shopee-ads", label: "Shopee ADS", icon: Zap, perm: "cs-monitor" },
       { href: "/cs-healthscore", label: "Health Score", icon: Activity, perm: "cs-monitor" },
       { href: "/cs-relatorios", label: "Relatórios", icon: FileText, perm: "cs-monitor" },

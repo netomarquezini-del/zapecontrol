@@ -23,32 +23,35 @@ export async function POST(req: NextRequest) {
     const supabase = getServiceClient()
     const now = new Date().toISOString()
 
-    // Fire all 3 Supabase operations in parallel
-    await Promise.all([
-      // Upsert group
-      supabase.from('cs_groups').upsert({
-        id: msg.groupId,
-        name: msg.groupName,
-        last_activity: msg.timestamp,
-        updated_at: now
-      }, { onConflict: 'id' }),
+    const errors: string[] = []
 
-      // Upsert member
-      msg.senderPhone
-        ? supabase.from('cs_group_members').upsert({
-            group_id: msg.groupId,
-            phone: msg.senderPhone,
-            name: msg.senderName,
-            is_team: msg.isTeamMember,
-            last_seen: msg.timestamp
-          }, { onConflict: 'group_id,phone' })
-        : Promise.resolve(),
+    // Upsert group
+    const { error: groupErr } = await supabase.from('cs_groups').upsert({
+      id: msg.groupId,
+      name: msg.groupName,
+      last_activity: msg.timestamp,
+      updated_at: now
+    }, { onConflict: 'id' })
+    if (groupErr) errors.push(`group: ${groupErr.message}`)
 
-      // Insert message (dedup by message_id)
-      supabase.from('cs_messages').upsert({
+    // Upsert member
+    if (msg.senderPhone) {
+      const { error: memberErr } = await supabase.from('cs_group_members').upsert({
+        group_id: msg.groupId,
+        phone: msg.senderPhone,
+        name: msg.senderName,
+        is_team: msg.isTeamMember,
+        last_seen: msg.timestamp
+      }, { onConflict: 'group_id,phone' })
+      if (memberErr) errors.push(`member: ${memberErr.message}`)
+    }
+
+    // Insert message — use insert for messages without messageId, upsert for those with
+    if (msg.messageId) {
+      const { error: msgErr } = await supabase.from('cs_messages').upsert({
         message_id: msg.messageId,
         group_id: msg.groupId,
-        sender_phone: msg.senderPhone,
+        sender_phone: msg.senderPhone || 'unknown',
         sender_name: msg.senderName,
         is_team_member: msg.isTeamMember,
         content: msg.content,
@@ -56,7 +59,25 @@ export async function POST(req: NextRequest) {
         media_url: msg.mediaUrl,
         timestamp: msg.timestamp
       }, { onConflict: 'message_id', ignoreDuplicates: true })
-    ])
+      if (msgErr) errors.push(`msg: ${msgErr.message}`)
+    } else {
+      const { error: msgErr } = await supabase.from('cs_messages').insert({
+        group_id: msg.groupId,
+        sender_phone: msg.senderPhone || 'unknown',
+        sender_name: msg.senderName,
+        is_team_member: msg.isTeamMember,
+        content: msg.content,
+        message_type: msg.messageType,
+        media_url: msg.mediaUrl,
+        timestamp: msg.timestamp
+      })
+      if (msgErr) errors.push(`msg: ${msgErr.message}`)
+    }
+
+    if (errors.length > 0) {
+      console.error('[JOANA-CS] Webhook DB errors:', errors)
+      return NextResponse.json({ status: 'partial', errors })
+    }
 
     return NextResponse.json({ status: 'received' })
   } catch (e: any) {

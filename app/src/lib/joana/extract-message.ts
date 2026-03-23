@@ -15,8 +15,19 @@ export interface GroupMessage {
   isTeamMember: boolean
 }
 
-export function isTeamMember(name: string | undefined | null): boolean {
-  return !!name && /zape/i.test(name)
+// Known team phone numbers (without country code formatting)
+const TEAM_PHONES = new Set(['5519953312658', '19953312658'])
+
+export function isTeamMember(name: string | undefined | null, fromMe?: boolean, phone?: string | undefined | null): boolean {
+  // Messages from the connected account (Larissa) are always team
+  if (fromMe) return true
+  // Known team phone numbers
+  if (phone && TEAM_PHONES.has(phone.replace(/\D/g, ''))) return true
+  // Names containing "Zape" are team
+  if (name && /zape/i.test(name)) return true
+  // Known team members without "Zape" in name
+  if (name && /neto\s*marquezini/i.test(name)) return true
+  return false
 }
 
 export function extractGroupMessage(data: Record<string, any>): GroupMessage | null {
@@ -37,7 +48,11 @@ export function extractGroupMessage(data: Record<string, any>): GroupMessage | n
   // Extract sender info (participant in group)
   const senderPhone = (data.participantPhone || data.participant || data.senderPhone || '')
     .replace(/\D/g, '')
-  const senderName = data.senderName || data.participantName || data.pushName || data.contact?.name || ''
+  let senderName = data.senderName || data.participantName || data.pushName || data.contact?.name || ''
+  // If fromMe (connected account = Larissa), set a proper team name
+  if (data.fromMe === true && !senderName) {
+    senderName = 'Larissa - Zape Ecomm'
+  }
 
   // Extract message content (multi-format Z-API support)
   let content = ''
@@ -102,6 +117,6 @@ export function extractGroupMessage(data: Record<string, any>): GroupMessage | n
     messageId,
     timestamp,
     mediaUrl,
-    isTeamMember: isTeamMember(senderName)
+    isTeamMember: isTeamMember(senderName, data.fromMe === true, senderPhone)
   }
 }

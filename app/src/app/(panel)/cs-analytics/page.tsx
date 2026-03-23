@@ -28,47 +28,65 @@ import {
 
 interface AnalyticsData {
   overview: {
-    messages_today: number
-    messages_yesterday: number
-    active_groups: number
     total_groups: number
-    avg_response_time_min: number
+    active_groups_today: number
+    total_messages_today: number
+    total_messages_week: number
     team_messages_today: number
     client_messages_today: number
+    team_ratio: number
+  }
+  response_time: {
+    avg_minutes: number
+    median_minutes: number
+    max_minutes: number
+    under_15min_pct: number
+    under_30min_pct: number
+    under_60min_pct: number
+    total_responses: number
   }
   alerts: {
-    no_response_1h: number
-    inactive_7d: number
-    negative_keywords: number
-    declining_engagement: number
+    no_response_count: number
+    inactive_7_days: number
+    inactive_14_days: number
+    negative_keywords_today: number
+    negative_keywords_week: number
+    groups_declining: number
   }
-  peak_hours: { hour: string; messages: number }[]
-  team_performance: {
+  trends: {
+    today_vs_yesterday: { current: number; previous: number; delta_pct: number }
+    this_week_vs_last: { current: number; previous: number; delta_pct: number }
+  }
+  peak_hours: { hour: number; count: number }[]
+  team_ranking: {
     name: string
-    responses_today: number
+    messages_today: number
+    messages_week: number
+    groups_served: number
     avg_response_min: number
-    groups: number
-    proactivity: number
-    status: 'EXCELENTE' | 'BOM' | 'ATENÇÃO' | 'CRÍTICO'
+    proactive_pct: number
+    status: string
   }[]
-  client_ranking: {
+  group_ranking: {
+    id: string
     name: string
-    msgs_today: number
-    msgs_week: number
-    team_msgs: number
-    client_msgs: number
+    messages_today: number
+    messages_week: number
+    team_messages: number
+    client_messages: number
     last_activity: string | null
-    status: 'Ativo' | 'Inativo' | 'Em Risco'
+    days_inactive: number
+    health_status: string
   }[]
-  health: {
-    declining: { name: string; change: string }[]
-    no_response: { name: string; since: string }[]
-    silent_clients: { name: string; since: string }[]
+  client_health: {
+    declining: { id: string; name: string; this_week: number; last_week: number }[]
+    only_sending: { id: string; name: string; client_msgs: number }[]
+    only_receiving: { id: string; name: string; team_msgs: number }[]
   }
   negative_keywords: {
-    group: string
-    keyword: string
-    preview: string
+    group_name: string
+    sender: string
+    content_preview: string
     timestamp: string
   }[]
 }
@@ -82,10 +100,16 @@ const PERIOD_LABELS: Record<Period, string> = {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  EXCELENTE: 'text-emerald-400 bg-emerald-400/8 border-emerald-400/15',
-  BOM: 'text-lime-400 bg-lime-400/8 border-lime-400/15',
-  'ATENÇÃO': 'text-yellow-400 bg-yellow-400/8 border-yellow-400/15',
-  'CRÍTICO': 'text-red-400 bg-red-400/8 border-red-400/15',
+  excellent: 'text-emerald-400 bg-emerald-400/8 border-emerald-400/15',
+  good: 'text-lime-400 bg-lime-400/8 border-lime-400/15',
+  attention: 'text-yellow-400 bg-yellow-400/8 border-yellow-400/15',
+  critical: 'text-red-400 bg-red-400/8 border-red-400/15',
+}
+const STATUS_LABELS: Record<string, string> = {
+  excellent: 'EXCELENTE',
+  good: 'BOM',
+  attention: 'ATENÇÃO',
+  critical: 'CRÍTICO',
 }
 
 const CLIENT_STATUS_DOT: Record<string, string> = {
@@ -132,16 +156,9 @@ export default function CsAnalyticsPage() {
   }, [fetchData])
 
   const overview = analytics?.overview
-  const msgDiff =
-    overview && overview.messages_yesterday > 0
-      ? Math.round(
-          ((overview.messages_today - overview.messages_yesterday) /
-            overview.messages_yesterday) *
-            100
-        )
-      : 0
+  const msgDiff = analytics?.trends?.today_vs_yesterday?.delta_pct ?? 0
 
-  const avgTime = overview?.avg_response_time_min ?? 0
+  const avgTime = analytics?.response_time?.avg_minutes ?? 0
   const avgTimeColor =
     avgTime <= 15
       ? 'text-emerald-400'
@@ -217,7 +234,7 @@ export default function CsAnalyticsPage() {
                 </span>
               </div>
               <p className="text-2xl font-extrabold text-white">
-                {overview?.messages_today ?? 0}
+                {overview?.total_messages_today ?? 0}
               </p>
               {msgDiff !== 0 && (
                 <p
@@ -238,7 +255,7 @@ export default function CsAnalyticsPage() {
                 </span>
               </div>
               <p className="text-2xl font-extrabold text-white">
-                {overview?.active_groups ?? 0}
+                {overview?.active_groups_today ?? 0}
                 <span className="text-sm font-semibold text-zinc-600 ml-1">
                   / {overview?.total_groups ?? 0}
                 </span>
@@ -287,7 +304,7 @@ export default function CsAnalyticsPage() {
               </div>
               <div>
                 <p className="text-lg font-extrabold text-red-400">
-                  {analytics.alerts.no_response_1h}
+                  {analytics.alerts.no_response_count}
                 </p>
                 <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-red-400/60">
                   Sem resposta &gt;1h
@@ -301,7 +318,7 @@ export default function CsAnalyticsPage() {
               </div>
               <div>
                 <p className="text-lg font-extrabold text-orange-400">
-                  {analytics.alerts.inactive_7d}
+                  {analytics.alerts.inactive_7_days}
                 </p>
                 <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-orange-400/60">
                   Inativos &gt;7 dias
@@ -315,7 +332,7 @@ export default function CsAnalyticsPage() {
               </div>
               <div>
                 <p className="text-lg font-extrabold text-yellow-400">
-                  {analytics.alerts.negative_keywords}
+                  {analytics.alerts.negative_keywords_week}
                 </p>
                 <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-yellow-400/60">
                   Keywords negativas
@@ -329,7 +346,7 @@ export default function CsAnalyticsPage() {
               </div>
               <div>
                 <p className="text-lg font-extrabold text-zinc-300">
-                  {analytics.alerts.declining_engagement}
+                  {analytics.alerts.groups_declining}
                 </p>
                 <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500">
                   Queda engajamento
@@ -381,7 +398,7 @@ export default function CsAnalyticsPage() {
                     labelFormatter={(v) => `${v}h`}
                   />
                   <Bar
-                    dataKey="messages"
+                    dataKey="count"
                     fill="#A3E635"
                     radius={[4, 4, 0, 0]}
                     maxBarSize={32}
@@ -420,14 +437,14 @@ export default function CsAnalyticsPage() {
                   Status
                 </span>
               </div>
-              {analytics.team_performance.length === 0 ? (
+              {analytics.team_ranking.length === 0 ? (
                 <div className="px-5 py-12 text-center">
                   <p className="text-[13px] font-semibold text-zinc-600">
                     Nenhum dado de equipe disponível.
                   </p>
                 </div>
               ) : (
-                analytics.team_performance.map((member, i) => (
+                analytics.team_ranking.map((member, i) => (
                   <div
                     key={member.name}
                     className="grid grid-cols-[40px_1fr_100px_100px_80px_100px_100px] gap-4 px-5 py-3.5 border-b border-[#1a1a1a] hover:bg-white/[0.02] transition-colors"
@@ -439,22 +456,22 @@ export default function CsAnalyticsPage() {
                       {cleanName(member.name)}
                     </span>
                     <span className="text-[13px] font-semibold text-white text-right">
-                      {member.responses_today}
+                      {member.messages_today}
                     </span>
                     <span className="text-[13px] font-semibold text-zinc-400 text-right">
                       {member.avg_response_min}min
                     </span>
                     <span className="text-[13px] font-semibold text-zinc-400 text-right">
-                      {member.groups}
+                      {member.groups_served}
                     </span>
                     <span className="text-[13px] font-semibold text-zinc-400 text-right">
-                      {member.proactivity}%
+                      {member.proactive_pct}%
                     </span>
                     <div className="flex justify-end self-center">
                       <span
                         className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg border ${STATUS_COLORS[member.status] ?? 'text-zinc-600 bg-zinc-800/50 border-zinc-700/30'}`}
                       >
-                        {member.status}
+                        {STATUS_LABELS[member.status] ?? member.status}
                       </span>
                     </div>
                   </div>
@@ -498,14 +515,14 @@ export default function CsAnalyticsPage() {
                   Status
                 </span>
               </div>
-              {analytics.client_ranking.length === 0 ? (
+              {analytics.group_ranking.length === 0 ? (
                 <div className="px-5 py-12 text-center">
                   <p className="text-[13px] font-semibold text-zinc-600">
                     Nenhum dado de clientes disponível.
                   </p>
                 </div>
               ) : (
-                analytics.client_ranking.slice(0, 20).map((client, i) => (
+                analytics.group_ranking.slice(0, 20).map((client, i) => (
                   <div
                     key={`${client.name}-${i}`}
                     className="grid grid-cols-[40px_1fr_80px_80px_80px_80px_100px_90px] gap-4 px-5 py-3.5 border-b border-[#1a1a1a] hover:bg-white/[0.02] transition-colors"
@@ -517,26 +534,29 @@ export default function CsAnalyticsPage() {
                       {cleanName(client.name)}
                     </span>
                     <span className="text-[13px] font-semibold text-white text-right">
-                      {client.msgs_today}
+                      {client.messages_today}
                     </span>
                     <span className="text-[13px] font-semibold text-zinc-400 text-right">
-                      {client.msgs_week}
+                      {client.messages_week}
                     </span>
                     <span className="text-[13px] font-semibold text-zinc-400 text-right">
-                      {client.team_msgs}
+                      {client.team_messages}
                     </span>
                     <span className="text-[13px] font-semibold text-zinc-400 text-right">
-                      {client.client_msgs}
+                      {client.client_messages}
                     </span>
                     <span className="text-[12px] font-semibold text-zinc-500 text-right self-center">
                       {formatTimeAgo(client.last_activity)}
                     </span>
                     <div className="flex items-center justify-end gap-2 self-center">
                       <div
-                        className={`h-2 w-2 rounded-full flex-shrink-0 ${CLIENT_STATUS_DOT[client.status] ?? 'bg-zinc-600'}`}
+                        className={`h-2 w-2 rounded-full flex-shrink-0 ${
+                          client.health_status === 'active' ? 'bg-lime-400 shadow-[0_0_6px_rgba(163,230,53,0.5)]' :
+                          client.health_status === 'critical' ? 'bg-red-400 shadow-[0_0_6px_rgba(248,113,113,0.5)]' : 'bg-zinc-600'
+                        }`}
                       />
                       <span className="text-[11px] font-bold text-zinc-500">
-                        {client.status}
+                        {client.health_status === 'active' ? 'Ativo' : client.health_status === 'warning' ? 'Atenção' : client.health_status === 'inactive' ? 'Inativo' : client.health_status === 'critical' ? 'Em Risco' : client.health_status}
                       </span>
                     </div>
                   </div>
@@ -559,13 +579,13 @@ export default function CsAnalyticsPage() {
                     Clientes em Queda
                   </span>
                 </div>
-                {analytics.health.declining.length === 0 ? (
+                {analytics.client_health.declining.length === 0 ? (
                   <p className="text-[12px] font-semibold text-zinc-600">
                     Nenhum cliente em queda.
                   </p>
                 ) : (
                   <div className="space-y-2">
-                    {analytics.health.declining.map((item, i) => (
+                    {analytics.client_health.declining.map((item, i) => (
                       <div
                         key={i}
                         className="flex items-center justify-between rounded-xl bg-orange-500/5 border border-orange-500/10 px-3 py-2"
@@ -574,7 +594,7 @@ export default function CsAnalyticsPage() {
                           {cleanName(item.name)}
                         </span>
                         <span className="text-[11px] font-bold text-orange-400 flex-shrink-0">
-                          {item.change}
+                          {item.this_week}/{item.last_week}
                         </span>
                       </div>
                     ))}
@@ -590,13 +610,13 @@ export default function CsAnalyticsPage() {
                     Clientes Sem Resposta
                   </span>
                 </div>
-                {analytics.health.no_response.length === 0 ? (
+                {analytics.client_health.only_sending.length === 0 ? (
                   <p className="text-[12px] font-semibold text-zinc-600">
                     Todos respondidos.
                   </p>
                 ) : (
                   <div className="space-y-2">
-                    {analytics.health.no_response.map((item, i) => (
+                    {analytics.client_health.only_sending.map((item, i) => (
                       <div
                         key={i}
                         className="flex items-center justify-between rounded-xl bg-red-500/5 border border-red-500/10 px-3 py-2"
@@ -605,7 +625,7 @@ export default function CsAnalyticsPage() {
                           {cleanName(item.name)}
                         </span>
                         <span className="text-[11px] font-bold text-red-400 flex-shrink-0">
-                          {item.since}
+                          {item.client_msgs} msgs
                         </span>
                       </div>
                     ))}
@@ -621,13 +641,13 @@ export default function CsAnalyticsPage() {
                     Clientes Silenciosos
                   </span>
                 </div>
-                {analytics.health.silent_clients.length === 0 ? (
+                {analytics.client_health.only_receiving.length === 0 ? (
                   <p className="text-[12px] font-semibold text-zinc-600">
                     Todos engajados.
                   </p>
                 ) : (
                   <div className="space-y-2">
-                    {analytics.health.silent_clients.map((item, i) => (
+                    {analytics.client_health.only_receiving.map((item, i) => (
                       <div
                         key={i}
                         className="flex items-center justify-between rounded-xl bg-zinc-500/5 border border-zinc-500/10 px-3 py-2"
@@ -636,7 +656,7 @@ export default function CsAnalyticsPage() {
                           {cleanName(item.name)}
                         </span>
                         <span className="text-[11px] font-bold text-zinc-400 flex-shrink-0">
-                          {item.since}
+                          {item.team_msgs} msgs
                         </span>
                       </div>
                     ))}
@@ -663,17 +683,17 @@ export default function CsAnalyticsPage() {
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[12px] font-bold text-red-400">
-                        {kw.keyword}
+                        {kw.sender}
                       </span>
                       <span className="text-[10px] font-semibold text-zinc-600">
                         {formatTimeAgo(kw.timestamp)}
                       </span>
                     </div>
                     <p className="text-[12px] font-semibold text-zinc-400 truncate">
-                      {cleanName(kw.group)}
+                      {cleanName(kw.group_name)}
                     </p>
                     <p className="text-[11px] font-medium text-zinc-600 mt-1 truncate">
-                      &ldquo;{kw.preview}&rdquo;
+                      &ldquo;{kw.content_preview}&rdquo;
                     </p>
                   </div>
                 ))}

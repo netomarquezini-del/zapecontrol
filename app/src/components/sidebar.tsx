@@ -15,6 +15,7 @@ import {
   Briefcase,
   ChevronDown,
   BarChart3,
+  HeartHandshake,
   Shield,
   LogOut,
   KeyRound,
@@ -52,6 +53,14 @@ const navGroups: NavGroup[] = [
       { href: "/lancamentos-ext", label: "Lancamentos", icon: FileEdit, external: true, perm: "lancamentos" },
       { href: "/metas", label: "Metas", icon: Target, perm: "metas" },
       { href: "/cadastros", label: "Cadastros", icon: Users, perm: "cadastros" },
+    ],
+  },
+  {
+    id: "cs",
+    label: "Customer Success",
+    icon: HeartHandshake,
+    children: [
+      { href: "/cs-monitor", label: "CS Monitor", icon: HeartHandshake, perm: "cs-monitor" },
     ],
   },
   {

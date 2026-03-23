@@ -16,6 +16,7 @@ const RESTRICTED_ROUTES: Record<string, string> = {
   '/usuarios': 'usuarios',
   '/diario': 'diario',
   '/diario-registro': 'diario',
+  '/cs-monitor': 'cs-monitor',
 }
 
 // /inicio is always accessible to any logged-in user
@@ -28,6 +29,7 @@ const PERM_TO_ROUTE: Record<string, string> = {
   cadastros: '/cadastros',
   usuarios: '/usuarios',
   diario: '/diario',
+  'cs-monitor': '/cs-monitor',
 }
 
 interface AuthContextType {

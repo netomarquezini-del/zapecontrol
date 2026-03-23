@@ -193,6 +193,7 @@ export default function CsConsultoresPage() {
 
     // Pass 2: response times and proactivity per group
     for (const [, msgs] of Object.entries(msgsByGroup)) {
+      let pendingClientMsgs: { timestamp: string }[] = []
       for (let i = 0; i < msgs.length; i++) {
         if (msgs[i].is_team_member) {
           const teamName = cleanTeamName(msgs[i].sender_name || '')
@@ -210,26 +211,22 @@ export default function CsConsultoresPage() {
                   1800000
             )
           if (isProactive) stats[teamName].proactive++
-        }
 
-        // Response time: client msg → next team msg in same group
-        if (!msgs[i].is_team_member) {
-          for (let j = i + 1; j < msgs.length; j++) {
-            if (
-              msgs[j].is_team_member &&
-              msgs[j].group_id === msgs[i].group_id
-            ) {
-              const diff =
-                (new Date(msgs[j].timestamp).getTime() -
-                  new Date(msgs[i].timestamp).getTime()) /
-                60000
-              if (diff > 0 && diff < 1440) {
-                const tn = cleanTeamName(msgs[j].sender_name || '')
-                if (stats[tn]) stats[tn].response_times.push(diff)
-              }
-              break
+          // First team response: credit response time to this team member only
+          if (pendingClientMsgs.length > 0) {
+            const oldest = pendingClientMsgs[0]
+            const diff =
+              (new Date(msgs[i].timestamp).getTime() -
+                new Date(oldest.timestamp).getTime()) /
+              60000
+            if (diff > 0 && diff < 1440) {
+              stats[teamName].response_times.push(diff)
             }
+            pendingClientMsgs = []
           }
+        } else {
+          // Client message: add to pending
+          pendingClientMsgs.push({ timestamp: msgs[i].timestamp })
         }
       }
     }

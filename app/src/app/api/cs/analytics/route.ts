@@ -114,16 +114,18 @@ export async function GET(req: NextRequest) {
     }
 
     for (const [, msgs] of Object.entries(msgsByGroup)) {
+      let pendingClientMsgs: { timestamp: string }[] = []
       for (let i = 0; i < msgs.length; i++) {
-        if (!msgs[i].is_team_member) {
-          // Find next team message
-          for (let j = i + 1; j < msgs.length; j++) {
-            if (msgs[j].is_team_member && msgs[j].group_id === msgs[i].group_id) {
-              const diff = (new Date(msgs[j].timestamp).getTime() - new Date(msgs[i].timestamp).getTime()) / 60000
-              if (diff > 0 && diff < 1440) responseTimes.push(diff)
-              break
-            }
+        if (msgs[i].is_team_member) {
+          // First team response clears all pending client messages
+          if (pendingClientMsgs.length > 0) {
+            const oldest = pendingClientMsgs[0]
+            const diff = (new Date(msgs[i].timestamp).getTime() - new Date(oldest.timestamp).getTime()) / 60000
+            if (diff > 0 && diff < 1440) responseTimes.push(diff)
+            pendingClientMsgs = []
           }
+        } else {
+          pendingClientMsgs.push({ timestamp: msgs[i].timestamp })
         }
       }
     }
@@ -177,6 +179,7 @@ export async function GET(req: NextRequest) {
 
     // Calculate per-team response times and proactivity
     for (const [, msgs] of Object.entries(msgsByGroup)) {
+      let pendingClientMsgs: { timestamp: string }[] = []
       for (let i = 0; i < msgs.length; i++) {
         if (msgs[i].is_team_member) {
           const teamName = cleanTeamName(msgs[i].sender_name || '')
@@ -189,19 +192,18 @@ export async function GET(req: NextRequest) {
             (new Date(msgs[i].timestamp).getTime() - new Date(prev.timestamp).getTime()) < 1800000
           )
           if (isProactive) teamStats[teamName].proactive++
-        }
 
-        if (!msgs[i].is_team_member) {
-          for (let j = i + 1; j < msgs.length; j++) {
-            if (msgs[j].is_team_member && msgs[j].group_id === msgs[i].group_id) {
-              const diff = (new Date(msgs[j].timestamp).getTime() - new Date(msgs[i].timestamp).getTime()) / 60000
-              if (diff > 0 && diff < 1440) {
-                const tn = cleanTeamName(msgs[j].sender_name || '')
-                if (teamStats[tn]) teamStats[tn].response_times.push(diff)
-              }
-              break
+          // First team response: credit response time to this team member only
+          if (pendingClientMsgs.length > 0) {
+            const oldest = pendingClientMsgs[0]
+            const diff = (new Date(msgs[i].timestamp).getTime() - new Date(oldest.timestamp).getTime()) / 60000
+            if (diff > 0 && diff < 1440) {
+              teamStats[teamName].response_times.push(diff)
             }
+            pendingClientMsgs = []
           }
+        } else {
+          pendingClientMsgs.push({ timestamp: msgs[i].timestamp })
         }
       }
     }

@@ -5,13 +5,14 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect, useCallback } from 'react'
 import { getSupabase } from '@/lib/supabase'
 import { format } from 'date-fns'
+
 import { Zap, Loader2, Plus } from 'lucide-react'
 import Gauge from '@/components/gauge'
 
 interface MetaMensal { id: number; nivel: string; meta_diaria_vendas: number }
 interface MetaCloser { id: number; mes_id: number; closer_id: number; meta_diaria: number }
 interface Closer { id: number; name: string }
-interface DailyEntry { id: string; closer_id: number; valor: number; timestamp: number }
+interface DailyEntry { id: string; closer_id: number; valor: number; created_at: string }
 
 const fmtBRL = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
 const NIVEL_COLORS: Record<string, string> = { minima: '#52525b', super: '#84CC16', ultra: '#A3E635', black: '#D9F99D' }
@@ -20,10 +21,6 @@ const NIVEL_ORDER = ['minima', 'super', 'ultra', 'black']
 function getCurrentMonth() {
   const n = new Date()
   return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}`
-}
-
-function getStorageKey() {
-  return `zape-diario-${format(new Date(), 'yyyy-MM-dd')}`
 }
 
 export default function DiarioPage() {
@@ -52,17 +49,21 @@ export default function DiarioPage() {
     setLoading(false)
   }, [])
 
-  // Poll localStorage every 3 seconds for live updates from registro page
+  // Poll Supabase every 5 seconds for live updates from registro page
   useEffect(() => {
-    const load = () => {
-      const stored = localStorage.getItem(getStorageKey())
-      if (stored) setEntries(JSON.parse(stored))
-      else setEntries([])
+    const load = async () => {
+      const supabase = getSupabase()
+      const { data } = await supabase
+        .from('vendas_diarias')
+        .select('id, closer_id, valor, created_at')
+        .eq('data', today)
+        .order('created_at', { ascending: true })
+      setEntries((data ?? []) as DailyEntry[])
     }
     load()
-    const interval = setInterval(load, 3000)
+    const interval = setInterval(load, 5000)
     return () => clearInterval(interval)
-  }, [])
+  }, [today])
 
   useEffect(() => { fetchMetas() }, [fetchMetas])
 

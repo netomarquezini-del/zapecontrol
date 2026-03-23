@@ -144,7 +144,7 @@ export default function Sidebar() {
         {/* Header */}
         <div className={`flex h-[72px] items-center border-b border-[#222222] ${collapsed ? "justify-center px-2" : "justify-between px-6"}`}>
           <Link href="/inicio" className="flex items-center gap-3 group">
-            <img src="/logo-zape.svg" alt="Zape" className={collapsed ? "h-7 w-auto" : "h-8 w-auto"} />
+            <img src="/logo-zape.png" alt="Zape" className={collapsed ? "h-7 w-auto" : "h-8 w-auto"} />
             {!collapsed && (
               <span className="text-sm font-thin text-zinc-600 tracking-tight">control</span>
             )}

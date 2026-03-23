@@ -107,7 +107,7 @@ export default function DiarioPage() {
       <header className="border-b border-[#222222] bg-black">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <img src="/logo-zape.svg" alt="Zape" className="h-9 w-auto" />
+            <img src="/logo-zape.png" alt="Zape" className="h-9 w-auto" />
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-zinc-600">
                 Meta Diaria — {today.split('-').reverse().join('/')}

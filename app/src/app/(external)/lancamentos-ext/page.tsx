@@ -175,7 +175,7 @@ export default function LancamentosExtPage() {
       <header className="sticky top-0 z-10 border-b border-[#222222] bg-black/90 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <img src="/logo-zape.svg" alt="Zape" className="h-8 w-auto" />
+            <img src="/logo-zape.png" alt="Zape" className="h-8 w-auto" />
             <span className="text-sm font-thin text-zinc-600 tracking-tight">control</span>
             <span className="text-[10px] font-bold text-zinc-700 ml-1 uppercase tracking-[0.1em]">Lancamentos</span>
           </div>

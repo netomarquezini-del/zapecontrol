@@ -46,33 +46,27 @@ export async function POST(req: NextRequest) {
       if (memberErr) errors.push(`member: ${memberErr.message}`)
     }
 
-    // Insert message — use insert for messages without messageId, upsert for those with
+    // Insert message — check for duplicates manually if messageId exists
     if (msg.messageId) {
-      const { error: msgErr } = await supabase.from('cs_messages').upsert({
-        message_id: msg.messageId,
-        group_id: msg.groupId,
-        sender_phone: msg.senderPhone || 'unknown',
-        sender_name: msg.senderName,
-        is_team_member: msg.isTeamMember,
-        content: msg.content,
-        message_type: msg.messageType,
-        media_url: msg.mediaUrl,
-        timestamp: msg.timestamp
-      }, { onConflict: 'message_id', ignoreDuplicates: true })
-      if (msgErr) errors.push(`msg: ${msgErr.message}`)
-    } else {
-      const { error: msgErr } = await supabase.from('cs_messages').insert({
-        group_id: msg.groupId,
-        sender_phone: msg.senderPhone || 'unknown',
-        sender_name: msg.senderName,
-        is_team_member: msg.isTeamMember,
-        content: msg.content,
-        message_type: msg.messageType,
-        media_url: msg.mediaUrl,
-        timestamp: msg.timestamp
-      })
-      if (msgErr) errors.push(`msg: ${msgErr.message}`)
+      const { data: existing } = await supabase.from('cs_messages')
+        .select('id').eq('message_id', msg.messageId).limit(1)
+      if (existing && existing.length > 0) {
+        return NextResponse.json({ status: 'ignored', reason: 'duplicate message' })
+      }
     }
+
+    const { error: msgErr } = await supabase.from('cs_messages').insert({
+      message_id: msg.messageId,
+      group_id: msg.groupId,
+      sender_phone: msg.senderPhone || 'unknown',
+      sender_name: msg.senderName,
+      is_team_member: msg.isTeamMember,
+      content: msg.content,
+      message_type: msg.messageType,
+      media_url: msg.mediaUrl,
+      timestamp: msg.timestamp
+    })
+    if (msgErr) errors.push(`msg: ${msgErr.message}`)
 
     if (errors.length > 0) {
       console.error('[JOANA-CS] Webhook DB errors:', errors)

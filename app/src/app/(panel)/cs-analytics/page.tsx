@@ -13,6 +13,7 @@ import {
   TrendingDown,
   VolumeX,
   MessageCircleOff,
+  Search,
 } from 'lucide-react'
 import PeriodSelector, { getTodayStartSP } from '@/components/cs/period-selector'
 import {
@@ -77,7 +78,9 @@ interface AnalyticsData {
     client_messages: number
     last_activity: string | null
     days_inactive: number
-    health_status: string
+    avg_response_min: number
+    engagement_score: number
+    engagement_status: string
   }[]
   client_health: {
     declining: { id: string; name: string; this_week: number; last_week: number }[]
@@ -120,6 +123,39 @@ const CLIENT_STATUS_DOT: Record<string, string> = {
   'Em Risco': 'bg-red-400 shadow-[0_0_6px_rgba(248,113,113,0.5)]',
 }
 
+const ENGAGEMENT_STATUS_COLORS: Record<string, string> = {
+  engajado: 'text-emerald-400 bg-emerald-400/8 border-emerald-400/15',
+  moderado: 'text-yellow-400 bg-yellow-400/8 border-yellow-400/15',
+  atencao: 'text-orange-400 bg-orange-400/8 border-orange-400/15',
+  critico: 'text-red-400 bg-red-400/8 border-red-400/15',
+  inativo: 'text-zinc-500 bg-zinc-500/8 border-zinc-500/15',
+}
+const ENGAGEMENT_STATUS_LABELS: Record<string, string> = {
+  engajado: 'ENGAJADO',
+  moderado: 'MODERADO',
+  atencao: 'ATENÇÃO',
+  critico: 'CRÍTICO',
+  inativo: 'INATIVO',
+}
+
+type ClientFilter = 'all' | 'engajado' | 'moderado' | 'atencao' | 'critico' | 'inativo'
+
+const CLIENT_FILTERS: { key: ClientFilter; label: string }[] = [
+  { key: 'all', label: 'Todos' },
+  { key: 'engajado', label: 'Engajados' },
+  { key: 'moderado', label: 'Moderados' },
+  { key: 'atencao', label: 'Atenção' },
+  { key: 'critico', label: 'Críticos' },
+  { key: 'inativo', label: 'Inativos' },
+]
+
+function scoreColor(score: number): string {
+  if (score >= 75) return 'text-emerald-400'
+  if (score >= 50) return 'text-yellow-400'
+  if (score >= 30) return 'text-orange-400'
+  return 'text-red-400'
+}
+
 function cleanName(name: string) {
   return name.replace(/\s*\|.*$/, '').trim()
 }
@@ -142,6 +178,8 @@ export default function CsAnalyticsPage() {
   const [periodFrom, setPeriodFrom] = useState<Date>(() => getTodayStartSP())
   const [periodTo, setPeriodTo] = useState<Date>(() => new Date())
   const [filter, setFilter] = useState<GroupFilter>('all')
+  const [clientFilter, setClientFilter] = useState<ClientFilter>('all')
+  const [clientSearch, setClientSearch] = useState('')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -493,14 +531,43 @@ export default function CsAnalyticsPage() {
 
           {/* ─── Section 5: Ranking de Clientes ─── */}
           <div className="space-y-4">
-            <h2 className="text-sm font-extrabold text-white">
-              Ranking de Clientes
-              <span className="text-zinc-600 font-semibold ml-2 text-[11px]">
-                Top 20
-              </span>
-            </h2>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-sm font-extrabold text-white">
+                Ranking de Clientes
+                <span className="text-zinc-600 font-semibold ml-2 text-[11px]">
+                  {analytics.group_ranking.length} grupos
+                </span>
+              </h2>
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-1 rounded-xl border border-[#222222] bg-[#111111] p-1">
+                  {CLIENT_FILTERS.map((opt) => (
+                    <button
+                      key={opt.key}
+                      onClick={() => setClientFilter(opt.key)}
+                      className={`rounded-lg px-3 py-2 text-[12px] font-bold transition-all cursor-pointer ${
+                        clientFilter === opt.key
+                          ? 'bg-lime-400/10 text-lime-400 border border-lime-400/20'
+                          : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
+                  <input
+                    type="text"
+                    value={clientSearch}
+                    onChange={(e) => setClientSearch(e.target.value)}
+                    placeholder="Buscar cliente..."
+                    className="rounded-xl border border-[#222222] bg-[#111111] pl-9 pr-3 py-2 text-[12px] font-semibold text-white placeholder:text-zinc-600 outline-none focus:border-lime-400/20 w-[200px]"
+                  />
+                </div>
+              </div>
+            </div>
             <div className="rounded-2xl border border-[#222222] bg-[#111111] overflow-hidden">
-              <div className="grid grid-cols-[40px_1fr_80px_80px_80px_80px_100px_90px] gap-4 px-5 py-3 border-b border-[#222222]">
+              <div className="grid grid-cols-[40px_1fr_60px_70px_70px_70px_80px_80px_100px] gap-3 px-5 py-3 border-b border-[#222222]">
                 <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600">
                   #
                 </span>
@@ -508,10 +575,10 @@ export default function CsAnalyticsPage() {
                   Cliente
                 </span>
                 <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600 text-right">
-                  Msgs Hoje
+                  Score
                 </span>
                 <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600 text-right">
-                  Msgs Sem.
+                  Msgs
                 </span>
                 <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600 text-right">
                   Equipe
@@ -520,34 +587,43 @@ export default function CsAnalyticsPage() {
                   Cliente
                 </span>
                 <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600 text-right">
+                  Resp. Equipe
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600 text-right">
                   Última Ativ.
                 </span>
                 <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600 text-right">
                   Status
                 </span>
               </div>
-              {analytics.group_ranking.length === 0 ? (
-                <div className="px-5 py-12 text-center">
-                  <p className="text-[13px] font-semibold text-zinc-600">
-                    Nenhum dado de clientes disponível.
-                  </p>
-                </div>
-              ) : (
-                analytics.group_ranking.slice(0, 20).map((client, i) => (
+              {(() => {
+                const filtered = analytics.group_ranking
+                  .filter((c) => clientFilter === 'all' || c.engagement_status === clientFilter)
+                  .filter((c) => !clientSearch || c.name.toLowerCase().includes(clientSearch.toLowerCase()))
+                if (filtered.length === 0) {
+                  return (
+                    <div className="px-5 py-12 text-center">
+                      <p className="text-[13px] font-semibold text-zinc-600">
+                        Nenhum dado de clientes disponível.
+                      </p>
+                    </div>
+                  )
+                }
+                return filtered.map((client, i) => (
                   <div
-                    key={`${client.name}-${i}`}
-                    className="grid grid-cols-[40px_1fr_80px_80px_80px_80px_100px_90px] gap-4 px-5 py-3.5 border-b border-[#1a1a1a] hover:bg-white/[0.02] transition-colors"
+                    key={`${client.id}-${i}`}
+                    className="grid grid-cols-[40px_1fr_60px_70px_70px_70px_80px_80px_100px] gap-3 px-5 py-3.5 border-b border-[#1a1a1a] hover:bg-white/[0.02] transition-colors"
                   >
                     <span className="text-[13px] font-bold text-zinc-600">
                       {i + 1}
                     </span>
                     <span className="text-[13px] font-semibold text-white truncate">
-                      {cleanName(client.name)}
+                      {client.name}
+                    </span>
+                    <span className={`text-[13px] font-extrabold text-right ${scoreColor(client.engagement_score)}`}>
+                      {client.engagement_score}
                     </span>
                     <span className="text-[13px] font-semibold text-white text-right">
-                      {client.messages_today}
-                    </span>
-                    <span className="text-[13px] font-semibold text-zinc-400 text-right">
                       {client.messages_week}
                     </span>
                     <span className="text-[13px] font-semibold text-zinc-400 text-right">
@@ -556,23 +632,22 @@ export default function CsAnalyticsPage() {
                     <span className="text-[13px] font-semibold text-zinc-400 text-right">
                       {client.client_messages}
                     </span>
+                    <span className="text-[13px] font-semibold text-zinc-400 text-right">
+                      {client.avg_response_min > 0 ? `${client.avg_response_min}min` : '—'}
+                    </span>
                     <span className="text-[12px] font-semibold text-zinc-500 text-right self-center">
                       {formatTimeAgo(client.last_activity)}
                     </span>
-                    <div className="flex items-center justify-end gap-2 self-center">
-                      <div
-                        className={`h-2 w-2 rounded-full flex-shrink-0 ${
-                          client.health_status === 'active' ? 'bg-lime-400 shadow-[0_0_6px_rgba(163,230,53,0.5)]' :
-                          client.health_status === 'critical' ? 'bg-red-400 shadow-[0_0_6px_rgba(248,113,113,0.5)]' : 'bg-zinc-600'
-                        }`}
-                      />
-                      <span className="text-[11px] font-bold text-zinc-500">
-                        {client.health_status === 'active' ? 'Ativo' : client.health_status === 'warning' ? 'Atenção' : client.health_status === 'inactive' ? 'Inativo' : client.health_status === 'critical' ? 'Em Risco' : client.health_status}
+                    <div className="flex justify-end self-center">
+                      <span
+                        className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg border ${ENGAGEMENT_STATUS_COLORS[client.engagement_status] ?? 'text-zinc-600 bg-zinc-800/50 border-zinc-700/30'}`}
+                      >
+                        {ENGAGEMENT_STATUS_LABELS[client.engagement_status] ?? client.engagement_status}
                       </span>
                     </div>
                   </div>
                 ))
-              )}
+              })()}
             </div>
           </div>
 

@@ -1,6 +1,71 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient } from '@/lib/joana/supabase'
 
+function cleanGroupName(name: string): string {
+  // Remove emojis at the start
+  let clean = name.replace(/^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\s]+/u, '')
+  return clean.trim()
+}
+
+function calcClientScore(g: {
+  messages_week: number,
+  team_messages: number,
+  client_messages: number,
+  days_inactive: number,
+  avgResponseMin: number,
+}) {
+  // Factor 1: Engagement (30%)
+  let engagementScore = 0
+  if (g.client_messages >= 15) engagementScore = 100
+  else if (g.client_messages >= 10) engagementScore = 80
+  else if (g.client_messages >= 5) engagementScore = 60
+  else if (g.client_messages >= 2) engagementScore = 40
+  else if (g.client_messages >= 1) engagementScore = 20
+  else engagementScore = 0
+
+  // Factor 2: Team Attention (25%)
+  let teamScore = 0
+  const total = g.team_messages + g.client_messages
+  const teamRatio = total > 0 ? g.team_messages / total : 0
+  if (teamRatio >= 0.5) teamScore = 100
+  else if (teamRatio >= 0.35) teamScore = 80
+  else if (teamRatio >= 0.2) teamScore = 60
+  else if (teamRatio >= 0.1) teamScore = 30
+  else teamScore = 0
+
+  // Factor 3: Response Time Received (20%)
+  let responseScore = 0
+  if (g.avgResponseMin <= 0) responseScore = 50
+  else if (g.avgResponseMin <= 15) responseScore = 100
+  else if (g.avgResponseMin <= 30) responseScore = 80
+  else if (g.avgResponseMin <= 60) responseScore = 60
+  else if (g.avgResponseMin <= 120) responseScore = 30
+  else responseScore = 10
+
+  // Factor 4: Recency (15%)
+  let recencyScore = 0
+  if (g.days_inactive <= 1) recencyScore = 100
+  else if (g.days_inactive <= 3) recencyScore = 70
+  else if (g.days_inactive <= 7) recencyScore = 40
+  else if (g.days_inactive <= 14) recencyScore = 20
+  else recencyScore = 0
+
+  // Factor 5: Balance (10%)
+  let balanceScore = 0
+  if (g.client_messages > 0 && g.team_messages > 0) {
+    const ratio = Math.min(g.client_messages, g.team_messages) / Math.max(g.client_messages, g.team_messages)
+    balanceScore = Math.round(ratio * 100)
+  }
+
+  return Math.round(
+    engagementScore * 0.30 +
+    teamScore * 0.25 +
+    responseScore * 0.20 +
+    recencyScore * 0.15 +
+    balanceScore * 0.10
+  )
+}
+
 function cleanTeamName(name: string): string {
   return name
     .replace(/\s*[\|\-]\s*Zape\s*Ecomm\s*/i, '')
@@ -353,28 +418,69 @@ export async function GET(req: NextRequest) {
       else groupStats[m.group_id].client++
     }
 
+    // Calculate per-group average response time
+    const groupResponseTimes: Record<string, number[]> = {}
+    for (const [groupId, msgs] of Object.entries(msgsByGroup)) {
+      let pendingClientMsgs: { timestamp: string }[] = []
+      for (let i = 0; i < msgs.length; i++) {
+        if (msgs[i].is_team_member) {
+          if (pendingClientMsgs.length > 0) {
+            const oldest = pendingClientMsgs[0]
+            const diff = (new Date(msgs[i].timestamp).getTime() - new Date(oldest.timestamp).getTime()) / 60000
+            if (diff > 0 && diff < 1440) {
+              if (!groupResponseTimes[groupId]) groupResponseTimes[groupId] = []
+              groupResponseTimes[groupId].push(diff)
+            }
+            pendingClientMsgs = []
+          }
+        } else {
+          pendingClientMsgs.push({ timestamp: msgs[i].timestamp })
+        }
+      }
+    }
+
     const group_ranking = Object.entries(groupStats)
       .map(([id, g]) => {
         const lastAct = g.last_activity ? new Date(g.last_activity) : null
         const daysInactive = lastAct ? Math.floor((now.getTime() - lastAct.getTime()) / 86400000) : 999
-        let health_status = 'active'
-        if (daysInactive > 14) health_status = 'critical'
-        else if (daysInactive > 7) health_status = 'inactive'
-        else if (daysInactive > 3) health_status = 'warning'
+
+        const rts = groupResponseTimes[id] || []
+        const avgResponseMin = rts.length > 0
+          ? Math.round(rts.reduce((a, b) => a + b, 0) / rts.length)
+          : 0
+
+        const noMessages = g.msgs_week === 0 && g.msgs_today === 0
+
+        const engagement_score = noMessages ? 0 : calcClientScore({
+          messages_week: g.msgs_week,
+          team_messages: g.team,
+          client_messages: g.client,
+          days_inactive: daysInactive,
+          avgResponseMin,
+        })
+
+        let engagement_status: string
+        if (noMessages) engagement_status = 'inativo'
+        else if (engagement_score >= 75) engagement_status = 'engajado'
+        else if (engagement_score >= 50) engagement_status = 'moderado'
+        else if (engagement_score >= 30) engagement_status = 'atencao'
+        else engagement_status = 'critico'
 
         return {
           id,
-          name: g.name,
+          name: cleanGroupName(g.name),
           messages_today: g.msgs_today,
           messages_week: g.msgs_week,
           team_messages: g.team,
           client_messages: g.client,
           last_activity: g.last_activity,
           days_inactive: daysInactive,
-          health_status,
+          avg_response_min: avgResponseMin,
+          engagement_score,
+          engagement_status,
         }
       })
-      .sort((a, b) => b.messages_week - a.messages_week)
+      .sort((a, b) => b.engagement_score - a.engagement_score)
       .slice(0, 50)
 
     // ============================================================

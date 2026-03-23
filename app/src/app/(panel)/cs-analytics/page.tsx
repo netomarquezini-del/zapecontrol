@@ -14,6 +14,7 @@ import {
   VolumeX,
   MessageCircleOff,
 } from 'lucide-react'
+import PeriodSelector, { getTodayStartSP } from '@/components/cs/period-selector'
 import {
   BarChart,
   Bar,
@@ -91,14 +92,6 @@ interface AnalyticsData {
   }[]
 }
 
-type Period = 'today' | 'week' | 'month'
-
-const PERIOD_LABELS: Record<Period, string> = {
-  today: 'Hoje',
-  week: 'Semana',
-  month: 'Mês',
-}
-
 const STATUS_COLORS: Record<string, string> = {
   excellent: 'text-emerald-400 bg-emerald-400/8 border-emerald-400/15',
   good: 'text-lime-400 bg-lime-400/8 border-lime-400/15',
@@ -137,19 +130,20 @@ function formatTimeAgo(dateStr: string | null) {
 export default function CsAnalyticsPage() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [period, setPeriod] = useState<Period>('today')
+  const [periodFrom, setPeriodFrom] = useState<Date>(() => getTodayStartSP())
+  const [periodTo, setPeriodTo] = useState<Date>(() => new Date())
 
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/cs/analytics?period=${period}`)
+      const res = await fetch(`/api/cs/analytics?from=${periodFrom.toISOString()}&to=${periodTo.toISOString()}`)
       const data = await res.json()
       setAnalytics(data)
     } catch (e) {
       console.error('Failed to fetch analytics:', e)
     }
     setLoading(false)
-  }, [period])
+  }, [periodFrom, periodTo])
 
   useEffect(() => {
     fetchData()
@@ -193,22 +187,11 @@ export default function CsAnalyticsPage() {
           </div>
         </div>
 
-        {/* Period Tabs */}
-        <div className="flex items-center gap-1 rounded-xl border border-[#222222] bg-[#111111] p-1">
-          {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`rounded-lg px-4 py-2 text-[12px] font-bold transition-all cursor-pointer ${
-                period === p
-                  ? 'bg-lime-400/10 text-lime-400 border border-lime-400/20'
-                  : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
-              }`}
-            >
-              {PERIOD_LABELS[p]}
-            </button>
-          ))}
-        </div>
+        <PeriodSelector
+          from={periodFrom}
+          to={periodTo}
+          onChange={(f, t) => { setPeriodFrom(f); setPeriodTo(t) }}
+        />
       </div>
 
       {loading ? (

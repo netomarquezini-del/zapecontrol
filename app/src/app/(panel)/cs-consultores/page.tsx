@@ -15,6 +15,7 @@ import {
   ChevronDown,
   RefreshCw,
 } from 'lucide-react'
+import PeriodSelector, { getTodayStartSP } from '@/components/cs/period-selector'
 import {
   BarChart,
   Bar,
@@ -121,23 +122,22 @@ export default function CsConsultoresPage() {
   const [loading, setLoading] = useState(true)
   const [sortKey, setSortKey] = useState<SortKey>('msgs_week')
   const [sortAsc, setSortAsc] = useState(false)
+  const [periodFrom, setPeriodFrom] = useState<Date>(() => getTodayStartSP())
+  const [periodTo, setPeriodTo] = useState<Date>(() => new Date())
 
   const fetchData = useCallback(async () => {
     setLoading(true)
     const supabase = getSupabase()
 
-    const now = new Date()
-    const todayStart = new Date(now)
-    todayStart.setHours(0, 0, 0, 0)
-    const weekStart = new Date(now)
-    weekStart.setDate(weekStart.getDate() - 7)
+    const todayStart = getTodayStartSP()
 
-    // Fetch all messages from last 7 days and groups in parallel
+    // Fetch all messages in selected period and groups in parallel
     const [allMsgsRes, groupsRes] = await Promise.all([
       supabase
         .from('cs_messages')
         .select('id, group_id, sender_name, sender_phone, is_team_member, timestamp')
-        .gte('timestamp', weekStart.toISOString())
+        .gte('timestamp', periodFrom.toISOString())
+        .lte('timestamp', periodTo.toISOString())
         .order('timestamp', { ascending: true })
         .limit(10000),
       supabase.from('cs_groups').select('id, name').eq('is_active', true),
@@ -259,7 +259,7 @@ export default function CsConsultoresPage() {
 
     setConsultants(result)
     setLoading(false)
-  }, [])
+  }, [periodFrom, periodTo])
 
   useEffect(() => {
     fetchData()
@@ -363,18 +363,25 @@ export default function CsConsultoresPage() {
             </p>
           </div>
         </div>
-        <button
-          onClick={() => fetchData()}
-          disabled={loading}
-          className="flex items-center gap-2 rounded-xl bg-lime-400/10 border border-lime-400/20 px-5 py-2.5 text-[13px] font-bold text-lime-400 hover:bg-lime-400/15 cursor-pointer disabled:opacity-40 transition-all"
-        >
-          {loading ? (
-            <Loader2 size={15} className="animate-spin" />
-          ) : (
-            <RefreshCw size={15} />
-          )}
-          Atualizar
-        </button>
+        <div className="flex items-center gap-3 flex-wrap">
+          <PeriodSelector
+            from={periodFrom}
+            to={periodTo}
+            onChange={(f, t) => { setPeriodFrom(f); setPeriodTo(t) }}
+          />
+          <button
+            onClick={() => fetchData()}
+            disabled={loading}
+            className="flex items-center gap-2 rounded-xl bg-lime-400/10 border border-lime-400/20 px-5 py-2.5 text-[13px] font-bold text-lime-400 hover:bg-lime-400/15 cursor-pointer disabled:opacity-40 transition-all"
+          >
+            {loading ? (
+              <Loader2 size={15} className="animate-spin" />
+            ) : (
+              <RefreshCw size={15} />
+            )}
+            Atualizar
+          </button>
+        </div>
       </div>
 
       {loading ? (

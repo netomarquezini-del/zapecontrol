@@ -14,6 +14,7 @@ import {
   Search,
   ChevronRight,
 } from 'lucide-react'
+import PeriodSelector, { getTodayStartSP } from '@/components/cs/period-selector'
 
 interface CsGroup {
   id: string
@@ -37,34 +38,32 @@ export default function CsMonitorPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [syncing, setSyncing] = useState(false)
+  const [periodFrom, setPeriodFrom] = useState<Date>(() => getTodayStartSP())
+  const [periodTo, setPeriodTo] = useState<Date>(() => new Date())
 
   const fetchData = useCallback(async () => {
     setLoading(true)
     const supabase = getSupabase()
 
-    const now = new Date()
-    const todayStart = new Date(now)
-    todayStart.setHours(0, 0, 0, 0)
-    const weekStart = new Date(now)
-    weekStart.setDate(weekStart.getDate() - 7)
-
-    const [groupsRes, todayRes, weekRes, teamTodayRes] = await Promise.all([
+    const [groupsRes, periodRes, teamPeriodRes] = await Promise.all([
       supabase.from('cs_groups').select('*').eq('is_active', true).order('name', { ascending: true }),
-      supabase.from('cs_messages').select('id', { count: 'exact', head: true }).gte('timestamp', todayStart.toISOString()),
-      supabase.from('cs_messages').select('id', { count: 'exact', head: true }).gte('timestamp', weekStart.toISOString()),
-      supabase.from('cs_messages').select('id', { count: 'exact', head: true }).eq('is_team_member', true).gte('timestamp', todayStart.toISOString()),
+      supabase.from('cs_messages').select('id', { count: 'exact', head: true }).gte('timestamp', periodFrom.toISOString()).lte('timestamp', periodTo.toISOString()),
+      supabase.from('cs_messages').select('id', { count: 'exact', head: true }).eq('is_team_member', true).gte('timestamp', periodFrom.toISOString()).lte('timestamp', periodTo.toISOString()),
     ])
+
+    const totalMsgs = periodRes.count ?? 0
+    const teamMsgs = teamPeriodRes.count ?? 0
 
     setGroups(groupsRes.data ?? [])
     setMetrics({
       total_groups: groupsRes.data?.length ?? 0,
-      messages_today: todayRes.count ?? 0,
-      messages_week: weekRes.count ?? 0,
-      team_messages_today: teamTodayRes.count ?? 0,
-      client_messages_today: (todayRes.count ?? 0) - (teamTodayRes.count ?? 0),
+      messages_today: totalMsgs,
+      messages_week: totalMsgs,
+      team_messages_today: teamMsgs,
+      client_messages_today: totalMsgs - teamMsgs,
     })
     setLoading(false)
-  }, [])
+  }, [periodFrom, periodTo])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -115,14 +114,21 @@ export default function CsMonitorPage() {
             <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-600">Joana — Monitoramento de Grupos</p>
           </div>
         </div>
-        <button
-          onClick={handleSync}
-          disabled={syncing}
-          className="flex items-center gap-2 rounded-xl bg-lime-400/10 border border-lime-400/20 px-5 py-2.5 text-[13px] font-bold text-lime-400 hover:bg-lime-400/15 cursor-pointer disabled:opacity-40 transition-all"
-        >
-          {syncing ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
-          Sincronizar Grupos
-        </button>
+        <div className="flex items-center gap-3 flex-wrap">
+          <PeriodSelector
+            from={periodFrom}
+            to={periodTo}
+            onChange={(f, t) => { setPeriodFrom(f); setPeriodTo(t) }}
+          />
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="flex items-center gap-2 rounded-xl bg-lime-400/10 border border-lime-400/20 px-5 py-2.5 text-[13px] font-bold text-lime-400 hover:bg-lime-400/15 cursor-pointer disabled:opacity-40 transition-all"
+          >
+            {syncing ? <Loader2 size={15} className="animate-spin" /> : <RefreshCw size={15} />}
+            Sincronizar Grupos
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards */}

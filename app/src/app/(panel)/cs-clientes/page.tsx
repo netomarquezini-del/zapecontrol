@@ -16,6 +16,7 @@ import {
   ShieldAlert,
   Moon,
 } from 'lucide-react'
+import PeriodSelector, { getTodayStartSP } from '@/components/cs/period-selector'
 import {
   PieChart,
   Pie,
@@ -178,6 +179,8 @@ export default function CsClientesPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<FilterStatus>('all')
+  const [periodFrom, setPeriodFrom] = useState<Date>(() => getTodayStartSP())
+  const [periodTo, setPeriodTo] = useState<Date>(() => new Date())
 
   // Data
   const [clients, setClients] = useState<ClientRow[]>([])
@@ -198,11 +201,10 @@ export default function CsClientesPage() {
     setLoading(true)
     const supabase = getSupabase()
 
-    const now = new Date()
-    const weekAgo = new Date(now)
-    weekAgo.setDate(weekAgo.getDate() - 7)
-    const twoWeeksAgo = new Date(now)
-    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
+    // Calculate a "previous period" of the same duration for comparison
+    const periodDurationMs = periodTo.getTime() - periodFrom.getTime()
+    const prevFrom = new Date(periodFrom.getTime() - periodDurationMs)
+    const prevTo = new Date(periodFrom.getTime())
 
     const [groupsRes, msgs7dRes, msgs14dRes, scoresRes, membersRes] = await Promise.all([
       supabase
@@ -213,12 +215,13 @@ export default function CsClientesPage() {
       supabase
         .from('cs_messages')
         .select('id, group_id, timestamp, is_team_member, content, sender_name')
-        .gte('timestamp', weekAgo.toISOString()),
+        .gte('timestamp', periodFrom.toISOString())
+        .lte('timestamp', periodTo.toISOString()),
       supabase
         .from('cs_messages')
         .select('id, group_id, timestamp, is_team_member, content, sender_name')
-        .gte('timestamp', twoWeeksAgo.toISOString())
-        .lt('timestamp', weekAgo.toISOString()),
+        .gte('timestamp', prevFrom.toISOString())
+        .lt('timestamp', prevTo.toISOString()),
       supabase
         .from('cs_health_scores')
         .select('group_id, score, calculated_at')
@@ -402,7 +405,7 @@ export default function CsClientesPage() {
     setNegativeGroups(negList)
     setInactive(inactiveList)
     setLoading(false)
-  }, [])
+  }, [periodFrom, periodTo])
 
   useEffect(() => {
     fetchData()
@@ -430,6 +433,11 @@ export default function CsClientesPage() {
             </p>
           </div>
         </div>
+        <PeriodSelector
+          from={periodFrom}
+          to={periodTo}
+          onChange={(f, t) => { setPeriodFrom(f); setPeriodTo(t) }}
+        />
       </div>
 
       {loading ? (

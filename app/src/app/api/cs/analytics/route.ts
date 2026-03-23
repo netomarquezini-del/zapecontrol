@@ -14,6 +14,8 @@ export async function GET(req: NextRequest) {
     const supabase = getServiceClient()
     const { searchParams } = new URL(req.url)
     const period = searchParams.get('period') || 'today'
+    const fromParam = searchParams.get('from')
+    const toParam = searchParams.get('to')
 
     const now = new Date()
     const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0)
@@ -22,7 +24,9 @@ export async function GET(req: NextRequest) {
     const lastWeekStart = new Date(now); lastWeekStart.setDate(lastWeekStart.getDate() - 14)
     const monthStart = new Date(now); monthStart.setDate(now.getDate() - 30)
 
-    const periodStart = period === 'month' ? monthStart : period === 'week' ? weekStart : todayStart
+    // If from/to are provided, use them; otherwise fall back to period param
+    const periodStart = fromParam ? new Date(fromParam) : (period === 'month' ? monthStart : period === 'week' ? weekStart : todayStart)
+    const periodEnd = toParam ? new Date(toParam) : now
 
     // ============================================================
     // Parallel queries
@@ -54,6 +58,7 @@ export async function GET(req: NextRequest) {
       supabase.from('cs_messages')
         .select('id, group_id, sender_name, sender_phone, is_team_member, content, message_type, timestamp')
         .gte('timestamp', periodStart.toISOString())
+        .lte('timestamp', periodEnd.toISOString())
         .order('timestamp', { ascending: true })
         .limit(10000),
       // Peak hours (last 7 days)
@@ -361,7 +366,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
-      period: { from: periodStart.toISOString(), to: now.toISOString() },
+      period: { from: periodStart.toISOString(), to: periodEnd.toISOString() },
       overview,
       response_time,
       peak_hours,

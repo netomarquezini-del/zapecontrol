@@ -27,7 +27,7 @@ export async function POST() {
 
     // Filter only groups
     const groups = chats.filter((g: any) =>
-      (g.id && g.id.includes('@g.us')) || g.isGroup === true
+      (g.id && (g.id.includes('@g.us') || g.id.includes('-group'))) || g.isGroup === true
     )
 
     const supabase = getServiceClient()

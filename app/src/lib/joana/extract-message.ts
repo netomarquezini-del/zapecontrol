@@ -22,8 +22,8 @@ export function isTeamMember(name: string | undefined | null): boolean {
 export function extractGroupMessage(data: Record<string, any>): GroupMessage | null {
   // Only process group messages
   const isGroup = data.isGroup === true ||
-    (data.chatId && data.chatId.includes('@g.us')) ||
-    (data.phone && data.phone.includes('@g.us'))
+    (data.chatId && (data.chatId.includes('@g.us') || data.chatId.includes('-group'))) ||
+    (data.phone && (data.phone.includes('@g.us') || data.phone.includes('-group')))
 
   if (!isGroup) return null
 

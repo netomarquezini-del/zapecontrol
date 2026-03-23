@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 200" width="260" height="200">
+  <!-- Zape Logo - Z com 3 barras diagonais (escada) -->
+  <!-- Barra 1 (esquerda) -->
+  <polygon points="0,170 60,30 95,30 35,170" fill="#A3E635"/>
+  <!-- Barra 2 (centro) -->
+  <polygon points="45,170 105,30 140,30 80,170" fill="#A3E635"/>
+  <!-- Barra 3 (direita, mais curta - desce menos) -->
+  <polygon points="90,170 150,30 180,30 120,170" fill="#A3E635"/>
+  <!-- Barra horizontal topo (corta as 3 barras no topo) -->
+  <rect x="55" y="0" width="200" height="40" rx="0" fill="#A3E635" transform="skewX(-10)"/>
+</svg>

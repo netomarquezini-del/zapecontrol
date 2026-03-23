@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
 import { getSupabase } from '@/lib/supabase'
 import { format } from 'date-fns'
-import { Zap, Plus, Trash2, Loader2, Check } from 'lucide-react'
+import { Plus, Trash2, Loader2, Check } from 'lucide-react'
 
 interface Closer { id: number; name: string }
 interface DailyEntry { id: string; closer_id: number; valor: number; created_at: string }
@@ -79,9 +79,7 @@ export default function DiarioRegistroPage() {
       <header className="border-b border-[#222222] bg-black">
         <div className="max-w-xl mx-auto px-5 py-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-lime-400/8 border border-lime-400/15">
-              <Zap size={16} className="text-lime-400" />
-            </div>
+            <img src="/logo-zape.svg" alt="Zape" className="h-8" />
             <div>
               <span className="text-lg font-extrabold text-white tracking-tight">Registrar Venda</span>
               <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-700">{today.split('-').reverse().join('/')}</p>

@@ -33,13 +33,8 @@ export default function LoginPage() {
     <div className="w-full max-w-sm px-6">
       {/* Logo */}
       <div className="flex flex-col items-center mb-10">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-lime-400/10 border border-lime-400/20 mb-5">
-          <Zap size={24} className="text-lime-400" />
-        </div>
-        <div className="flex items-baseline gap-1">
-          <span className="text-2xl font-black text-white tracking-tight">ZAPE</span>
-          <span className="text-lg font-thin text-zinc-600">control</span>
-        </div>
+        <img src="/logo-zape.svg" alt="Zape" className="h-14 mb-5" />
+        <span className="text-lg font-thin text-zinc-600">control</span>
         <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-700 mt-2">Painel de Controle</p>
       </div>
 

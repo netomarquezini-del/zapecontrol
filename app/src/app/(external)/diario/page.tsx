@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { getSupabase } from '@/lib/supabase'
 import { format } from 'date-fns'
 
-import { Zap, Loader2, Plus } from 'lucide-react'
+import { Loader2, Plus } from 'lucide-react'
 import Gauge from '@/components/gauge'
 
 interface MetaMensal { id: number; nivel: string; meta_diaria_vendas: number }
@@ -107,14 +107,8 @@ export default function DiarioPage() {
       <header className="border-b border-[#222222] bg-black">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-lime-400/10 border border-lime-400/20">
-              <Zap size={18} className="text-lime-400" />
-            </div>
+            <img src="/logo-zape.svg" alt="Zape" className="h-9" />
             <div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-xl font-extrabold text-white tracking-tight">ZAPE</span>
-                <span className="text-base font-thin text-zinc-600">control</span>
-              </div>
               <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-zinc-600">
                 Meta Diaria — {today.split('-').reverse().join('/')}
               </p>

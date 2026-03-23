@@ -17,6 +17,7 @@ import {
   BarChart3,
   HeartHandshake,
   Activity,
+  FileText,
   Shield,
   LogOut,
   KeyRound,
@@ -63,6 +64,7 @@ const navGroups: NavGroup[] = [
     children: [
       { href: "/cs-monitor", label: "CS Monitor", icon: HeartHandshake, perm: "cs-monitor" },
       { href: "/cs-healthscore", label: "Health Score", icon: Activity, perm: "cs-monitor" },
+      { href: "/cs-relatorios", label: "Relatórios", icon: FileText, perm: "cs-monitor" },
     ],
   },
   {

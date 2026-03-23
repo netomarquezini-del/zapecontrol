@@ -10,25 +10,28 @@ export async function POST() {
   }
 
   try {
-    // Fetch all chats from Z-API
-    const res = await fetch(`${baseUrl}/chats`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Client-Token': clientToken || ''
-      }
-    })
+    // Fetch all chats from Z-API with pagination
+    const allGroups: any[] = []
+    for (let page = 1; page <= 10; page++) {
+      const res = await fetch(`${baseUrl}/chats?page=${page}&pageSize=500`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Client-Token': clientToken || ''
+        }
+      })
 
-    const chats = await res.json()
+      const chats = await res.json()
+      if (!Array.isArray(chats) || chats.length === 0) break
 
-    if (!Array.isArray(chats)) {
-      return NextResponse.json({ success: false, reason: 'Unexpected Z-API response' }, { status: 502 })
+      const pageGroups = chats.filter((g: any) =>
+        (g.id && (g.id.includes('@g.us') || g.id.includes('-group'))) || g.isGroup === true
+      )
+      allGroups.push(...pageGroups)
+      if (chats.length < 500) break
     }
 
-    // Filter only groups
-    const groups = chats.filter((g: any) =>
-      (g.id && (g.id.includes('@g.us') || g.id.includes('-group'))) || g.isGroup === true
-    )
+    const groups = allGroups
 
     const supabase = getServiceClient()
     let synced = 0

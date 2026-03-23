@@ -8,13 +8,9 @@ import { format } from 'date-fns'
 import { Zap, Plus, Trash2, Loader2, Check } from 'lucide-react'
 
 interface Closer { id: number; name: string }
-interface DailyEntry { id: string; closer_id: number; valor: number; timestamp: number }
+interface DailyEntry { id: string; closer_id: number; valor: number; created_at: string }
 
 const fmtBRL = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
-
-function getStorageKey() {
-  return `zape-diario-${format(new Date(), 'yyyy-MM-dd')}`
-}
 
 export default function DiarioRegistroPage() {
   const today = format(new Date(), 'yyyy-MM-dd')
@@ -28,37 +24,43 @@ export default function DiarioRegistroPage() {
   useEffect(() => {
     async function load() {
       const supabase = getSupabase()
-      const { data } = await supabase.from('closers').select('id, name').order('name')
-      setClosers((data ?? []) as Closer[])
+      const { data: closersData } = await supabase.from('closers').select('id, name').order('name')
+      setClosers((closersData ?? []) as Closer[])
+
+      // Load today's entries from Supabase
+      const { data: entriesData } = await supabase
+        .from('vendas_diarias')
+        .select('id, closer_id, valor, created_at')
+        .eq('data', today)
+        .order('created_at', { ascending: true })
+      setEntries((entriesData ?? []) as DailyEntry[])
       setLoading(false)
     }
     load()
-    const stored = localStorage.getItem(getStorageKey())
-    if (stored) setEntries(JSON.parse(stored))
-  }, [])
+  }, [today])
 
-  const saveEntries = (newEntries: DailyEntry[]) => {
-    setEntries(newEntries)
-    localStorage.setItem(getStorageKey(), JSON.stringify(newEntries))
-  }
-
-  const addEntry = () => {
+  const addEntry = async () => {
     if (!formCloser || !formValor) return
-    const entry: DailyEntry = {
-      id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-      closer_id: Number(formCloser),
-      valor: Number(formValor),
-      timestamp: Date.now(),
+    const supabase = getSupabase()
+    const { data, error } = await supabase
+      .from('vendas_diarias')
+      .insert({ closer_id: Number(formCloser), valor: Number(formValor), data: today })
+      .select('id, closer_id, valor, created_at')
+      .single()
+
+    if (!error && data) {
+      setEntries((prev) => [...prev, data as DailyEntry])
+      setFormCloser('')
+      setFormValor('')
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
     }
-    saveEntries([...entries, entry])
-    setFormCloser('')
-    setFormValor('')
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
   }
 
-  const removeEntry = (id: string) => {
-    saveEntries(entries.filter((e) => e.id !== id))
+  const removeEntry = async (id: string) => {
+    const supabase = getSupabase()
+    await supabase.from('vendas_diarias').delete().eq('id', id)
+    setEntries((prev) => prev.filter((e) => e.id !== id))
   }
 
   const closerMap = new Map(closers.map((c) => [c.id, c.name]))

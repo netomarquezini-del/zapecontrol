@@ -63,8 +63,10 @@ const navGroups: NavGroup[] = [
     icon: HeartHandshake,
     children: [
       { href: "/cs-monitor", label: "CS Monitor", icon: HeartHandshake, perm: "cs-monitor" },
+      { href: "/cs-analytics", label: "Analytics Geral", icon: BarChart3, perm: "cs-monitor" },
+      { href: "/cs-consultores", label: "Consultores", icon: Users, perm: "cs-monitor" },
+      { href: "/cs-clientes", label: "Clientes", icon: HeartHandshake, perm: "cs-monitor" },
       { href: "/cs-healthscore", label: "Health Score", icon: Activity, perm: "cs-monitor" },
-      { href: "/cs-analytics", label: "Analytics", icon: BarChart3, perm: "cs-monitor" },
       { href: "/cs-relatorios", label: "Relatórios", icon: FileText, perm: "cs-monitor" },
     ],
   },
@@ -142,7 +144,7 @@ export default function Sidebar() {
         {/* Header */}
         <div className={`flex h-[72px] items-center border-b border-[#222222] ${collapsed ? "justify-center px-2" : "justify-between px-6"}`}>
           <Link href="/inicio" className="flex items-center gap-3 group">
-            <img src="/logo-zape.svg" alt="Zape" className={collapsed ? "h-7" : "h-8"} />
+            <img src="/logo-zape.svg" alt="Zape" className={collapsed ? "h-7 w-auto" : "h-8 w-auto"} />
             {!collapsed && (
               <span className="text-sm font-thin text-zinc-600 tracking-tight">control</span>
             )}

@@ -33,7 +33,7 @@ export default function LoginPage() {
     <div className="w-full max-w-sm px-6">
       {/* Logo */}
       <div className="flex flex-col items-center mb-10">
-        <img src="/logo-zape.svg" alt="Zape" className="h-14 mb-5" />
+        <img src="/logo-zape.svg" alt="Zape" className="h-14 w-auto mb-5" />
         <span className="text-lg font-thin text-zinc-600">control</span>
         <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-700 mt-2">Painel de Controle</p>
       </div>

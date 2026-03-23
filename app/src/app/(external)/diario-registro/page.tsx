@@ -79,7 +79,7 @@ export default function DiarioRegistroPage() {
       <header className="border-b border-[#222222] bg-black">
         <div className="max-w-xl mx-auto px-5 py-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/logo-zape.svg" alt="Zape" className="h-8" />
+            <img src="/logo-zape.svg" alt="Zape" className="h-8 w-auto" />
             <div>
               <span className="text-lg font-extrabold text-white tracking-tight">Registrar Venda</span>
               <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-700">{today.split('-').reverse().join('/')}</p>

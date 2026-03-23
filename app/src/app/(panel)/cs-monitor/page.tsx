@@ -49,7 +49,7 @@ export default function CsMonitorPage() {
     weekStart.setDate(weekStart.getDate() - 7)
 
     const [groupsRes, todayRes, weekRes, teamTodayRes] = await Promise.all([
-      supabase.from('cs_groups').select('*').eq('is_active', true).order('last_activity', { ascending: false }),
+      supabase.from('cs_groups').select('*').eq('is_active', true).order('name', { ascending: true }),
       supabase.from('cs_messages').select('id', { count: 'exact', head: true }).gte('timestamp', todayStart.toISOString()),
       supabase.from('cs_messages').select('id', { count: 'exact', head: true }).gte('timestamp', weekStart.toISOString()),
       supabase.from('cs_messages').select('id', { count: 'exact', head: true }).eq('is_team_member', true).gte('timestamp', todayStart.toISOString()),

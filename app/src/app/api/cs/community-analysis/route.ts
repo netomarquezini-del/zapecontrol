@@ -26,28 +26,44 @@ export async function POST(req: NextRequest) {
     const supabase = getServiceClient()
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-    // Analyze both community groups
+    // Analyze all community + consultoria groups
     const groupSets = [
       { id: 'community', groupIds: [COMMUNITY_GROUP_ID], name: 'Programa de Aceleração Zape' },
       { id: 'shopee-ads', groupIds: SHOPEE_ADS_GROUP_IDS, name: 'Shopee ADS 2.0' },
+      { id: 'consultoria', groupIds: 'ALL_EXCEPT_COMMUNITY' as any, name: 'Consultoria' },
     ]
 
     const results = []
 
     for (const groupSet of groupSets) {
       // Fetch messages
-      let query = supabase
-        .from('cs_messages')
-        .select('sender_name, is_team_member, content, timestamp')
-        .gte('timestamp', fromDate.toISOString())
-        .lte('timestamp', toDate.toISOString())
-        .order('timestamp', { ascending: true })
-        .limit(5000)
+      let query: any
 
-      if (groupSet.groupIds.length === 1) {
-        query = query.eq('group_id', groupSet.groupIds[0])
+      if (groupSet.id === 'consultoria') {
+        // Fetch all messages except community groups
+        const allCommunityIds = [COMMUNITY_GROUP_ID, ...SHOPEE_ADS_GROUP_IDS]
+        query = supabase
+          .from('cs_messages')
+          .select('sender_name, is_team_member, content, timestamp')
+          .gte('timestamp', fromDate.toISOString())
+          .lte('timestamp', toDate.toISOString())
+          .not('group_id', 'in', `(${allCommunityIds.join(',')})`)
+          .order('timestamp', { ascending: true })
+          .limit(5000)
       } else {
-        query = query.in('group_id', groupSet.groupIds)
+        query = supabase
+          .from('cs_messages')
+          .select('sender_name, is_team_member, content, timestamp')
+          .gte('timestamp', fromDate.toISOString())
+          .lte('timestamp', toDate.toISOString())
+          .order('timestamp', { ascending: true })
+          .limit(5000)
+
+        if (groupSet.groupIds.length === 1) {
+          query = query.eq('group_id', groupSet.groupIds[0])
+        } else {
+          query = query.in('group_id', groupSet.groupIds)
+        }
       }
 
       const { data: messages } = await query
@@ -57,16 +73,42 @@ export async function POST(req: NextRequest) {
         continue
       }
 
-      // Build message text for Claude (truncate to fit context)
+      // Build message text (truncate to fit context)
+      const isConsultoria = groupSet.id === 'consultoria'
+      const teamLabel = isConsultoria ? '[CONSULTOR]' : '[EQUIPE]'
+      const memberLabel = isConsultoria ? '[CLIENTE]' : '[ALUNO]'
+
       const msgText = messages
-        .filter(m => m.content)
-        .map(m => {
-          const role = m.is_team_member ? '[EQUIPE]' : '[ALUNO]'
+        .filter((m: any) => m.content)
+        .map((m: any) => {
+          const role = m.is_team_member ? teamLabel : memberLabel
           const content = (m.content || '').substring(0, 150)
           return `${m.timestamp.substring(11, 16)} ${role} ${m.sender_name}: ${content}`
         })
         .join('\n')
         .substring(0, 80000) // limit to ~80K chars
+
+      const systemPrompt = isConsultoria
+        ? 'Você é um analista de operações de consultoria/assessoria de e-commerce. Responda APENAS com JSON válido, sem markdown ou texto adicional.'
+        : 'Você é um analista de comunidades de e-commerce. Responda APENAS com JSON válido, sem markdown ou texto adicional.'
+
+      const contextDescription = isConsultoria
+        ? `grupos de consultoria/assessoria de e-commerce da Zape Ecomm`
+        : `comunidade de vendedores de marketplace como Shopee e Mercado Livre`
+
+      const rolesDescription = isConsultoria
+        ? `Membros marcados como [CONSULTOR] são consultores/suporte da Zape Ecomm. Membros [CLIENTE] são clientes de consultoria.`
+        : `Membros marcados como [EQUIPE] são mentores/suporte da Zape Ecomm. Membros [ALUNO] são participantes.`
+
+      const topicsGuidance = isConsultoria
+        ? `top 10 TEMAS/QUESTÕES reais discutidos — NÃO palavras soltas. Foco em: problemas dos clientes, dúvidas recorrentes, temas que precisam de atenção. Exemplos: "Problemas com configuração de loja", "Dúvidas sobre precificação", "Reclamações sobre entrega", "Suporte técnico de plataforma". Cada tópico deve ser uma frase curta descrevendo o TEMA da conversa`
+        : `top 10 TEMAS/QUESTÕES reais discutidos — NÃO palavras soltas. Exemplos: "Dúvidas sobre precificação de produtos", "Problemas com frete na Shopee", "Como configurar cupom de ADS", "Reclamações sobre taxa da plataforma". Cada tópico deve ser uma frase curta descrevendo o TEMA da conversa`
+
+      const insightsGuidance = isConsultoria
+        ? `3-5 observações ACIONÁVEIS sobre os grupos de consultoria. Ex: "Muitos clientes com problema em X — criar material de suporte", "Cliente Y está insatisfeito — priorizar atendimento", "Padrão de dúvidas sobre Z — criar FAQ ou tutorial"`
+        : `3-5 observações ACIONÁVEIS sobre o grupo. Ex: "Muitos alunos com dúvida sobre X — criar tutorial dedicado", "Engajamento caiu desde terça — verificar se houve problema", "3 alunos novos estão ajudando outros — reconhecer publicamente"`
+
+      const questionsLabel = isConsultoria ? 'clientes' : 'participantes'
 
       // Call GPT-4o-mini
       const response = await openai.chat.completions.create({
@@ -74,10 +116,10 @@ export async function POST(req: NextRequest) {
         max_tokens: 2000,
         temperature: 0.3,
         messages: [
-          { role: 'system', content: 'Você é um analista de comunidades de e-commerce. Responda APENAS com JSON válido, sem markdown ou texto adicional.' },
-          { role: 'user', content: `Analise as mensagens do grupo "${groupSet.name}" (comunidade de vendedores de marketplace como Shopee e Mercado Livre).
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Analise as mensagens do grupo "${groupSet.name}" (${contextDescription}).
 
-Membros marcados como [EQUIPE] são mentores/suporte da Zape Ecomm. Membros [ALUNO] são participantes.
+${rolesDescription}
 
 Mensagens do período ${fromDate.toISOString().substring(0, 10)} a ${toDate.toISOString().substring(0, 10)}:
 
@@ -95,15 +137,15 @@ Retorne um JSON com:
   },
   "topics": [
     {"name": "descrição do tema/questão discutida", "count": number, "trend": "up|stable|down"}
-  ] (top 10 TEMAS/QUESTÕES reais discutidos — NÃO palavras soltas. Exemplos: "Dúvidas sobre precificação de produtos", "Problemas com frete na Shopee", "Como configurar cupom de ADS", "Reclamações sobre taxa da plataforma". Cada tópico deve ser uma frase curta descrevendo o TEMA da conversa),
+  ] (${topicsGuidance}),
   "insights": [
     "insight 1 em português",
     "insight 2",
     "insight 3"
-  ] (3-5 observações ACIONÁVEIS sobre o grupo. Ex: "Muitos alunos com dúvida sobre X — criar tutorial dedicado", "Engajamento caiu desde terça — verificar se houve problema", "3 alunos novos estão ajudando outros — reconhecer publicamente"),
+  ] (${insightsGuidance}),
   "main_questions": [
-    {"question": "pergunta ou dúvida real dos participantes", "sender": "nome", "answered": true/false}
-  ] (top 10 perguntas/dúvidas reais feitas pelos participantes — frases reais ou resumidas)
+    {"question": "pergunta ou dúvida real dos ${questionsLabel}", "sender": "nome", "answered": true/false}
+  ] (top 10 perguntas/dúvidas reais feitas pelos ${questionsLabel} — frases reais ou resumidas)
 }` }
         ]
       })
@@ -124,7 +166,8 @@ Retorne um JSON com:
         continue
       }
 
-      const groupId = groupSet.groupIds.length === 1 ? groupSet.groupIds[0] : 'shopee-ads-combined'
+      const groupId = groupSet.id === 'consultoria' ? 'consultoria-combined' :
+        groupSet.groupIds.length === 1 ? groupSet.groupIds[0] : 'shopee-ads-combined'
       const tokensUsed = (response.usage?.prompt_tokens || 0) + (response.usage?.completion_tokens || 0)
 
       // Store each analysis type

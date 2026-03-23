@@ -93,6 +93,10 @@ interface AnalyticsData {
     content_preview: string
     timestamp: string
   }[]
+  ai_topics: { name: string; count: number; trend: string }[] | null
+  ai_insights: string[] | null
+  ai_questions: { question: string; sender: string; answered: boolean }[] | null
+  ai_analysis_available: boolean
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -752,7 +756,88 @@ export default function CsAnalyticsPage() {
             </div>
           </div>
 
-          {/* ─── Section 7: Keywords Negativas ─── */}
+          {/* ─── Section 7: Tópicos em Alta (AI) ─── */}
+          {analytics.ai_topics && analytics.ai_topics.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-sm font-extrabold text-white">
+                Tópicos em Alta
+                <span className="text-zinc-600 font-semibold ml-2 text-[11px]">Análise por IA</span>
+              </h2>
+              <div className="rounded-2xl border border-[#222222] bg-[#111111] p-5">
+                <div className="space-y-3">
+                  {analytics.ai_topics.map((topic, i) => (
+                    <div key={i} className="flex items-center justify-between py-2 border-b border-[#1a1a1a] last:border-b-0">
+                      <div className="flex items-center gap-3">
+                        <span className="text-[13px] font-bold text-zinc-600 w-5">{i + 1}</span>
+                        <span className="text-[13px] font-semibold text-white">{topic.name}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[12px] font-semibold text-zinc-400">{topic.count}x</span>
+                        <span className={`text-[11px] font-bold ${
+                          topic.trend === 'up' ? 'text-lime-400' :
+                          topic.trend === 'down' ? 'text-red-400' :
+                          'text-zinc-500'
+                        }`}>
+                          {topic.trend === 'up' ? '↑' : topic.trend === 'down' ? '↓' : '→'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Section 8: Principais Dúvidas (AI) ─── */}
+          {analytics.ai_questions && analytics.ai_questions.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-sm font-extrabold text-white">
+                Principais Dúvidas dos Clientes
+                <span className="text-zinc-600 font-semibold ml-2 text-[11px]">Análise por IA</span>
+              </h2>
+              <div className="rounded-2xl border border-[#222222] bg-[#111111] p-5">
+                <div className="space-y-3">
+                  {analytics.ai_questions.map((q, i) => (
+                    <div key={i} className="flex items-start justify-between gap-3 py-2 border-b border-[#1a1a1a] last:border-b-0">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-semibold text-white">{q.question}</p>
+                        <p className="text-[11px] font-medium text-zinc-600 mt-0.5">{q.sender}</p>
+                      </div>
+                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg border flex-shrink-0 ${
+                        q.answered
+                          ? 'text-emerald-400 bg-emerald-400/8 border-emerald-400/15'
+                          : 'text-orange-400 bg-orange-400/8 border-orange-400/15'
+                      }`}>
+                        {q.answered ? 'Respondida' : 'Pendente'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Section 9: Insights (AI) ─── */}
+          {analytics.ai_insights && analytics.ai_insights.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-sm font-extrabold text-white">
+                Insights
+                <span className="text-zinc-600 font-semibold ml-2 text-[11px]">Análise por IA</span>
+              </h2>
+              <div className="rounded-2xl border border-[#222222] bg-[#111111] p-5">
+                <div className="space-y-3">
+                  {analytics.ai_insights.map((insight, i) => (
+                    <div key={i} className="flex items-start gap-3 py-2 border-b border-[#1a1a1a] last:border-b-0">
+                      <span className="text-lime-400 text-[13px] mt-0.5 flex-shrink-0">●</span>
+                      <p className="text-[13px] font-semibold text-zinc-300">{insight}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Section 10: Keywords Negativas ─── */}
           {analytics.negative_keywords.length > 0 && (
             <div className="space-y-4">
               <h2 className="text-sm font-extrabold text-white">

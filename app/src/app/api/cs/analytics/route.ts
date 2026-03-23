@@ -647,6 +647,19 @@ export async function GET(req: NextRequest) {
       declining: decliningGroups.slice(0, 10),
     }
 
+    // Fetch AI analysis for consultoria
+    const { data: aiAnalysis } = await supabase
+      .from('cs_community_analysis')
+      .select('analysis_type, data, created_at')
+      .eq('group_id', 'consultoria-combined')
+      .order('created_at', { ascending: false })
+      .limit(10)
+
+    const getAI = (type: string) => {
+      const found = aiAnalysis?.find((a: any) => a.analysis_type === type)
+      return found?.data || null
+    }
+
     return NextResponse.json({
       period: { from: periodStart.toISOString(), to: periodEnd.toISOString() },
       overview,
@@ -658,6 +671,10 @@ export async function GET(req: NextRequest) {
       trends,
       client_health,
       negative_keywords: negativeKeywords.slice(0, 20),
+      ai_topics: getAI('topics')?.topics || null,
+      ai_insights: getAI('insights')?.insights || null,
+      ai_questions: getAI('main_questions')?.questions || null,
+      ai_analysis_available: (aiAnalysis?.length || 0) > 0,
       generated_at: now.toISOString(),
     })
   } catch (e: any) {

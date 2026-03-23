@@ -7,42 +7,80 @@ function cleanGroupName(name: string): string {
   return clean.trim()
 }
 
+const POSITIVE_KEYWORDS = ['consegui', 'obrigado', 'valeu', 'top', 'show', 'funcionou', 'vendendo', 'resultado', 'excelente', 'maravilh', 'incrível', 'parabéns', 'perfeito', 'ótimo']
+const NEGATIVE_KEYWORDS = ['erro', 'problema', 'não consigo', 'difícil', 'complicado', 'caro', 'cancelar', 'travou', 'bug', 'péssimo', 'horrível', 'frustrad', 'decepcion']
+
+function classifyMessage(content: string): 'positive' | 'negative' | 'neutral' {
+  const lower = content.toLowerCase()
+  const hasPos = POSITIVE_KEYWORDS.some(w => lower.includes(w))
+  const hasNeg = NEGATIVE_KEYWORDS.some(w => lower.includes(w))
+  if (hasPos && !hasNeg) return 'positive'
+  if (hasNeg && !hasPos) return 'negative'
+  return 'neutral'
+}
+
 function calcClientScore(g: {
-  messages_week: number,
   team_messages: number,
   client_messages: number,
   days_inactive: number,
   avgResponseMin: number,
-}) {
-  // Factor 1: Engagement (30%)
-  let engagementScore = 0
-  if (g.client_messages >= 15) engagementScore = 100
-  else if (g.client_messages >= 10) engagementScore = 80
-  else if (g.client_messages >= 5) engagementScore = 60
-  else if (g.client_messages >= 2) engagementScore = 40
-  else if (g.client_messages >= 1) engagementScore = 20
-  else engagementScore = 0
+  proactiveTeamMsgs: number, // team msgs not preceded by client msg within 30min
+  totalTeamMsgs: number,
+  positiveCount: number,
+  negativeCount: number,
+  neutralCount: number,
+}): number {
+  // Factor 1: Response Time (30%) — how fast team responds to this client
+  let responseScore = 50 // default if no data
+  if (g.avgResponseMin > 0) {
+    if (g.avgResponseMin <= 10) responseScore = 100
+    else if (g.avgResponseMin <= 15) responseScore = 90
+    else if (g.avgResponseMin <= 25) responseScore = 75
+    else if (g.avgResponseMin <= 40) responseScore = 60
+    else if (g.avgResponseMin <= 60) responseScore = 40
+    else if (g.avgResponseMin <= 120) responseScore = 20
+    else responseScore = 5
+  }
 
-  // Factor 2: Team Attention (25%)
-  let teamScore = 0
+  // Factor 2: Communication Balance (20%) — healthy 2-way communication
+  let balanceScore = 0
   const total = g.team_messages + g.client_messages
-  const teamRatio = total > 0 ? g.team_messages / total : 0
-  if (teamRatio >= 0.5) teamScore = 100
-  else if (teamRatio >= 0.35) teamScore = 80
-  else if (teamRatio >= 0.2) teamScore = 60
-  else if (teamRatio >= 0.1) teamScore = 30
-  else teamScore = 0
+  if (total > 0 && g.team_messages > 0 && g.client_messages > 0) {
+    const ratio = Math.min(g.team_messages, g.client_messages) / Math.max(g.team_messages, g.client_messages)
+    balanceScore = Math.round(ratio * 100)
+  } else if (total === 0) {
+    balanceScore = 0 // no activity
+  } else if (g.team_messages === 0 && g.client_messages > 0) {
+    balanceScore = 0 // client talking, team silent = bad
+  } else if (g.client_messages === 0 && g.team_messages > 0) {
+    balanceScore = 40 // team proactive but client not responding
+  }
 
-  // Factor 3: Response Time Received (20%)
-  let responseScore = 0
-  if (g.avgResponseMin <= 0) responseScore = 50
-  else if (g.avgResponseMin <= 15) responseScore = 100
-  else if (g.avgResponseMin <= 30) responseScore = 80
-  else if (g.avgResponseMin <= 60) responseScore = 60
-  else if (g.avgResponseMin <= 120) responseScore = 30
-  else responseScore = 10
+  // Factor 3: Team Proactivity (20%) — team initiates contact
+  let proactivityScore = 10
+  if (g.totalTeamMsgs > 0) {
+    const proactivePct = g.proactiveTeamMsgs / g.totalTeamMsgs
+    if (proactivePct >= 0.40) proactivityScore = 100
+    else if (proactivePct >= 0.25) proactivityScore = 80
+    else if (proactivePct >= 0.15) proactivityScore = 60
+    else if (proactivePct >= 0.05) proactivityScore = 40
+    else proactivityScore = 20
+  }
 
-  // Factor 4: Recency (15%)
+  // Factor 4: Sentiment (15%) — positive vs negative tone from client
+  let sentimentScore = 50 // neutral default
+  const sentimentTotal = g.positiveCount + g.negativeCount + g.neutralCount
+  if (sentimentTotal > 0) {
+    const posRatio = g.positiveCount / sentimentTotal
+    const negRatio = g.negativeCount / sentimentTotal
+    if (negRatio >= 0.3) sentimentScore = 10 // very negative
+    else if (negRatio >= 0.15) sentimentScore = 30
+    else if (posRatio >= 0.3) sentimentScore = 100 // very positive
+    else if (posRatio >= 0.15) sentimentScore = 75
+    else sentimentScore = 50 // neutral
+  }
+
+  // Factor 5: Recency (15%) — how recently active
   let recencyScore = 0
   if (g.days_inactive <= 1) recencyScore = 100
   else if (g.days_inactive <= 3) recencyScore = 70
@@ -50,19 +88,12 @@ function calcClientScore(g: {
   else if (g.days_inactive <= 14) recencyScore = 20
   else recencyScore = 0
 
-  // Factor 5: Balance (10%)
-  let balanceScore = 0
-  if (g.client_messages > 0 && g.team_messages > 0) {
-    const ratio = Math.min(g.client_messages, g.team_messages) / Math.max(g.client_messages, g.team_messages)
-    balanceScore = Math.round(ratio * 100)
-  }
-
   return Math.round(
-    engagementScore * 0.30 +
-    teamScore * 0.25 +
-    responseScore * 0.20 +
-    recencyScore * 0.15 +
-    balanceScore * 0.10
+    responseScore * 0.30 +
+    balanceScore * 0.20 +
+    proactivityScore * 0.20 +
+    sentimentScore * 0.15 +
+    recencyScore * 0.15
   )
 }
 
@@ -439,6 +470,39 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Pre-compute per-group proactivity and sentiment for client score
+    const groupProactivity: Record<string, { proactive: number; total: number }> = {}
+    for (const [groupId, msgs] of Object.entries(msgsByGroup)) {
+      let proactive = 0
+      let total = 0
+      for (let i = 0; i < msgs.length; i++) {
+        if (msgs[i].is_team_member) {
+          total++
+          const isProactive = !msgs.slice(Math.max(0, i - 10), i).some(prev =>
+            !prev.is_team_member &&
+            prev.group_id === msgs[i].group_id &&
+            (new Date(msgs[i].timestamp).getTime() - new Date(prev.timestamp).getTime()) < 1800000
+          )
+          if (isProactive) proactive++
+        }
+      }
+      groupProactivity[groupId] = { proactive, total }
+    }
+
+    const groupSentiment: Record<string, { positive: number; negative: number; neutral: number }> = {}
+    for (const [groupId, msgs] of Object.entries(msgsByGroup)) {
+      let positive = 0, negative = 0, neutral = 0
+      for (const m of msgs) {
+        if (!m.is_team_member && m.content) {
+          const cls = classifyMessage(m.content)
+          if (cls === 'positive') positive++
+          else if (cls === 'negative') negative++
+          else neutral++
+        }
+      }
+      groupSentiment[groupId] = { positive, negative, neutral }
+    }
+
     const group_ranking = Object.entries(groupStats)
       .map(([id, g]) => {
         const lastAct = g.last_activity ? new Date(g.last_activity) : null
@@ -451,12 +515,19 @@ export async function GET(req: NextRequest) {
 
         const noMessages = g.msgs_week === 0 && g.msgs_today === 0
 
+        const proact = groupProactivity[id] || { proactive: 0, total: 0 }
+        const sent = groupSentiment[id] || { positive: 0, negative: 0, neutral: 0 }
+
         const engagement_score = noMessages ? 0 : calcClientScore({
-          messages_week: g.msgs_week,
           team_messages: g.team,
           client_messages: g.client,
           days_inactive: daysInactive,
           avgResponseMin,
+          proactiveTeamMsgs: proact.proactive,
+          totalTeamMsgs: proact.total,
+          positiveCount: sent.positive,
+          negativeCount: sent.negative,
+          neutralCount: sent.neutral,
         })
 
         let engagement_status: string

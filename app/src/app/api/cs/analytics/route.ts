@@ -246,25 +246,90 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const team_ranking = Object.values(teamStats)
+    // Pre-compute raw stats for all consultants
+    const teamRawStats = Object.values(teamStats).map(t => {
+      const avgResp = t.response_times.length > 0
+        ? Math.round(t.response_times.reduce((a, b) => a + b, 0) / t.response_times.length)
+        : 0
+      const proactivePct = t.total > 0 ? Math.round(t.proactive / t.total * 100) : 0
+      return {
+        name: t.name,
+        messages_today: t.msgs_today,
+        messages_week: t.msgs_week,
+        groups_served: t.groups.size,
+        avg_response_min: avgResp,
+        proactive_pct: proactivePct,
+        has_responses: t.response_times.length > 0,
+      }
+    })
+
+    // Calculate team averages for relative scoring
+    const avgMsgsWeek = teamRawStats.length > 0
+      ? teamRawStats.reduce((a, c) => a + c.messages_week, 0) / teamRawStats.length
+      : 1
+    const avgGroupsServed = teamRawStats.length > 0
+      ? teamRawStats.reduce((a, c) => a + c.groups_served, 0) / teamRawStats.length
+      : 1
+
+    // Composite score helpers
+    function calcResponseTimeScore(avgMin: number, hasResponses: boolean): number {
+      if (!hasResponses) return 70 // neutral for proactive-only consultants
+      if (avgMin <= 10) return 100
+      if (avgMin <= 15) return 85
+      if (avgMin <= 25) return 70
+      if (avgMin <= 35) return 50
+      if (avgMin <= 60) return 30
+      return 10
+    }
+    function calcProactivityScore(pct: number): number {
+      if (pct >= 40) return 100
+      if (pct >= 25) return 80
+      if (pct >= 15) return 60
+      if (pct >= 5) return 40
+      return 20
+    }
+    function calcVolumeScore(msgs: number, avg: number): number {
+      const ratio = avg > 0 ? msgs / avg : 0
+      if (ratio >= 2) return 100
+      if (ratio >= 1.5) return 85
+      if (ratio >= 1) return 70
+      if (ratio >= 0.5) return 50
+      return 30
+    }
+    function calcCoverageScore(groups: number, avg: number): number {
+      const ratio = avg > 0 ? groups / avg : 0
+      if (ratio >= 2) return 100
+      if (ratio >= 1.5) return 85
+      if (ratio >= 1) return 70
+      if (ratio >= 0.5) return 50
+      return 30
+    }
+    function compositeStatus(score: number): string {
+      if (score >= 80) return 'excellent'
+      if (score >= 65) return 'good'
+      if (score >= 45) return 'attention'
+      return 'critical'
+    }
+
+    const team_ranking = teamRawStats
       .map(t => {
-        const avgResp = t.response_times.length > 0
-          ? Math.round(t.response_times.reduce((a, b) => a + b, 0) / t.response_times.length)
-          : 0
-        const proactivePct = t.total > 0 ? Math.round(t.proactive / t.total * 100) : 0
-        let status = 'critical'
-        if (avgResp > 0 && avgResp <= 15) status = 'excellent'
-        else if (avgResp <= 25) status = 'good'
-        else if (avgResp <= 35) status = 'attention'
+        const rtScore = calcResponseTimeScore(t.avg_response_min, t.has_responses)
+        const proactScore = calcProactivityScore(t.proactive_pct)
+        const volScore = calcVolumeScore(t.messages_week, avgMsgsWeek)
+        const covScore = calcCoverageScore(t.groups_served, avgGroupsServed)
+        const composite_score = Math.round(
+          rtScore * 0.40 + proactScore * 0.25 + volScore * 0.20 + covScore * 0.15
+        )
 
         return {
           name: t.name,
-          messages_today: t.msgs_today,
-          messages_week: t.msgs_week,
-          groups_served: t.groups.size,
-          avg_response_min: avgResp,
-          proactive_pct: proactivePct,
-          status,
+          messages_today: t.messages_today,
+          messages_week: t.messages_week,
+          groups_served: t.groups_served,
+          avg_response_min: t.avg_response_min,
+          proactive_pct: t.proactive_pct,
+          composite_score,
+          status: compositeStatus(composite_score),
         }
       })
       .sort((a, b) => b.messages_week - a.messages_week)

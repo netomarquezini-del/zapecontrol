@@ -49,10 +49,11 @@ interface ConsultantData {
   avg_response_min: number
   groups_count: number
   proactive_pct: number
+  composite_score: number
   status: 'excellent' | 'good' | 'attention' | 'critical'
 }
 
-type SortKey = 'name' | 'msgs_today' | 'msgs_week' | 'avg_response_min' | 'groups_count' | 'proactive_pct' | 'status'
+type SortKey = 'name' | 'msgs_today' | 'msgs_week' | 'avg_response_min' | 'groups_count' | 'proactive_pct' | 'composite_score' | 'status'
 
 /* ─── Constants ─── */
 
@@ -108,10 +109,42 @@ function cleanTeamName(name: string): string {
     .trim()
 }
 
-function getStatus(avgMin: number): 'excellent' | 'good' | 'attention' | 'critical' {
-  if (avgMin > 0 && avgMin <= 15) return 'excellent'
-  if (avgMin <= 25) return 'good'
-  if (avgMin <= 35) return 'attention'
+function calcResponseTimeScore(avgMin: number, hasResponses: boolean): number {
+  if (!hasResponses) return 70
+  if (avgMin <= 10) return 100
+  if (avgMin <= 15) return 85
+  if (avgMin <= 25) return 70
+  if (avgMin <= 35) return 50
+  if (avgMin <= 60) return 30
+  return 10
+}
+function calcProactivityScore(pct: number): number {
+  if (pct >= 40) return 100
+  if (pct >= 25) return 80
+  if (pct >= 15) return 60
+  if (pct >= 5) return 40
+  return 20
+}
+function calcVolumeScore(msgs: number, avg: number): number {
+  const ratio = avg > 0 ? msgs / avg : 0
+  if (ratio >= 2) return 100
+  if (ratio >= 1.5) return 85
+  if (ratio >= 1) return 70
+  if (ratio >= 0.5) return 50
+  return 30
+}
+function calcCoverageScore(groups: number, avg: number): number {
+  const ratio = avg > 0 ? groups / avg : 0
+  if (ratio >= 2) return 100
+  if (ratio >= 1.5) return 85
+  if (ratio >= 1) return 70
+  if (ratio >= 0.5) return 50
+  return 30
+}
+function compositeStatus(score: number): 'excellent' | 'good' | 'attention' | 'critical' {
+  if (score >= 80) return 'excellent'
+  if (score >= 65) return 'good'
+  if (score >= 45) return 'attention'
   return 'critical'
 }
 
@@ -231,8 +264,8 @@ export default function CsConsultoresPage() {
       }
     }
 
-    // Build final consultant data
-    const result: ConsultantData[] = Object.values(stats).map((s) => {
+    // Build raw consultant stats first
+    const rawStats = Object.values(stats).map((s) => {
       const avgResp =
         s.response_times.length > 0
           ? Math.round(
@@ -250,7 +283,37 @@ export default function CsConsultoresPage() {
         avg_response_min: avgResp,
         groups_count: s.groups.size,
         proactive_pct: proactivePct,
-        status: getStatus(avgResp),
+        has_responses: s.response_times.length > 0,
+      }
+    })
+
+    // Calculate team averages for relative scoring
+    const avgMsgsWeek = rawStats.length > 0
+      ? rawStats.reduce((a, c) => a + c.msgs_week, 0) / rawStats.length
+      : 1
+    const avgGroupsCount = rawStats.length > 0
+      ? rawStats.reduce((a, c) => a + c.groups_count, 0) / rawStats.length
+      : 1
+
+    // Build final consultant data with composite score
+    const result: ConsultantData[] = rawStats.map((r) => {
+      const rtScore = calcResponseTimeScore(r.avg_response_min, r.has_responses)
+      const proactScore = calcProactivityScore(r.proactive_pct)
+      const volScore = calcVolumeScore(r.msgs_week, avgMsgsWeek)
+      const covScore = calcCoverageScore(r.groups_count, avgGroupsCount)
+      const composite_score = Math.round(
+        rtScore * 0.40 + proactScore * 0.25 + volScore * 0.20 + covScore * 0.15
+      )
+
+      return {
+        name: r.name,
+        msgs_today: r.msgs_today,
+        msgs_week: r.msgs_week,
+        avg_response_min: r.avg_response_min,
+        groups_count: r.groups_count,
+        proactive_pct: r.proactive_pct,
+        composite_score,
+        status: compositeStatus(composite_score),
       }
     })
 
@@ -487,6 +550,7 @@ export default function CsConsultoresPage() {
                           <span
                             className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${STATUS_COLORS[c.status] ?? 'text-zinc-600 bg-zinc-800/50 border-zinc-700/30'}`}
                           >
+                            <span className="font-extrabold mr-1">{c.composite_score}</span>
                             {STATUS_LABELS[c.status] ?? c.status}
                           </span>
                         </div>
@@ -562,7 +626,7 @@ export default function CsConsultoresPage() {
             </h2>
             <div className="rounded-2xl border border-[#222222] bg-[#111111] overflow-hidden">
               {/* Header */}
-              <div className="grid grid-cols-[40px_1fr_80px_80px_90px_70px_90px_90px] gap-4 px-5 py-3 border-b border-[#222222]">
+              <div className="grid grid-cols-[40px_1fr_80px_80px_90px_70px_90px_60px_90px] gap-4 px-5 py-3 border-b border-[#222222]">
                 <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600">
                   #
                 </span>
@@ -609,6 +673,13 @@ export default function CsConsultoresPage() {
                   <SortIcon col="proactive_pct" />
                 </button>
                 <button
+                  onClick={() => handleSort('composite_score')}
+                  className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600 text-right cursor-pointer hover:text-zinc-400 transition-colors"
+                >
+                  Score
+                  <SortIcon col="composite_score" />
+                </button>
+                <button
                   onClick={() => handleSort('status')}
                   className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600 text-right cursor-pointer hover:text-zinc-400 transition-colors"
                 >
@@ -628,7 +699,7 @@ export default function CsConsultoresPage() {
                 sorted.map((c, i) => (
                   <div
                     key={c.name}
-                    className="grid grid-cols-[40px_1fr_80px_80px_90px_70px_90px_90px] gap-4 px-5 py-3.5 border-b border-[#1a1a1a] hover:bg-white/[0.02] transition-colors"
+                    className="grid grid-cols-[40px_1fr_80px_80px_90px_70px_90px_60px_90px] gap-4 px-5 py-3.5 border-b border-[#1a1a1a] hover:bg-white/[0.02] transition-colors"
                   >
                     <span className="text-[13px] font-bold text-zinc-600">
                       {i + 1}
@@ -661,6 +732,11 @@ export default function CsConsultoresPage() {
                     </span>
                     <span className="text-[13px] font-semibold text-zinc-400 text-right">
                       {c.proactive_pct}%
+                    </span>
+                    <span
+                      className={`text-[13px] font-extrabold text-right ${STATUS_TEXT_COLORS[c.status] ?? 'text-zinc-400'}`}
+                    >
+                      {c.composite_score}
                     </span>
                     <div className="flex justify-end self-center">
                       <span

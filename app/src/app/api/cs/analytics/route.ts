@@ -151,8 +151,9 @@ export async function GET(req: NextRequest) {
     const hourCounts: Record<number, number> = {}
     for (let h = 0; h < 24; h++) hourCounts[h] = 0
     for (const m of peakMsgs) {
-      const h = new Date(m.timestamp).getHours()
-      hourCounts[h] = (hourCounts[h] || 0) + 1
+      const d = new Date(m.timestamp)
+      const spHour = new Date(d.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' })).getHours()
+      hourCounts[spHour] = (hourCounts[spHour] || 0) + 1
     }
     const peak_hours = Object.entries(hourCounts).map(([h, count]) => ({
       hour: Number(h),

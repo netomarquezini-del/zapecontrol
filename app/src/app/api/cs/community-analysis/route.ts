@@ -94,16 +94,16 @@ Retorne um JSON com:
     "negative_examples": [{"content": "msg", "sender": "nome", "keywords": ["palavra"]}] (top 3)
   },
   "topics": [
-    {"name": "nome do tópico", "count": number, "trend": "up|stable|down"}
-  ] (top 10 tópicos discutidos),
+    {"name": "descrição do tema/questão discutida", "count": number, "trend": "up|stable|down"}
+  ] (top 10 TEMAS/QUESTÕES reais discutidos — NÃO palavras soltas. Exemplos: "Dúvidas sobre precificação de produtos", "Problemas com frete na Shopee", "Como configurar cupom de ADS", "Reclamações sobre taxa da plataforma". Cada tópico deve ser uma frase curta descrevendo o TEMA da conversa),
   "insights": [
     "insight 1 em português",
     "insight 2",
     "insight 3"
-  ] (3-5 observações importantes sobre o grupo),
-  "keywords": [
-    {"word": "palavra", "count": number}
-  ] (top 20 palavras mais relevantes, excluindo stopwords)
+  ] (3-5 observações ACIONÁVEIS sobre o grupo. Ex: "Muitos alunos com dúvida sobre X — criar tutorial dedicado", "Engajamento caiu desde terça — verificar se houve problema", "3 alunos novos estão ajudando outros — reconhecer publicamente"),
+  "main_questions": [
+    {"question": "pergunta ou dúvida real dos participantes", "sender": "nome", "answered": true/false}
+  ] (top 10 perguntas/dúvidas reais feitas pelos participantes — frases reais ou resumidas)
 }` }
         ]
       })
@@ -128,7 +128,7 @@ Retorne um JSON com:
       const tokensUsed = (response.usage?.prompt_tokens || 0) + (response.usage?.completion_tokens || 0)
 
       // Store each analysis type
-      const types = ['sentiment', 'topics', 'insights', 'keywords']
+      const types = ['sentiment', 'topics', 'insights', 'main_questions']
       for (const type of types) {
         if (analysis[type]) {
           await supabase.from('cs_community_analysis').insert({
@@ -138,7 +138,7 @@ Retorne um JSON com:
             analysis_type: type,
             data: type === 'insights' ? { insights: analysis[type] } :
                   type === 'topics' ? { topics: analysis[type] } :
-                  type === 'keywords' ? { words: analysis[type] } :
+                  type === 'main_questions' ? { questions: analysis[type] } :
                   analysis[type],
             model_used: 'gpt-4o-mini',
             tokens_used: Math.round(tokensUsed / 4),

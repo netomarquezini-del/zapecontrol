@@ -92,6 +92,25 @@ interface InactiveGroup {
 
 /* ─── Constants ─── */
 
+const ACELERACAO_ID = '120363401620622735-group'
+const SHOPEE_ADS_IDS = [
+  '120363422457783091-group',
+  '120363407332110646-group',
+  '120363407280170820-group',
+  '120363404311146540-group',
+  '120363424726740000-group',
+]
+const COMMUNITY_IDS = [ACELERACAO_ID, ...SHOPEE_ADS_IDS]
+
+type GroupTypeFilter = 'all' | 'consultoria' | 'aceleracao' | 'shopee-ads'
+
+const GROUP_TYPE_OPTIONS: { key: GroupTypeFilter; label: string }[] = [
+  { key: 'all', label: 'Todos' },
+  { key: 'consultoria', label: 'Consultoria' },
+  { key: 'aceleracao', label: 'Prog. Aceleração' },
+  { key: 'shopee-ads', label: 'Shopee ADS' },
+]
+
 const NEGATIVE_KEYWORDS = [
   'cancelar', 'cancelamento', 'insatisfeito', 'problema',
   'reclamar', 'reclamacao', 'pessimo', 'horrivel',
@@ -158,6 +177,30 @@ function cleanName(name: string) {
   return name.replace(/\s*\|.*$/, '').trim()
 }
 
+function cleanGroupName(name: string): string {
+  // Remove leading emojis
+  let clean = name.replace(/^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\s]+/u, '').trim()
+  // Keep only #number | client name (remove service type like "Consultoria Ultra")
+  const parts = clean.split('|').map(p => p.trim())
+  if (parts.length >= 2) {
+    return `${parts[0]} | ${parts[1]}`
+  }
+  return clean
+}
+
+function filterByGroupType(items: { id: string }[], groupType: GroupTypeFilter) {
+  switch (groupType) {
+    case 'consultoria':
+      return items.filter((item) => !COMMUNITY_IDS.includes(item.id))
+    case 'aceleracao':
+      return items.filter((item) => item.id === ACELERACAO_ID)
+    case 'shopee-ads':
+      return items.filter((item) => SHOPEE_ADS_IDS.includes(item.id))
+    default:
+      return items
+  }
+}
+
 function timeAgo(dateStr: string | null) {
   if (!dateStr) return 'sem atividade'
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -179,6 +222,7 @@ export default function CsClientesPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<FilterStatus>('all')
+  const [groupType, setGroupType] = useState<GroupTypeFilter>('all')
   const [periodFrom, setPeriodFrom] = useState<Date>(() => getTodayStartSP())
   const [periodTo, setPeriodTo] = useState<Date>(() => new Date())
 
@@ -193,6 +237,7 @@ export default function CsClientesPage() {
   const [atRiskCount, setAtRiskCount] = useState(0)
   const [avgEngagement, setAvgEngagement] = useState(0)
   const [noReplyCount, setNoReplyCount] = useState(0)
+  const [noReplyIds, setNoReplyIds] = useState<string[]>([])
 
   // Pie data
   const [pieData, setPieData] = useState<{ name: string; value: number }[]>([])
@@ -400,6 +445,7 @@ export default function CsClientesPage() {
     setAtRiskCount(risk.length)
     setAvgEngagement(avgEng)
     setNoReplyCount(noReply.length)
+    setNoReplyIds(noReply.map((c) => c.id))
     setPieData(pie)
     setDeclining(decliningList)
     setNegativeGroups(negList)
@@ -411,8 +457,58 @@ export default function CsClientesPage() {
     fetchData()
   }, [fetchData])
 
+  // Filter by group type first (affects KPIs, pie, and table)
+  const groupTypeFiltered = filterByGroupType(clients, groupType) as ClientRow[]
+
+  // Recompute KPIs and pie based on group type filter
+  const computedActiveCount = (() => {
+    const sevenDaysMs = 7 * 24 * 3600 * 1000
+    return groupTypeFiltered.filter((c) => {
+      if (!c.last_activity) return false
+      return Date.now() - new Date(c.last_activity).getTime() < sevenDaysMs
+    }).length
+  })()
+
+  const computedAtRiskCount = (() => {
+    const sevenDaysMs = 7 * 24 * 3600 * 1000
+    return groupTypeFiltered.filter((c) => {
+      const isInactive = !c.last_activity || Date.now() - new Date(c.last_activity).getTime() > sevenDaysMs
+      const hasNeg = c.negative_count > 0
+      return isInactive || hasNeg
+    }).length
+  })()
+
+  const computedAvgEngagement = (() => {
+    const withMsgs = groupTypeFiltered.filter((c) => c.messages_week > 0)
+    return withMsgs.length > 0
+      ? Math.round(withMsgs.reduce((acc, c) => acc + c.messages_week, 0) / withMsgs.length)
+      : 0
+  })()
+
+  const computedNoReplyCount = filterByGroupType(
+    noReplyIds.map((id) => ({ id })), groupType
+  ).length
+
+  const computedPieData = (() => {
+    const distribution: Record<string, number> = {
+      'Saudavel': 0, 'Atencao': 0, 'Risco': 0, 'Critico': 0, 'Sem score': 0,
+    }
+    for (const c of groupTypeFiltered) {
+      const cfg = STATUS_CONFIG[c.health_status]
+      distribution[cfg.label]++
+    }
+    return Object.entries(distribution)
+      .filter(([, v]) => v > 0)
+      .map(([name, value]) => ({ name, value }))
+  })()
+
+  // Filter at-risk sections by group type
+  const filteredDeclining = filterByGroupType(declining, groupType) as DecliningGroup[]
+  const filteredNegativeGroups = filterByGroupType(negativeGroups, groupType) as NegativeKeywordGroup[]
+  const filteredInactive = filterByGroupType(inactive, groupType) as InactiveGroup[]
+
   // Filtered & searched clients
-  const filteredClients = clients.filter((c) => {
+  const filteredClients = groupTypeFiltered.filter((c) => {
     const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase())
     const matchesFilter = filter === 'all' || c.health_status === filter
     return matchesSearch && matchesFilter
@@ -433,11 +529,28 @@ export default function CsClientesPage() {
             </p>
           </div>
         </div>
-        <PeriodSelector
-          from={periodFrom}
-          to={periodTo}
-          onChange={(f, t) => { setPeriodFrom(f); setPeriodTo(t) }}
-        />
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1 rounded-xl border border-[#222222] bg-[#111111] p-1">
+            {GROUP_TYPE_OPTIONS.map((opt) => (
+              <button
+                key={opt.key}
+                onClick={() => setGroupType(opt.key)}
+                className={`rounded-lg px-3 py-2 text-[12px] font-bold transition-all cursor-pointer ${
+                  groupType === opt.key
+                    ? 'bg-lime-400/10 text-lime-400 border border-lime-400/20'
+                    : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <PeriodSelector
+            from={periodFrom}
+            to={periodTo}
+            onChange={(f, t) => { setPeriodFrom(f); setPeriodTo(t) }}
+          />
+        </div>
       </div>
 
       {loading ? (
@@ -455,7 +568,7 @@ export default function CsClientesPage() {
                   Clientes Ativos
                 </span>
               </div>
-              <p className="text-2xl font-extrabold text-white">{activeCount}</p>
+              <p className="text-2xl font-extrabold text-white">{computedActiveCount}</p>
               <p className="text-[10px] font-semibold text-zinc-600 mt-1">ultimos 7 dias</p>
             </div>
 
@@ -466,8 +579,8 @@ export default function CsClientesPage() {
                   Em Risco
                 </span>
               </div>
-              <p className={`text-2xl font-extrabold ${atRiskCount > 0 ? 'text-red-400' : 'text-white'}`}>
-                {atRiskCount}
+              <p className={`text-2xl font-extrabold ${computedAtRiskCount > 0 ? 'text-red-400' : 'text-white'}`}>
+                {computedAtRiskCount}
               </p>
               <p className="text-[10px] font-semibold text-zinc-600 mt-1">inativos ou keywords neg.</p>
             </div>
@@ -480,7 +593,7 @@ export default function CsClientesPage() {
                 </span>
               </div>
               <p className="text-2xl font-extrabold text-lime-400">
-                {avgEngagement}
+                {computedAvgEngagement}
                 <span className="text-sm font-semibold text-zinc-600 ml-1">msgs/sem</span>
               </p>
             </div>
@@ -492,8 +605,8 @@ export default function CsClientesPage() {
                   Sem Resposta
                 </span>
               </div>
-              <p className={`text-2xl font-extrabold ${noReplyCount > 0 ? 'text-orange-400' : 'text-white'}`}>
-                {noReplyCount}
+              <p className={`text-2xl font-extrabold ${computedNoReplyCount > 0 ? 'text-orange-400' : 'text-white'}`}>
+                {computedNoReplyCount}
               </p>
               <p className="text-[10px] font-semibold text-zinc-600 mt-1">equipe nao respondeu</p>
             </div>
@@ -504,7 +617,7 @@ export default function CsClientesPage() {
             <h2 className="text-sm font-extrabold text-white mb-4">
               Distribuicao de Saude
               <span className="text-zinc-600 font-semibold ml-2 text-[11px]">
-                {clients.length} clientes
+                {groupTypeFiltered.length} clientes
               </span>
             </h2>
             <div className="flex flex-col lg:flex-row items-center gap-6">
@@ -512,7 +625,7 @@ export default function CsClientesPage() {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={pieData}
+                      data={computedPieData}
                       cx="50%"
                       cy="50%"
                       innerRadius={60}
@@ -521,7 +634,7 @@ export default function CsClientesPage() {
                       dataKey="value"
                       stroke="none"
                     >
-                      {pieData.map((entry, i) => (
+                      {computedPieData.map((entry, i) => (
                         <Cell
                           key={`cell-${i}`}
                           fill={PIE_COLORS[entry.name] ?? '#52525b'}
@@ -543,7 +656,7 @@ export default function CsClientesPage() {
                 </ResponsiveContainer>
               </div>
               <div className="flex flex-wrap gap-4">
-                {pieData.map((entry) => (
+                {computedPieData.map((entry) => (
                   <div key={entry.name} className="flex items-center gap-2">
                     <div
                       className="h-3 w-3 rounded-full"
@@ -566,7 +679,7 @@ export default function CsClientesPage() {
             <div className="flex items-center gap-3">
               <h2 className="text-sm font-extrabold text-white">Clientes</h2>
               <span className="text-[11px] font-bold text-zinc-600">
-                {filteredClients.length} de {clients.length}
+                {filteredClients.length} de {groupTypeFiltered.length}
               </span>
             </div>
 
@@ -633,7 +746,7 @@ export default function CsClientesPage() {
                       <div className="flex items-center gap-3 min-w-0">
                         <div className={`h-2 w-2 rounded-full flex-shrink-0 ${cfg.dot}`} />
                         <span className="text-[13px] font-semibold text-white truncate">
-                          {cleanName(client.name)}
+                          {cleanGroupName(client.name)}
                         </span>
                       </div>
                       <span className="text-[13px] font-semibold text-white text-right self-center">
@@ -675,16 +788,16 @@ export default function CsClientesPage() {
                   <TrendingDown size={14} className="text-orange-400" />
                   <span className="text-[12px] font-bold text-white">Em Queda</span>
                   <span className="text-[11px] text-zinc-600 font-semibold">
-                    {declining.length}
+                    {filteredDeclining.length}
                   </span>
                 </div>
-                {declining.length === 0 ? (
+                {filteredDeclining.length === 0 ? (
                   <p className="text-[12px] font-semibold text-zinc-600">
                     Nenhum cliente em queda.
                   </p>
                 ) : (
                   <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                    {declining.map((item) => {
+                    {filteredDeclining.map((item) => {
                       const dropPct = Math.round((1 - item.this_week / item.last_week) * 100)
                       return (
                         <div
@@ -692,7 +805,7 @@ export default function CsClientesPage() {
                           className="flex items-center justify-between rounded-xl bg-orange-500/5 border border-orange-500/10 px-3 py-2"
                         >
                           <span className="text-[12px] font-semibold text-white truncate mr-2">
-                            {cleanName(item.name)}
+                            {cleanGroupName(item.name)}
                           </span>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <span className="text-[11px] font-bold text-orange-400">
@@ -715,23 +828,23 @@ export default function CsClientesPage() {
                   <ShieldAlert size={14} className="text-yellow-400" />
                   <span className="text-[12px] font-bold text-white">Keywords Negativas</span>
                   <span className="text-[11px] text-zinc-600 font-semibold">
-                    {negativeGroups.length}
+                    {filteredNegativeGroups.length}
                   </span>
                 </div>
-                {negativeGroups.length === 0 ? (
+                {filteredNegativeGroups.length === 0 ? (
                   <p className="text-[12px] font-semibold text-zinc-600">
                     Nenhuma keyword negativa detectada.
                   </p>
                 ) : (
                   <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                    {negativeGroups.map((item) => (
+                    {filteredNegativeGroups.map((item) => (
                       <div
                         key={item.id}
                         className="rounded-xl bg-yellow-500/5 border border-yellow-500/10 px-3 py-2"
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-[12px] font-semibold text-white truncate mr-2">
-                            {cleanName(item.name)}
+                            {cleanGroupName(item.name)}
                           </span>
                           <span className="text-[11px] font-bold text-yellow-400 flex-shrink-0">
                             {item.count} msgs
@@ -752,22 +865,22 @@ export default function CsClientesPage() {
                   <Moon size={14} className="text-zinc-400" />
                   <span className="text-[12px] font-bold text-white">Inativos</span>
                   <span className="text-[11px] text-zinc-600 font-semibold">
-                    {inactive.length}
+                    {filteredInactive.length}
                   </span>
                 </div>
-                {inactive.length === 0 ? (
+                {filteredInactive.length === 0 ? (
                   <p className="text-[12px] font-semibold text-zinc-600">
                     Todos os clientes ativos.
                   </p>
                 ) : (
                   <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                    {inactive.map((item) => (
+                    {filteredInactive.map((item) => (
                       <div
                         key={item.id}
                         className="flex items-center justify-between rounded-xl bg-zinc-500/5 border border-zinc-500/10 px-3 py-2"
                       >
                         <span className="text-[12px] font-semibold text-white truncate mr-2">
-                          {cleanName(item.name)}
+                          {cleanGroupName(item.name)}
                         </span>
                         <span className="text-[11px] font-bold text-zinc-400 flex-shrink-0">
                           {item.days_inactive === 999 ? 'sem atividade' : `${item.days_inactive}d`}

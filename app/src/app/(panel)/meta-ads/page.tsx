@@ -123,8 +123,6 @@ export default function MetaAdsPage() {
     setSelectedCampaigns(prev => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id); else next.add(id)
-      if (next.size === 0) setTab('campaigns')
-      else setTab('adsets')
       return next
     })
     setSelectedAdsets(new Set())
@@ -133,10 +131,8 @@ export default function MetaAdsPage() {
   const toggleAllCampaigns = () => {
     if (selectedCampaigns.size === campaigns.length) {
       setSelectedCampaigns(new Set())
-      setTab('campaigns')
     } else {
       setSelectedCampaigns(new Set(campaigns.map(c => c.campaign_id!).filter(Boolean)))
-      setTab('adsets')
     }
     setSelectedAdsets(new Set())
   }
@@ -145,8 +141,6 @@ export default function MetaAdsPage() {
     setSelectedAdsets(prev => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id); else next.add(id)
-      if (next.size > 0) setTab('ads')
-      else setTab('adsets')
       return next
     })
   }
@@ -154,10 +148,8 @@ export default function MetaAdsPage() {
   const toggleAllAdsets = () => {
     if (selectedAdsets.size === adsets.length) {
       setSelectedAdsets(new Set())
-      setTab('adsets')
     } else {
       setSelectedAdsets(new Set(adsets.map(a => a.adset_id!).filter(Boolean)))
-      setTab('ads')
     }
   }
 

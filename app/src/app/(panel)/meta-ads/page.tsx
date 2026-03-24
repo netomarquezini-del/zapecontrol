@@ -351,7 +351,7 @@ function ConversionFunnel({ totals }: { totals: Totals }) {
 
   // Fixed widths for true funnel shape — centered, decreasing
   const widths = [100, 78, 58, 40, 26]
-  const opacities = [0.08, 0.14, 0.22, 0.35, 0.55]
+  const opacities = [0.12, 0.18, 0.28, 0.42, 0.65]
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 md:p-8">

@@ -19,16 +19,6 @@ export default function ProductSelector({ value, onChange }: {
     return () => document.removeEventListener('mousedown', h)
   }, [])
 
-  if (products.length <= 1) {
-    // Só 1 produto — mostra badge fixo sem dropdown
-    return (
-      <div className="flex items-center gap-2 rounded-xl border border-[#222222] bg-[#111111] px-4 py-2.5 text-[13px] font-bold text-white">
-        <Package size={14} className="text-lime-400" />
-        {selected.name}
-      </div>
-    )
-  }
-
   return (
     <div ref={ref} className="relative">
       <button

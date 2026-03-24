@@ -360,119 +360,78 @@ export default function MetaAdsPage() {
 }
 
 function ConversionFunnel({ totals }: { totals: Totals }) {
-  const impressions = totals.impressions
-  const linkClicks = totals.link_clicks
-  const lpViews = totals.landing_page_views
-  const paymentInfo = totals.add_payment_info
-  const purchases = totals.purchases
-
   const steps = [
-    {
-      label: 'Impressoes',
-      value: impressions,
-      cost: null,
-      color: 'from-zinc-500/20 to-zinc-500/5',
-      barColor: 'bg-zinc-500',
-      textColor: 'text-zinc-300',
-    },
-    {
-      label: 'Cliques no Link',
-      value: linkClicks,
-      cost: linkClicks > 0 ? totals.spend / linkClicks : 0,
-      color: 'from-blue-500/20 to-blue-500/5',
-      barColor: 'bg-blue-500',
-      textColor: 'text-blue-400',
-    },
-    {
-      label: 'Vis. Pag. Destino',
-      value: lpViews,
-      cost: totals.cost_per_landing_page_view,
-      color: 'from-cyan-500/20 to-cyan-500/5',
-      barColor: 'bg-cyan-500',
-      textColor: 'text-cyan-400',
-    },
-    {
-      label: 'Info Pagamento',
-      value: paymentInfo,
-      cost: totals.cost_per_add_payment_info,
-      color: 'from-purple-500/20 to-purple-500/5',
-      barColor: 'bg-purple-500',
-      textColor: 'text-purple-400',
-    },
-    {
-      label: 'Compras',
-      value: purchases,
-      cost: totals.cost_per_purchase,
-      color: 'from-emerald-500/20 to-emerald-500/5',
-      barColor: 'bg-emerald-500',
-      textColor: 'text-emerald-400',
-    },
+    { label: 'Impressoes', value: totals.impressions, cost: null, rateName: '' },
+    { label: 'Cliques no Link', value: totals.link_clicks, cost: totals.link_clicks > 0 ? totals.spend / totals.link_clicks : 0, rateName: 'CTR (Link Click)' },
+    { label: 'Vis. Pagina Destino', value: totals.landing_page_views, cost: totals.cost_per_landing_page_view, rateName: 'Connect Rate' },
+    { label: 'Info de Pagamento', value: totals.add_payment_info, cost: totals.cost_per_add_payment_info, rateName: 'Taxa Info Pag.' },
+    { label: 'Compras', value: totals.purchases, cost: totals.cost_per_purchase, rateName: 'Taxa de Compra' },
   ]
 
   const maxVal = Math.max(...steps.map(s => s.value), 1)
+  // Opacity steps: each level gets slightly more opaque lime
+  const opacities = [0.06, 0.12, 0.20, 0.35, 0.55]
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-sm font-bold text-zinc-300">Funil de Conversao</h3>
-        <span className="text-[10px] text-zinc-600">Impressao → Compra</span>
+    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 md:p-8">
+      <div className="flex items-center justify-between mb-8">
+        <h3 className="text-sm font-bold text-zinc-200">Funil de Conversao</h3>
+        <span className="text-[10px] uppercase tracking-wider text-zinc-600 font-semibold">Impressao → Compra</span>
       </div>
 
-      <div className="space-y-1">
+      <div className="space-y-0">
         {steps.map((step, i) => {
           const prev = i > 0 ? steps[i - 1].value : 0
           const rate = prev > 0 ? (step.value / prev) * 100 : 0
-          const widthPct = maxVal > 0 ? Math.max((step.value / maxVal) * 100, 4) : 4
+          const widthPct = maxVal > 0 ? Math.max((step.value / maxVal) * 100, 8) : 8
 
           return (
             <div key={step.label}>
-              {/* Conversion rate between steps */}
+              {/* Rate badge between steps */}
               {i > 0 && (
-                <div className="flex items-center gap-2 py-1.5 pl-2">
-                  <ChevronDown className="w-3 h-3 text-zinc-700" />
-                  <span className={`text-xs font-bold tabular-nums ${rate >= 50 ? 'text-emerald-400' : rate >= 20 ? 'text-yellow-400' : rate >= 5 ? 'text-orange-400' : 'text-red-400'}`}>
+                <div className="flex items-center gap-3 py-2 ml-4">
+                  <div className="w-px h-4 bg-lime-400/20" />
+                  <span className={`text-sm font-black tabular-nums ${rate >= 50 ? 'text-lime-400' : rate >= 20 ? 'text-lime-400/70' : rate >= 5 ? 'text-lime-400/50' : 'text-zinc-500'}`}>
                     {rate > 0 ? rate.toFixed(1) + '%' : '—'}
                   </span>
-                  <span className="text-[10px] text-zinc-600">
-                    {i === 1 ? 'CTR (Link Click)' : i === 2 ? 'Connect Rate' : i === 3 ? 'Taxa Info Pag.' : 'Taxa de Compra'}
-                  </span>
+                  <span className="text-[10px] text-zinc-600 font-medium">{step.rateName}</span>
                 </div>
               )}
 
-              {/* Funnel bar */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1">
-                  <div className="relative">
-                    {/* Background bar (full width reference) */}
-                    <div className="h-12 bg-zinc-800/30 rounded-lg overflow-hidden">
-                      {/* Colored bar (proportional) */}
-                      <div
-                        className={`h-full rounded-lg bg-gradient-to-r ${step.color} flex items-center transition-all duration-700`}
-                        style={{ width: `${widthPct}%`, minWidth: '120px' }}
-                      >
-                        <div className="flex items-center justify-between w-full px-4">
-                          <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${step.barColor} flex-shrink-0`} />
-                            <span className="text-[11px] font-semibold text-zinc-400 whitespace-nowrap">{step.label}</span>
-                          </div>
-                        </div>
-                      </div>
+              {/* Funnel row */}
+              <div className="flex items-center gap-4">
+                {/* Bar */}
+                <div className="flex-1 relative">
+                  <div
+                    className="h-14 rounded-xl flex items-center px-5 transition-all duration-700"
+                    style={{
+                      width: `${widthPct}%`,
+                      minWidth: '160px',
+                      background: `rgba(163, 230, 53, ${opacities[i]})`,
+                      borderLeft: '3px solid rgba(163, 230, 53, 0.4)',
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">{step.label}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Value + Cost */}
-                <div className="w-[180px] flex-shrink-0 flex items-center gap-4">
-                  <div className="text-right flex-1">
-                    <p className={`text-base font-extrabold tabular-nums ${step.textColor}`}>{fmt.num(step.value)}</p>
-                  </div>
-                  <div className="text-right w-[90px]">
-                    {step.cost !== null && step.cost > 0 ? (
-                      <p className="text-[11px] text-zinc-500 tabular-nums">{fmt.money(step.cost)}<span className="text-zinc-700">/un</span></p>
-                    ) : (
-                      <p className="text-[11px] text-zinc-700">—</p>
-                    )}
-                  </div>
+                {/* Quantity */}
+                <div className="w-[100px] text-right flex-shrink-0">
+                  <p className="text-lg font-black tabular-nums text-white">{fmt.num(step.value)}</p>
+                </div>
+
+                {/* Cost per action — HIGHLIGHTED */}
+                <div className="w-[140px] text-right flex-shrink-0">
+                  {step.cost !== null && step.cost > 0 ? (
+                    <div>
+                      <p className="text-lg font-black tabular-nums text-lime-400">{fmt.money(step.cost)}</p>
+                      <p className="text-[9px] uppercase tracking-wider text-zinc-600 font-semibold">custo por acao</p>
+                    </div>
+                  ) : (
+                    <p className="text-zinc-700">—</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -480,13 +439,17 @@ function ConversionFunnel({ totals }: { totals: Totals }) {
         })}
       </div>
 
-      {/* Summary line */}
-      <div className="mt-4 pt-4 border-t border-zinc-800 flex items-center justify-between text-xs">
-        <span className="text-zinc-600">Conversao total: Impressao → Compra</span>
-        <span className={`font-bold tabular-nums ${impressions > 0 && purchases > 0 ? 'text-lime-400' : 'text-zinc-600'}`}>
-          {impressions > 0 && purchases > 0 ? (purchases / impressions * 100).toFixed(3) + '%' : '—'}
-          {impressions > 0 && purchases > 0 && <span className="text-zinc-600 font-normal ml-2">({fmt.num(purchases)} de {fmt.num(impressions)})</span>}
-        </span>
+      {/* Total conversion */}
+      <div className="mt-6 pt-5 border-t border-zinc-800/60 flex items-center justify-between">
+        <span className="text-xs text-zinc-600 font-medium">Conversao total (Impressao → Compra)</span>
+        <div className="text-right">
+          <span className="text-xl font-black tabular-nums text-lime-400">
+            {totals.impressions > 0 && totals.purchases > 0 ? (totals.purchases / totals.impressions * 100).toFixed(3) + '%' : '—'}
+          </span>
+          {totals.impressions > 0 && totals.purchases > 0 && (
+            <p className="text-[10px] text-zinc-600 mt-0.5">{fmt.num(totals.purchases)} de {fmt.num(totals.impressions)}</p>
+          )}
+        </div>
       </div>
     </div>
   )

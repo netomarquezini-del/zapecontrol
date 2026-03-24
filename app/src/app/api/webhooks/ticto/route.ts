@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     const supabase = getServiceSupabase()
     const { error } = await supabase
       .from('ticto_sales')
-      .upsert(sale, { onConflict: 'order_id,status' })
+      .upsert(sale, { onConflict: 'order_id,status,product_name,is_bump' })
 
     if (error) {
       console.error('[Ticto Webhook] Supabase error:', error.message)

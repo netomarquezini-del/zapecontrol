@@ -124,13 +124,13 @@ export default function MetaAdsPage() {
   }
 
   const toggleCampaign = (id: string) => {
-    if (selectedCampaign === id) { setSelectedCampaign(null); setSelectedAdset(null) }
-    else { setSelectedCampaign(id); setSelectedAdset(null) }
+    if (selectedCampaign === id) { setSelectedCampaign(null); setSelectedAdset(null); setTab('campaigns') }
+    else { setSelectedCampaign(id); setSelectedAdset(null); setTab('adsets') }
   }
 
   const toggleAdset = (id: string) => {
-    if (selectedAdset === id) setSelectedAdset(null)
-    else setSelectedAdset(id)
+    if (selectedAdset === id) { setSelectedAdset(null); setTab('adsets') }
+    else { setSelectedAdset(id); setTab('ads') }
   }
 
   const chartData = daily.map(d => ({

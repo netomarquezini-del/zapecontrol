@@ -92,19 +92,24 @@ export default function MetaAdsPage() {
     finally { setLoading(false) }
   }, [qs])
 
-  // Fetch adsets when campaign selected
+  // Fetch adsets + ads when campaign selected
   useEffect(() => {
-    if (!selectedCampaign) { setAdsets([]); setSelectedAdset(null); return }
-    fetch(`/api/meta-ads?${qs}&level=adsets&campaign_id=${selectedCampaign}`)
-      .then(r => r.json()).then(d => { if (d.data) setAdsets(d.data) })
+    if (!selectedCampaign) { setAdsets([]); setAds([]); setSelectedAdset(null); return }
+    // Load both adsets and ads for this campaign in parallel
+    Promise.all([
+      fetch(`/api/meta-ads?${qs}&level=adsets&campaign_id=${selectedCampaign}`).then(r => r.json()),
+      fetch(`/api/meta-ads?${qs}&level=ads&campaign_id=${selectedCampaign}`).then(r => r.json()),
+    ]).then(([adsetData, adsData]) => {
+      if (adsetData.data) setAdsets(adsetData.data)
+      if (adsData.data) setAds(adsData.data)
+    })
   }, [selectedCampaign, qs])
 
-  // Fetch ads when adset selected
+  // Filter ads when adset selected (re-fetch with adset filter)
   useEffect(() => {
-    if (!selectedAdset) { setAds([]); return }
-    let url = `/api/meta-ads?${qs}&level=ads&adset_id=${selectedAdset}`
-    if (selectedCampaign) url += `&campaign_id=${selectedCampaign}`
-    fetch(url).then(r => r.json()).then(d => { if (d.data) setAds(d.data) })
+    if (!selectedAdset || !selectedCampaign) return
+    fetch(`/api/meta-ads?${qs}&level=ads&campaign_id=${selectedCampaign}&adset_id=${selectedAdset}`)
+      .then(r => r.json()).then(d => { if (d.data) setAds(d.data) })
   }, [selectedAdset, selectedCampaign, qs])
 
   useEffect(() => { fetchBase() }, [fetchBase])
@@ -120,12 +125,12 @@ export default function MetaAdsPage() {
 
   const toggleCampaign = (id: string) => {
     if (selectedCampaign === id) { setSelectedCampaign(null); setSelectedAdset(null) }
-    else { setSelectedCampaign(id); setSelectedAdset(null); setTab('adsets') }
+    else { setSelectedCampaign(id); setSelectedAdset(null) }
   }
 
   const toggleAdset = (id: string) => {
     if (selectedAdset === id) setSelectedAdset(null)
-    else { setSelectedAdset(id); setTab('ads') }
+    else setSelectedAdset(id)
   }
 
   const chartData = daily.map(d => ({
@@ -306,7 +311,7 @@ export default function MetaAdsPage() {
             })}
             {activeRows.length === 0 && (
               <tr><td colSpan={onToggle ? 10 : 9} className="px-4 py-8 text-center text-zinc-600 text-sm">
-                {loading ? 'Carregando...' : tab !== 'campaigns' && !selectedCampaign ? 'Selecione uma campanha primeiro' : 'Sem dados para o periodo'}
+                {loading ? 'Carregando...' : (tab === 'adsets' && !selectedCampaign) ? 'Selecione uma campanha para ver os conjuntos' : (tab === 'ads' && !selectedCampaign) ? 'Selecione uma campanha para ver os anuncios' : 'Sem dados para o periodo'}
               </td></tr>
             )}
           </tbody>

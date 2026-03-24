@@ -403,34 +403,30 @@ function ConversionFunnel({ totals }: { totals: Totals }) {
                 {/* Bar */}
                 <div className="flex-1 relative">
                   <div
-                    className="h-14 rounded-xl flex items-center px-5 transition-all duration-700"
+                    className="h-14 rounded-xl flex items-center transition-all duration-700"
                     style={{
                       width: `${widthPct}%`,
-                      minWidth: '160px',
-                      background: `rgba(163, 230, 53, ${opacities[i]})`,
+                      minWidth: '180px',
+                      background: `linear-gradient(90deg, rgba(163, 230, 53, ${opacities[i]}) 0%, rgba(163, 230, 53, ${opacities[i] * 0.3}) 100%)`,
                       borderLeft: '3px solid rgba(163, 230, 53, 0.4)',
                     }}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">{step.label}</span>
+                    <div className="flex items-center justify-between w-full px-5">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-300">{step.label}</span>
+                      <span className="text-sm font-black tabular-nums text-white">{fmt.num(step.value)}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Quantity */}
-                <div className="w-[100px] text-right flex-shrink-0">
-                  <p className="text-lg font-black tabular-nums text-white">{fmt.num(step.value)}</p>
-                </div>
-
                 {/* Cost per action — HIGHLIGHTED */}
-                <div className="w-[140px] text-right flex-shrink-0">
+                <div className="w-[150px] text-right flex-shrink-0">
                   {step.cost !== null && step.cost > 0 ? (
                     <div>
                       <p className="text-lg font-black tabular-nums text-lime-400">{fmt.money(step.cost)}</p>
-                      <p className="text-[9px] uppercase tracking-wider text-zinc-600 font-semibold">custo por acao</p>
+                      <p className="text-[9px] uppercase tracking-wider text-zinc-600 font-semibold">custo / acao</p>
                     </div>
                   ) : (
-                    <p className="text-zinc-700">—</p>
+                    <p className="text-[11px] text-zinc-700">—</p>
                   )}
                 </div>
               </div>
@@ -439,18 +435,6 @@ function ConversionFunnel({ totals }: { totals: Totals }) {
         })}
       </div>
 
-      {/* Total conversion */}
-      <div className="mt-6 pt-5 border-t border-zinc-800/60 flex items-center justify-between">
-        <span className="text-xs text-zinc-600 font-medium">Conversao total (Impressao → Compra)</span>
-        <div className="text-right">
-          <span className="text-xl font-black tabular-nums text-lime-400">
-            {totals.impressions > 0 && totals.purchases > 0 ? (totals.purchases / totals.impressions * 100).toFixed(3) + '%' : '—'}
-          </span>
-          {totals.impressions > 0 && totals.purchases > 0 && (
-            <p className="text-[10px] text-zinc-600 mt-0.5">{fmt.num(totals.purchases)} de {fmt.num(totals.impressions)}</p>
-          )}
-        </div>
-      </div>
     </div>
   )
 }

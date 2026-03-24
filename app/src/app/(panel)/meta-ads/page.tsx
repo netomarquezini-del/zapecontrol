@@ -195,9 +195,8 @@ export default function MetaAdsPage() {
               <Tooltip
                 contentStyle={{ background: '#111', border: '1px solid #333', borderRadius: '12px', fontSize: '12px' }}
                 labelStyle={{ color: '#999' }}
-                formatter={(value: number, name: string) => {
-                  if (name === 'spend') return [`R$ ${value.toFixed(2)}`, 'Gasto']
-                  return [value, name]
+                formatter={(value) => {
+                  return `R$ ${Number(value).toFixed(2)}`
                 }}
               />
               <Bar dataKey="spend" radius={[4, 4, 0, 0]}>

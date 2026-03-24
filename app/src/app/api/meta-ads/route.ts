@@ -99,13 +99,14 @@ export async function GET(req: NextRequest) {
       const revenue = g.revenue as number
       return {
         ...g,
+        spend,
         ctr: impressions > 0 ? (clicks / impressions) * 100 : 0,
         cost_per_purchase: purchases > 0 ? spend / purchases : 0,
         roas: spend > 0 ? revenue / spend : 0,
       }
     })
 
-    result.sort((a, b) => (b.spend as number) - (a.spend as number))
+    result.sort((a, b) => b.spend - a.spend)
     return NextResponse.json({ data: result })
   }
 

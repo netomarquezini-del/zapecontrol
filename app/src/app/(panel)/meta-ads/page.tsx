@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { TrendingUp, DollarSign, ShoppingCart, Target, Eye, MousePointerClick, RefreshCw, BarChart3, Layers, CreditCard, ChevronRight, ChevronUp, ChevronDown, X, Check } from 'lucide-react'
 import DatePicker from '@/components/date-picker'
+import ProductSelector from '@/components/product-selector'
 
 function todayISO() {
   const now = new Date()
@@ -194,10 +195,11 @@ export default function MetaAdsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <div><h1 className="text-2xl font-bold text-zinc-100">Meta Ads</h1><p className="text-sm text-zinc-500 mt-1">Shopee ADS 2.0 | R$97</p></div>
+        <div><h1 className="text-2xl font-bold text-zinc-100">Meta Ads</h1></div>
         <div className="flex items-center gap-3">
           <div className="text-xs text-zinc-600">{lastUpdate}</div>
           <button onClick={fetchBase} className="p-1.5 rounded-lg hover:bg-zinc-800 transition text-zinc-600"><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /></button>
+          <ProductSelector value="shopee-ads" onChange={() => {}} />
           <DatePicker startDate={dates.startDate} endDate={dates.endDate} onChange={(s, e) => setDates({ startDate: s, endDate: e })} />
         </div>
       </div>

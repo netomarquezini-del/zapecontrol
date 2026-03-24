@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { ArrowLeftRight, RefreshCw, AlertTriangle, CheckCircle } from 'lucide-react'
 import DatePicker from '@/components/date-picker'
+import ProductSelector from '@/components/product-selector'
 
 function todayISO() {
   const now = new Date()
@@ -81,6 +82,7 @@ export default function RoasRealPage() {
           <button onClick={fetchData} className="p-1.5 rounded-lg hover:bg-zinc-800 transition text-zinc-600">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
+          <ProductSelector value="shopee-ads" onChange={() => {}} />
           <DatePicker startDate={dates.startDate} endDate={dates.endDate} onChange={(s, e) => setDates({ startDate: s, endDate: e })} />
         </div>
       </div>

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { ShoppingBag, DollarSign, TrendingUp, RefreshCw, ArrowDownRight, ArrowUpRight, Package, Clock, MapPin, Zap, Target, Layers, CreditCard } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts'
 import DatePicker from '@/components/date-picker'
+import ProductSelector from '@/components/product-selector'
 
 function todayISO() {
   const now = new Date()
@@ -94,13 +95,13 @@ export default function InfoprodutosPage() {
             <ShoppingBag className="w-6 h-6 text-lime-400" />
             Infoprodutos
           </h1>
-          <p className="text-sm text-zinc-500 mt-1">Vendas Ticto · Todos os produtos</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="text-xs text-zinc-600">{lastUpdate && `${lastUpdate}`}</div>
           <button onClick={fetchData} className="p-1.5 rounded-lg hover:bg-zinc-800 transition text-zinc-600">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
+          <ProductSelector value="shopee-ads" onChange={() => {}} />
           <DatePicker startDate={dates.startDate} endDate={dates.endDate} onChange={(s, e) => setDates({ startDate: s, endDate: e })} />
         </div>
       </div>

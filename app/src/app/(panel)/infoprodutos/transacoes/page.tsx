@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { CreditCard, RefreshCw, Search, ArrowUpRight, ArrowDownRight, Check, XCircle } from 'lucide-react'
 import DatePicker from '@/components/date-picker'
+import ProductSelector from '@/components/product-selector'
 
 function todayISO() {
   const now = new Date()
@@ -88,6 +89,7 @@ export default function TransacoesPage() {
 
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
+        <ProductSelector value="shopee-ads" onChange={() => {}} />
         <DatePicker startDate={dates.startDate} endDate={dates.endDate} onChange={(s, e) => setDates({ startDate: s, endDate: e })} />
 
         <div className="flex gap-2 ml-auto">

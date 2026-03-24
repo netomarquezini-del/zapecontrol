@@ -30,25 +30,36 @@ export async function GET(req: NextRequest) {
   const startDate = new Date(startStr + 'T00:00:00')
   const endDate = endStr ? new Date(endStr + 'T23:59:59') : new Date()
 
-  // Todas as vendas aprovadas (incluindo bumps e upsells)
-  let salesQuery = supabase.from('ticto_sales').select('*').eq('status', 'authorized').gte('status_date', startDate.toISOString())
-  if (endStr) salesQuery = salesQuery.lte('status_date', endDate.toISOString())
-  const { data: sales, error: salesError } = await salesQuery.order('status_date', { ascending: false }).limit(5000)
-
-  if (salesError) return NextResponse.json({ error: salesError.message }, { status: 500 })
+  // Paginar vendas aprovadas (Supabase default 1000 rows)
+  const allSalesPages: Record<string, unknown>[][] = []
+  let offset = 0
+  const PAGE = 1000
+  while (true) {
+    let q = supabase.from('ticto_sales').select('*').eq('status', 'authorized').gte('status_date', startDate.toISOString())
+    if (endStr) q = q.lte('status_date', endDate.toISOString())
+    const { data, error } = await q.order('status_date', { ascending: false }).range(offset, offset + PAGE - 1)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (!data || data.length === 0) break
+    allSalesPages.push(data)
+    if (data.length < PAGE) break
+    offset += PAGE
+  }
+  const sales = allSalesPages.flat()
 
   // Reembolsos
-  let refundQuery = supabase.from('ticto_sales').select('*').in('status', ['refunded', 'chargeback']).gte('status_date', startDate.toISOString())
-  if (endStr) refundQuery = refundQuery.lte('status_date', endDate.toISOString())
-  const { data: refunds } = await refundQuery
+  let refundQ = supabase.from('ticto_sales').select('*').in('status', ['refunded', 'chargeback']).gte('status_date', startDate.toISOString())
+  if (endStr) refundQ = refundQ.lte('status_date', endDate.toISOString())
+  const { data: refunds } = await refundQ
 
   // Gasto Meta Ads
   let metaQuery = supabase.from('meta_ads_account_insights').select('date, spend').gte('date', startStr)
   if (endStr) metaQuery = metaQuery.lte('date', endStr)
   const { data: metaData } = await metaQuery
 
-  const all = sales || []
-  const allRefunds = refunds || []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const all: any[] = sales || []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const allRefunds: any[] = refunds || []
   const totalSpend = (metaData || []).reduce((s, r) => s + Number(r.spend), 0)
 
   // Separar tipos

@@ -66,37 +66,64 @@ export async function POST(req: NextRequest) {
 }
 
 // Ticto v2.0 payload parser
+// Ticto sends amounts in CENTAVOS (9700 = R$97.00)
 function parseV2(body: Record<string, unknown>) {
   const order = (body.order || {}) as Record<string, unknown>
   const customer = (body.customer || {}) as Record<string, unknown>
-  const customerAddress = (customer.address || {}) as Record<string, unknown>
+  const customerPhone = (customer.phone || {}) as Record<string, unknown>
   const tracking = (body.tracking || {}) as Record<string, unknown>
-  const items = (body.items || []) as Record<string, unknown>[]
-  const firstItem = items[0] || {}
+  const producer = (body.producer || {}) as Record<string, unknown>
+  const offer = (body.offer || {}) as Record<string, unknown>
+
+  // item pode ser singular (item) ou array (items)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const item = (body.item || ((body.items as any)?.[0]) || {}) as Record<string, unknown>
+
+  // Valores em centavos → converter pra reais
+  const paidAmountCents = Number(order.paid_amount || item.amount || offer.price || 0)
+  const paidAmount = paidAmountCents > 1000 ? paidAmountCents / 100 : paidAmountCents // auto-detect centavos
+  const producerAmount = Number(producer.amount || 0)
+  const commission = producerAmount > 1000 ? producerAmount / 100 : producerAmount
+  const itemPrice = Number(item.amount || offer.price || 0)
+  const price = itemPrice > 1000 ? itemPrice / 100 : itemPrice
 
   return {
-    order_id: String(order.id || order.hash || ''),
+    order_id: String(order.hash || order.id || ''),
     order_hash: String(order.hash || ''),
-    transaction_hash: String(order.transaction_hash || ''),
+    transaction_hash: String((body.transaction as Record<string, unknown>)?.hash || order.transaction_hash || ''),
     status: String(body.status || ''),
     status_date: body.status_date ? new Date(String(body.status_date)).toISOString() : new Date().toISOString(),
     payment_method: String(body.payment_method || ''),
-    product_name: String(firstItem.product_name || ''),
-    offer_id: String(firstItem.offer_id || ''),
-    quantity: Number(firstItem.quantity || 1),
-    price: Number(firstItem.price || 0),
-    paid_amount: Number(order.paid_amount || 0),
+    product_name: String(item.product_name || ''),
+    product_id: String(item.product_id || ''),
+    offer_name: String(item.offer_name || offer.name || ''),
+    offer_code: String(item.offer_code || offer.code || ''),
+    quantity: Number(item.quantity || 1),
+    price,
+    paid_amount: paidAmount,
+    item_price: price,
+    order_total: paidAmount,
+    commission,
+    net_amount: commission,
     installments: Number(order.installments || 1),
+    installments_count: Number(order.installments || 1),
     customer_name: String(customer.name || ''),
     customer_email: String(customer.email || ''),
     customer_cpf: String(customer.cpf || ''),
-    customer_city: String(customerAddress.city || ''),
-    customer_state: String(customerAddress.state || ''),
+    customer_document: String(customer.cpf || customer.cnpj || ''),
+    customer_phone: String(body.phone_number_customer || customerPhone.number || ''),
+    customer_city: '',
+    customer_state: '',
     utm_source: String(tracking.utm_source || ''),
     utm_medium: String(tracking.utm_medium || ''),
     utm_campaign: String(tracking.utm_campaign || ''),
     utm_content: String(tracking.utm_content || ''),
     utm_term: String(tracking.utm_term || ''),
+    is_bump: String(body.commission_type) === 'bump',
+    is_upsell: String(item.offer_name || offer.name || '').toLowerCase().includes('upsell'),
+    is_downsell: String(item.offer_name || offer.name || '').toLowerCase().includes('dowsell') || String(item.offer_name || offer.name || '').toLowerCase().includes('downsell'),
+    parent_product: null,
+    card_brand: null,
     raw_payload: body,
     updated_at: new Date().toISOString(),
   }

@@ -213,7 +213,7 @@ export default function MetaAdsPage() {
           <p className="text-sm text-zinc-500 mt-2">Receita {fmt.money(totals.revenue)} / Gasto {fmt.money(totals.spend)}</p>
           <div className="max-w-md mx-auto mt-4">
             <div className="h-2 bg-zinc-800 rounded-full overflow-hidden"><div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min((totals.roas / 3) * 100, 100)}%`, background: roasBarColor(totals.roas) }} /></div>
-            <div className="flex justify-between mt-1.5 text-[10px] text-zinc-600"><span>0</span><span>1.0</span><span className="text-red-400">1.4</span><span className="text-yellow-400">1.8</span><span className="text-emerald-400">2.0+</span><span>3.0</span></div>
+            <div className="flex justify-between mt-2 text-xs font-bold text-zinc-600"><span>0</span><span>1.0</span><span className="text-red-400">1.4</span><span className="text-yellow-400">1.8</span><span className="text-emerald-400">2.0+</span><span>3.0</span></div>
           </div>
         </div>
       )}

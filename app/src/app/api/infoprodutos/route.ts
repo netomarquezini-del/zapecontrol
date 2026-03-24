@@ -69,12 +69,12 @@ export async function GET(req: NextRequest) {
   const downsells = all.filter(s => s.is_downsell)
 
   // Receitas
-  const revPrincipais = principais.reduce((s, r) => s + Number(r.paid_amount || 0), 0)
-  const revBumps = bumps.reduce((s, r) => s + Number(r.paid_amount || 0), 0)
-  const revUpsells = upsells.reduce((s, r) => s + Number(r.paid_amount || 0), 0)
-  const revDownsells = downsells.reduce((s, r) => s + Number(r.paid_amount || 0), 0)
+  const revPrincipais = principais.reduce((s, r) => s + Number(r.commission || r.paid_amount || 0), 0)
+  const revBumps = bumps.reduce((s, r) => s + Number(r.commission || r.paid_amount || 0), 0)
+  const revUpsells = upsells.reduce((s, r) => s + Number(r.commission || r.paid_amount || 0), 0)
+  const revDownsells = downsells.reduce((s, r) => s + Number(r.commission || r.paid_amount || 0), 0)
   const totalRevenue = revPrincipais + revBumps + revUpsells + revDownsells
-  const totalRefundAmount = allRefunds.reduce((s, r) => s + Number(r.paid_amount || 0), 0)
+  const totalRefundAmount = allRefunds.reduce((s, r) => s + Number(r.commission || r.paid_amount || 0), 0)
   const netRevenue = totalRevenue - totalRefundAmount
 
   // Pedidos únicos (pelo order_id dos principais)
@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
   const orderTotals: Record<string, number> = {}
   all.forEach(s => {
     const oid = s.order_id || ''
-    orderTotals[oid] = (orderTotals[oid] || 0) + Number(s.paid_amount || 0)
+    orderTotals[oid] = (orderTotals[oid] || 0) + Number(s.commission || s.paid_amount || 0)
   })
   const avgOrderValue = uniqueOrders.size > 0
     ? Object.values(orderTotals).reduce((a, b) => a + b, 0) / uniqueOrders.size : 0
@@ -97,26 +97,26 @@ export async function GET(req: NextRequest) {
     const name = s.product_name || 'Desconhecido'
     if (!productMap[name]) productMap[name] = { count: 0, revenue: 0, bumps: 0, bump_revenue: 0, upsells: 0, upsell_revenue: 0, downsells: 0, downsell_revenue: 0 }
     productMap[name].count++
-    productMap[name].revenue += Number(s.paid_amount || 0)
+    productMap[name].revenue += Number(s.commission || s.paid_amount || 0)
   })
   // Adicionar bumps/upsells/downsells ao produto pai
   bumps.forEach(s => {
     const parent = s.parent_product || 'Outros'
     if (!productMap[parent]) productMap[parent] = { count: 0, revenue: 0, bumps: 0, bump_revenue: 0, upsells: 0, upsell_revenue: 0, downsells: 0, downsell_revenue: 0 }
     productMap[parent].bumps++
-    productMap[parent].bump_revenue += Number(s.paid_amount || 0)
+    productMap[parent].bump_revenue += Number(s.commission || s.paid_amount || 0)
   })
   upsells.forEach(s => {
     const parent = s.parent_product || 'Outros'
     if (!productMap[parent]) productMap[parent] = { count: 0, revenue: 0, bumps: 0, bump_revenue: 0, upsells: 0, upsell_revenue: 0, downsells: 0, downsell_revenue: 0 }
     productMap[parent].upsells++
-    productMap[parent].upsell_revenue += Number(s.paid_amount || 0)
+    productMap[parent].upsell_revenue += Number(s.commission || s.paid_amount || 0)
   })
   downsells.forEach(s => {
     const parent = s.parent_product || 'Outros'
     if (!productMap[parent]) productMap[parent] = { count: 0, revenue: 0, bumps: 0, bump_revenue: 0, upsells: 0, upsell_revenue: 0, downsells: 0, downsell_revenue: 0 }
     productMap[parent].downsells++
-    productMap[parent].downsell_revenue += Number(s.paid_amount || 0)
+    productMap[parent].downsell_revenue += Number(s.commission || s.paid_amount || 0)
   })
 
   const products = Object.entries(productMap)
@@ -134,7 +134,7 @@ export async function GET(req: NextRequest) {
     const name = s.product_name || ''
     if (!bumpProducts[name]) bumpProducts[name] = { name, count: 0, revenue: 0 }
     bumpProducts[name].count++
-    bumpProducts[name].revenue += Number(s.paid_amount || 0)
+    bumpProducts[name].revenue += Number(s.commission || s.paid_amount || 0)
   })
   const topBumps = Object.values(bumpProducts).sort((a, b) => b.count - a.count)
 
@@ -152,20 +152,20 @@ export async function GET(req: NextRequest) {
     if (!date) return
     if (!dailyMap[date]) dailyMap[date] = { count: 0, revenue: 0, bumps: 0, bump_rev: 0, refunds: 0, refund_amount: 0 }
     dailyMap[date].count++
-    dailyMap[date].revenue += Number(s.paid_amount || 0)
+    dailyMap[date].revenue += Number(s.commission || s.paid_amount || 0)
   })
   bumps.forEach(s => {
     const date = s.status_date ? new Date(s.status_date).toISOString().split('T')[0] : ''
     if (!date || !dailyMap[date]) return
     dailyMap[date].bumps++
-    dailyMap[date].bump_rev += Number(s.paid_amount || 0)
+    dailyMap[date].bump_rev += Number(s.commission || s.paid_amount || 0)
   })
   allRefunds.forEach(r => {
     const date = r.status_date ? new Date(r.status_date).toISOString().split('T')[0] : ''
     if (!date) return
     if (!dailyMap[date]) dailyMap[date] = { count: 0, revenue: 0, bumps: 0, bump_rev: 0, refunds: 0, refund_amount: 0 }
     dailyMap[date].refunds++
-    dailyMap[date].refund_amount += Number(r.paid_amount || 0)
+    dailyMap[date].refund_amount += Number(r.commission || r.paid_amount || 0)
   })
 
   const daily = Object.entries(dailyMap)
@@ -178,7 +178,7 @@ export async function GET(req: NextRequest) {
     const key = s.utm_source || 'direto'
     if (!utmMap[key]) utmMap[key] = { count: 0, revenue: 0, source: key }
     utmMap[key].count++
-    utmMap[key].revenue += Number(s.paid_amount || 0)
+    utmMap[key].revenue += Number(s.commission || s.paid_amount || 0)
   })
   const topSources = Object.values(utmMap).sort((a, b) => b.revenue - a.revenue)
 

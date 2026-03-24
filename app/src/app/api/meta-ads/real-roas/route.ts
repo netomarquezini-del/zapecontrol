@@ -80,19 +80,19 @@ export async function GET(req: NextRequest) {
   const orderRevenue: Record<string, number> = {}
   for (const s of allTicto) {
     const oid = s.order_id || ''
-    orderRevenue[oid] = (orderRevenue[oid] || 0) + Number(s.paid_amount || 0)
+    orderRevenue[oid] = (orderRevenue[oid] || 0) + Number(s.commission || s.paid_amount || 0)
   }
 
   // Receitas
-  const revPrincipais = principais.reduce((s, r) => s + Number(r.paid_amount || 0), 0)
-  const revBumps = bumps.reduce((s, r) => s + Number(r.paid_amount || 0), 0)
-  const revUpsells = upsells.reduce((s, r) => s + Number(r.paid_amount || 0), 0)
-  const revDownsells = downsells.reduce((s, r) => s + Number(r.paid_amount || 0), 0)
+  const revPrincipais = principais.reduce((s, r) => s + Number(r.commission || r.paid_amount || 0), 0)
+  const revBumps = bumps.reduce((s, r) => s + Number(r.commission || r.paid_amount || 0), 0)
+  const revUpsells = upsells.reduce((s, r) => s + Number(r.commission || r.paid_amount || 0), 0)
+  const revDownsells = downsells.reduce((s, r) => s + Number(r.commission || r.paid_amount || 0), 0)
   const totalRealRevenue = revPrincipais + revBumps + revUpsells + revDownsells
 
   // Reembolsos por pedido único
   const refundOrders = new Set(allRefunds.filter(r => !r.is_bump).map(r => r.order_id))
-  const totalRefundAmount = allRefunds.reduce((s, r) => s + Number(r.paid_amount || 0), 0)
+  const totalRefundAmount = allRefunds.reduce((s, r) => s + Number(r.commission || r.paid_amount || 0), 0)
 
   const netRevenue = totalRealRevenue - totalRefundAmount
 
@@ -161,13 +161,13 @@ export async function GET(req: NextRequest) {
         salesByDate[date].orders++
         salesByDate[date].orderIds.add(s.order_id)
       }
-      salesByDate[date].revenue += Number(s.paid_amount || 0)
+      salesByDate[date].revenue += Number(s.commission || s.paid_amount || 0)
     }
     // Adicionar receita de bumps/upsells/downsells ao dia do pedido
     for (const s of [...bumps, ...upsells, ...downsells]) {
       const date = s.status_date ? new Date(s.status_date).toISOString().split('T')[0] : ''
       if (!date || !salesByDate[date]) continue
-      salesByDate[date].revenue += Number(s.paid_amount || 0)
+      salesByDate[date].revenue += Number(s.commission || s.paid_amount || 0)
     }
 
     daily = (metaData || []).map(row => {

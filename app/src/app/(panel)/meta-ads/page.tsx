@@ -351,20 +351,20 @@ function ConversionFunnel({ totals }: { totals: Totals }) {
 
   // Fixed widths for true funnel shape — centered, decreasing
   const widths = [100, 78, 58, 40, 26]
-  // Backgrounds using Zape palette: bg-card → bg-card-hover → accent-subtle → accent-border
-  const backgrounds = [
-    '#111111',  // --bg-card
-    '#151515',
-    '#181818',  // --bg-card-hover
-    '#1c1c1c',
-    '#202020',
+  // Gradient backgrounds using Zape accent (#A3E635 / #84CC16)
+  const gradients = [
+    'linear-gradient(135deg, rgba(163,230,53,0.06) 0%, rgba(132,204,22,0.12) 100%)',
+    'linear-gradient(135deg, rgba(163,230,53,0.10) 0%, rgba(132,204,22,0.18) 100%)',
+    'linear-gradient(135deg, rgba(163,230,53,0.16) 0%, rgba(132,204,22,0.26) 100%)',
+    'linear-gradient(135deg, rgba(163,230,53,0.22) 0%, rgba(132,204,22,0.36) 100%)',
+    'linear-gradient(135deg, rgba(163,230,53,0.30) 0%, rgba(132,204,22,0.48) 100%)',
   ]
   const borders = [
-    'rgba(163, 230, 53, 0.06)',  // --accent-subtle
     'rgba(163, 230, 53, 0.10)',
-    'rgba(163, 230, 53, 0.14)',
-    'rgba(163, 230, 53, 0.20)',
+    'rgba(163, 230, 53, 0.15)',
+    'rgba(163, 230, 53, 0.22)',
     'rgba(163, 230, 53, 0.30)',
+    'rgba(163, 230, 53, 0.40)',
   ]
 
   return (
@@ -383,11 +383,11 @@ function ConversionFunnel({ totals }: { totals: Totals }) {
             <div key={step.label} className="w-full flex flex-col items-center">
               {/* Rate badge — centered */}
               {i > 0 && (
-                <div className="flex items-center gap-2 py-1">
-                  <span className={`text-xs font-black tabular-nums ${rate >= 50 ? 'text-lime-400' : rate >= 20 ? 'text-lime-400/70' : rate >= 5 ? 'text-lime-400/50' : 'text-zinc-500'}`}>
+                <div className="flex items-center justify-center gap-3 py-2">
+                  <span className={`text-base font-black tabular-nums ${rate >= 50 ? 'text-lime-400' : rate >= 20 ? 'text-lime-400/80' : rate >= 5 ? 'text-lime-400/60' : 'text-zinc-500'}`}>
                     ↓ {rate > 0 ? rate.toFixed(1) + '%' : '—'}
                   </span>
-                  <span className="text-[10px] text-zinc-600">{step.rateName}</span>
+                  <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">{step.rateName}</span>
                 </div>
               )}
 
@@ -397,7 +397,7 @@ function ConversionFunnel({ totals }: { totals: Totals }) {
                 style={{
                   width: `${widths[i]}%`,
                   minWidth: '200px',
-                  background: backgrounds[i],
+                  background: gradients[i],
                   border: `1px solid ${borders[i]}`,
                 }}
               >

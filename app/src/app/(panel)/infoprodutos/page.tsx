@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { ShoppingBag, RefreshCw, Package, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { ShoppingBag, RefreshCw, Package, ArrowUpRight, ArrowDownRight, Clock, MapPin, Zap } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts'
 import DatePicker from '@/components/date-picker'
 import ProductSelector from '@/components/product-selector'
 
@@ -33,11 +34,25 @@ interface Totals {
   ad_spend: number; roas_real: number; cpa: number; profit: number
 }
 
+interface ProductRow {
+  name: string; count: number; revenue: number; bumps: number; bump_revenue: number
+  upsells: number; upsell_revenue: number; downsells: number; downsell_revenue: number
+  total_revenue: number; bump_rate: number
+}
+
+interface DailyRow { date: string; count: number; revenue: number; bumps: number; bump_rev: number; total: number; refunds: number; net: number }
+
 export default function InfoprodutosPage() {
   const today = todayISO()
   const [dates, setDates] = useState({ startDate: today, endDate: today })
   const [totals, setTotals] = useState<Totals | null>(null)
+  const [products, setProducts] = useState<ProductRow[]>([])
   const [topBumps, setTopBumps] = useState<{ name: string; count: number; revenue: number }[]>([])
+  const [daily, setDaily] = useState<DailyRow[]>([])
+  const [paymentMethods, setPaymentMethods] = useState<Record<string, number>>({})
+  const [topSources, setTopSources] = useState<{ source: string; count: number; revenue: number }[]>([])
+  const [peakHours, setPeakHours] = useState<{ hour: number; count: number }[]>([])
+  const [topStates, setTopStates] = useState<{ state: string; count: number }[]>([])
   const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState('')
 
@@ -47,7 +62,13 @@ export default function InfoprodutosPage() {
       const res = await fetch(`/api/infoprodutos?startDate=${dates.startDate}&endDate=${dates.endDate}`)
       const data = await res.json()
       if (data.totals) setTotals(data.totals)
+      if (data.products) setProducts(data.products)
       if (data.top_bumps) setTopBumps(data.top_bumps)
+      if (data.daily) setDaily(data.daily)
+      if (data.payment_methods) setPaymentMethods(data.payment_methods)
+      if (data.top_sources) setTopSources(data.top_sources)
+      if (data.peak_hours) setPeakHours(data.peak_hours)
+      if (data.top_states) setTopStates(data.top_states)
       setLastUpdate(new Date().toLocaleTimeString('pt-BR'))
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
@@ -55,6 +76,18 @@ export default function InfoprodutosPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
   useEffect(() => { const iv = setInterval(fetchData, 5 * 60 * 1000); return () => clearInterval(iv) }, [fetchData])
+
+  const chartData = daily.map(d => ({
+    date: d.date.split('-').slice(1).reverse().join('/'),
+    vendas: d.count,
+    receita: d.revenue,
+  }))
+
+  const pieData = Object.entries(paymentMethods).map(([name, value]) => ({
+    name: name === 'credit_card' ? 'Cartão' : name === 'pix' ? 'PIX' : name === 'bank_slip' ? 'Boleto' : name,
+    value,
+    color: name === 'pix' ? '#a3e635' : name === 'credit_card' ? '#4f8cff' : name === 'bank_slip' ? '#eab308' : '#8b5cf6',
+  }))
 
   const imposto = totals ? totals.ad_spend * 0.12 : 0
   const margem = totals ? totals.net_revenue - totals.ad_spend - imposto : 0
@@ -125,7 +158,6 @@ export default function InfoprodutosPage() {
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
             <h3 className="text-sm font-bold text-zinc-300 mb-4">Bumps, Upsells & Downsells</h3>
 
-            {/* Bumps individuais */}
             {topBumps.length > 0 && (
               <div className="mb-5">
                 <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-3 flex items-center gap-2">
@@ -146,7 +178,6 @@ export default function InfoprodutosPage() {
               </div>
             )}
 
-            {/* Upsell + Downsell */}
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-zinc-800/40 border border-zinc-800 rounded-xl px-5 py-4">
                 <div className="flex items-center gap-2 mb-2">
@@ -164,6 +195,139 @@ export default function InfoprodutosPage() {
                 <p className="text-2xl font-black text-zinc-300 tabular-nums">{fmt.num(totals.downsell_count)}</p>
                 <p className="text-xs text-zinc-500 mt-1">{fmt.money(totals.downsell_revenue)}</p>
               </div>
+            </div>
+          </div>
+
+          {/* 5. Tabela de Produtos */}
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-x-auto">
+            <div className="px-6 py-4 border-b border-zinc-800">
+              <h3 className="text-sm font-bold text-zinc-300">Produtos</h3>
+            </div>
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <th className="text-left text-[9px] uppercase tracking-wider text-zinc-500 font-semibold px-6 py-2.5">Produto</th>
+                  <th className="text-right text-[9px] uppercase tracking-wider text-zinc-500 font-semibold px-3 py-2.5">Vendas</th>
+                  <th className="text-right text-[9px] uppercase tracking-wider text-zinc-500 font-semibold px-3 py-2.5">Receita</th>
+                  <th className="text-right text-[9px] uppercase tracking-wider text-zinc-500 font-semibold px-3 py-2.5">Bumps</th>
+                  <th className="text-right text-[9px] uppercase tracking-wider text-zinc-500 font-semibold px-3 py-2.5">Taxa Bump</th>
+                  <th className="text-right text-[9px] uppercase tracking-wider text-zinc-500 font-semibold px-3 py-2.5">Upsells</th>
+                  <th className="text-right text-[9px] uppercase tracking-wider text-zinc-500 font-semibold px-3 py-2.5">Downsells</th>
+                  <th className="text-right text-[9px] uppercase tracking-wider text-zinc-500 font-semibold px-3 py-2.5">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map(p => (
+                  <tr key={p.name} className="border-t border-zinc-800/50 hover:bg-zinc-800/30 transition">
+                    <td className="px-6 py-2.5 text-xs font-semibold text-zinc-200">{p.name}</td>
+                    <td className="px-3 py-2.5 text-xs text-right text-zinc-300 tabular-nums">{fmt.num(p.count)}</td>
+                    <td className="px-3 py-2.5 text-xs text-right text-zinc-300 tabular-nums">{fmt.money(p.revenue)}</td>
+                    <td className="px-3 py-2.5 text-xs text-right text-lime-400 tabular-nums">{p.bumps > 0 ? `${p.bumps} (${fmt.money(p.bump_revenue)})` : '—'}</td>
+                    <td className="px-3 py-2.5 text-xs text-right"><span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold ${p.bump_rate >= 40 ? 'bg-emerald-400/10 text-emerald-400' : p.bump_rate >= 20 ? 'bg-yellow-400/10 text-yellow-400' : p.bump_rate > 0 ? 'bg-zinc-700/50 text-zinc-400' : 'text-zinc-700'}`}>{p.bump_rate > 0 ? fmt.pct(p.bump_rate) : '—'}</span></td>
+                    <td className="px-3 py-2.5 text-xs text-right text-lime-400 tabular-nums">{p.upsells > 0 ? `${p.upsells} (${fmt.money(p.upsell_revenue)})` : '—'}</td>
+                    <td className="px-3 py-2.5 text-xs text-right text-zinc-400 tabular-nums">{p.downsells > 0 ? `${p.downsells} (${fmt.money(p.downsell_revenue)})` : '—'}</td>
+                    <td className="px-3 py-2.5 text-xs text-right font-bold text-lime-400 tabular-nums">{fmt.money(p.total_revenue)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* 6. Graficos */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Vendas por dia */}
+            <div className="lg:col-span-2 bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+              <h3 className="text-sm font-bold text-zinc-300 mb-4">Vendas por Dia</h3>
+              <div className="h-[220px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#222" />
+                    <XAxis dataKey="date" tick={{ fill: '#666', fontSize: 11 }} />
+                    <YAxis tick={{ fill: '#666', fontSize: 11 }} />
+                    <Tooltip contentStyle={{ background: '#111', border: '1px solid #333', borderRadius: '12px', fontSize: 12 }}
+                      formatter={(value, name) => [name === 'receita' ? fmt.money(Number(value)) : String(value), name === 'vendas' ? 'Vendas' : 'Receita']} />
+                    <Bar dataKey="vendas" fill="#a3e635" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Pagamento */}
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+              <h3 className="text-sm font-bold text-zinc-300 mb-4">Pagamento</h3>
+              {pieData.length > 0 ? (
+                <>
+                  <div className="h-[140px] flex justify-center">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart><Pie data={pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={65} dataKey="value" stroke="none">
+                        {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                      </Pie></PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="space-y-2 mt-2">
+                    {pieData.map(p => (
+                      <div key={p.name} className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full" style={{ background: p.color }} /><span className="text-zinc-400">{p.name}</span></div>
+                        <span className="font-bold text-zinc-300">{p.value} ({(p.value / Object.values(paymentMethods).reduce((a, b) => a + b, 0) * 100).toFixed(0)}%)</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : <div className="h-[140px] flex items-center justify-center text-zinc-600 text-sm">Sem dados</div>}
+            </div>
+          </div>
+
+          {/* 7. Bottom cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Horários */}
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+              <h3 className="text-sm font-bold text-zinc-300 mb-3 flex items-center gap-2"><Clock className="w-4 h-4 text-lime-400" /> Horarios de Pico</h3>
+              {peakHours.length > 0 ? (
+                <div className="space-y-2">
+                  {peakHours.map(h => (
+                    <div key={h.hour} className="flex items-center justify-between">
+                      <span className="text-xs text-zinc-400">{String(h.hour).padStart(2, '0')}:00</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div className="h-full rounded-full bg-lime-400" style={{ width: `${(h.count / peakHours[0].count) * 100}%` }} /></div>
+                        <span className="text-xs font-bold text-zinc-300 w-8 text-right">{h.count}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : <p className="text-sm text-zinc-600">Sem dados</p>}
+            </div>
+
+            {/* Estados */}
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+              <h3 className="text-sm font-bold text-zinc-300 mb-3 flex items-center gap-2"><MapPin className="w-4 h-4 text-lime-400" /> Top Estados</h3>
+              {topStates.length > 0 ? (
+                <div className="space-y-2">
+                  {topStates.slice(0, 5).map(s => (
+                    <div key={s.state} className="flex items-center justify-between">
+                      <span className="text-xs text-zinc-400">{s.state || 'N/A'}</span>
+                      <span className="text-xs font-bold text-zinc-300">{s.count}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : <p className="text-sm text-zinc-600">Sem dados</p>}
+            </div>
+
+            {/* Fontes */}
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+              <h3 className="text-sm font-bold text-zinc-300 mb-3 flex items-center gap-2"><Zap className="w-4 h-4 text-lime-400" /> Fontes</h3>
+              {topSources.length > 0 ? (
+                <div className="space-y-2">
+                  {topSources.slice(0, 5).map(s => (
+                    <div key={s.source} className="flex items-center justify-between">
+                      <span className="text-xs text-zinc-400">{s.source}</span>
+                      <div className="text-right">
+                        <span className="text-xs font-bold text-zinc-300">{s.count}</span>
+                        <span className="text-[10px] text-zinc-600 ml-2">{fmt.money(s.revenue)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : <p className="text-sm text-zinc-600">Sem dados</p>}
             </div>
           </div>
         </>

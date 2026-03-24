@@ -218,18 +218,17 @@ export default function MetaAdsPage() {
         </div>
       )}
 
-      {/* Metricas gerais */}
+      {/* Funil de Conversao */}
+      {totals && <ConversionFunnel totals={totals} />}
+
+      {/* Metricas complementares */}
       {totals && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <KpiCard icon={Eye} label="CPM" value={fmt.money(totals.cpm)} />
           <KpiCard icon={Layers} label="Frequencia" value={totals.frequency.toFixed(2)} color={totals.frequency > 3 ? 'text-red-400' : totals.frequency > 2 ? 'text-yellow-400' : 'text-zinc-100'} sub={totals.frequency > 3 ? 'Saturacao!' : totals.frequency > 2 ? 'Atencao' : 'Saudavel'} />
-          <KpiCard icon={BarChart3} label="CTR (Link Click)" value={totals.link_clicks > 0 && totals.impressions > 0 ? fmt.pct(totals.link_clicks / totals.impressions * 100) : '—'} sub={`${fmt.num(totals.link_clicks)} clicks | CPC: ${totals.link_clicks > 0 ? fmt.money(totals.spend / totals.link_clicks) : '—'}`} />
           <KpiCard icon={Target} label="Taxa Conv. LP" value={totals.landing_page_views > 0 ? fmt.pct(totals.purchases / totals.landing_page_views * 100) : '—'} sub={`${fmt.num(totals.purchases)} compras / ${fmt.num(totals.landing_page_views)} visitantes`} color={totals.landing_page_views > 0 && (totals.purchases / totals.landing_page_views * 100) >= 1 ? 'text-emerald-400' : 'text-yellow-400'} />
         </div>
       )}
-
-      {/* Funil de Conversao */}
-      {totals && <ConversionFunnel totals={totals} />}
 
       {/* Financeiro */}
       {totals && (

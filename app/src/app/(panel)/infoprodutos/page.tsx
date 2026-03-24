@@ -157,8 +157,8 @@ export default function InfoprodutosPage() {
                     <YAxis tick={{ fill: '#666', fontSize: 11 }} />
                     <Tooltip
                       contentStyle={{ background: '#111', border: '1px solid #333', borderRadius: '12px', fontSize: 12 }}
-                      formatter={(value: number, name: string) => [
-                        name === 'receita' ? fmt.money(value) : value,
+                      formatter={(value, name) => [
+                        name === 'receita' ? fmt.money(Number(value)) : String(value),
                         name === 'vendas' ? 'Vendas' : name === 'receita' ? 'Receita' : 'Reembolsos'
                       ]}
                     />

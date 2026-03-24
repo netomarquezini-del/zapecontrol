@@ -188,7 +188,7 @@ export default function RoasRealPage() {
                   <YAxis tick={{ fill: '#666', fontSize: 11 }} domain={[0, 'auto']} />
                   <Tooltip
                     contentStyle={{ background: '#111', border: '1px solid #333', borderRadius: '12px', fontSize: 12 }}
-                    formatter={(value: number, name: string) => [value.toFixed(2) + 'x', name]}
+                    formatter={(value, name) => [Number(value).toFixed(2) + 'x', String(name)]}
                   />
                   <Legend wrapperStyle={{ fontSize: 11, color: '#666' }} />
                   <Bar dataKey="ROAS Meta" fill="#4f8cff" radius={[3, 3, 0, 0]} />

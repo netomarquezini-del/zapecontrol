@@ -63,8 +63,9 @@ export async function GET(req: NextRequest) {
         initiate_checkout: acc.initiate_checkout + Number(row.initiate_checkout || 0),
         landing_page_views: acc.landing_page_views + Number(row.landing_page_views || 0),
         add_payment_info: acc.add_payment_info + Number(row.add_payment_info || 0),
+        link_clicks: acc.link_clicks + Number(row.link_clicks || 0),
       }),
-      { spend: 0, impressions: 0, clicks: 0, reach: 0, purchases: 0, revenue: 0, add_to_cart: 0, initiate_checkout: 0, landing_page_views: 0, add_payment_info: 0 }
+      { spend: 0, impressions: 0, clicks: 0, reach: 0, purchases: 0, revenue: 0, add_to_cart: 0, initiate_checkout: 0, landing_page_views: 0, add_payment_info: 0, link_clicks: 0 }
     )
 
     const imposto = totals.spend * 0.12
@@ -72,6 +73,7 @@ export async function GET(req: NextRequest) {
       ...totals,
       ctr: totals.impressions > 0 ? (totals.clicks / totals.impressions) * 100 : 0,
       cpc: totals.clicks > 0 ? totals.spend / totals.clicks : 0,
+      ctr_link: totals.link_clicks > 0 && totals.impressions > 0 ? (totals.link_clicks / totals.impressions) * 100 : 0,
       cpm: totals.impressions > 0 ? (totals.spend / totals.impressions) * 1000 : 0,
       cost_per_purchase: totals.purchases > 0 ? totals.spend / totals.purchases : 0,
       cost_per_landing_page_view: totals.landing_page_views > 0 ? totals.spend / totals.landing_page_views : 0,
@@ -100,7 +102,7 @@ export async function GET(req: NextRequest) {
           ...(level === 'adsets' ? { campaign_id: row.campaign_id, campaign_name: row.campaign_name } : {}),
           ...(level === 'ads' ? { campaign_id: row.campaign_id, campaign_name: row.campaign_name, adset_id: row.adset_id, adset_name: row.adset_name } : {}),
           spend: 0, impressions: 0, clicks: 0, purchases: 0, revenue: 0,
-          landing_page_views: 0, add_payment_info: 0,
+          landing_page_views: 0, add_payment_info: 0, link_clicks: 0,
         }
       }
       ;(grouped[id].spend as number) += Number(row.spend)
@@ -110,6 +112,7 @@ export async function GET(req: NextRequest) {
       ;(grouped[id].revenue as number) += Number(row.revenue)
       ;(grouped[id].landing_page_views as number) += Number(row.landing_page_views || 0)
       ;(grouped[id].add_payment_info as number) += Number(row.add_payment_info || 0)
+      ;(grouped[id].link_clicks as number) += Number(row.link_clicks || 0)
     }
 
     const result = Object.values(grouped).map((g) => {
@@ -120,9 +123,11 @@ export async function GET(req: NextRequest) {
       const revenue = g.revenue as number
       const lpv = g.landing_page_views as number
       const api = g.add_payment_info as number
+      const lc = g.link_clicks as number
       return {
         ...g,
-        spend, impressions, clicks, purchases, revenue,
+        spend, impressions, clicks, purchases, revenue, link_clicks: lc,
+        connect_rate: lc > 0 ? (lpv / lc) * 100 : 0,
         cpm: impressions > 0 ? (spend / impressions) * 1000 : 0,
         ctr: impressions > 0 ? (clicks / impressions) * 100 : 0,
         cost_per_purchase: purchases > 0 ? spend / purchases : 0,

@@ -38,7 +38,7 @@ function roasPillClass(roas: number | null): string {
 }
 
 interface Totals {
-  spend: number; impressions: number; clicks: number; reach: number
+  spend: number; impressions: number; clicks: number; reach: number; link_clicks: number
   purchases: number; revenue: number; landing_page_views: number; add_payment_info: number
   ctr: number; cpc: number; cpm: number; cost_per_purchase: number
   cost_per_landing_page_view: number; cost_per_add_payment_info: number
@@ -187,11 +187,11 @@ export default function MetaAdsPage() {
       {totals && (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
           <KpiCard icon={Eye} label="CPM" value={fmt.money(totals.cpm)} />
-          <KpiCard icon={TrendingUp} label="Connect Rate" value={totals.clicks > 0 ? fmt.pct(totals.landing_page_views / totals.clicks * 100) : '—'} sub={`${fmt.num(totals.landing_page_views)} LP / ${fmt.num(totals.clicks)} cliques`} color={totals.clicks > 0 && (totals.landing_page_views / totals.clicks * 100) >= 80 ? 'text-emerald-400' : totals.clicks > 0 && (totals.landing_page_views / totals.clicks * 100) >= 60 ? 'text-yellow-400' : 'text-red-400'} />
+          <KpiCard icon={TrendingUp} label="Connect Rate" value={totals.link_clicks > 0 ? fmt.pct(totals.landing_page_views / totals.link_clicks * 100) : '—'} sub={`${fmt.num(totals.landing_page_views)} LP / ${fmt.num(totals.link_clicks)} link clicks`} color={totals.link_clicks > 0 && (totals.landing_page_views / totals.link_clicks * 100) >= 80 ? 'text-emerald-400' : totals.link_clicks > 0 && (totals.landing_page_views / totals.link_clicks * 100) >= 60 ? 'text-yellow-400' : 'text-red-400'} />
           <KpiCard icon={MousePointerClick} label="Vis. Pag. Destino" value={fmt.num(totals.landing_page_views)} sub={`Custo: ${totals.cost_per_landing_page_view > 0 ? fmt.money(totals.cost_per_landing_page_view) : '—'}`} color="text-blue-400" />
           <KpiCard icon={CreditCard} label="Info Pagamento" value={fmt.num(totals.add_payment_info)} sub={`Custo: ${totals.cost_per_add_payment_info > 0 ? fmt.money(totals.cost_per_add_payment_info) : '—'}`} color="text-purple-400" />
           <KpiCard icon={ShoppingCart} label="Compras" value={fmt.num(totals.purchases)} sub={`CPA: ${totals.cost_per_purchase > 0 ? fmt.money(totals.cost_per_purchase) : '—'}`} color={totals.cost_per_purchase <= 60 ? 'text-emerald-400' : totals.cost_per_purchase <= 80 ? 'text-yellow-400' : 'text-red-400'} />
-          <KpiCard icon={BarChart3} label="CTR (Link Click)" value={totals.impressions > 0 ? fmt.pct(totals.clicks / totals.impressions * 100) : '—'} sub={`CPC: ${fmt.money(totals.cpc)}`} />
+          <KpiCard icon={BarChart3} label="CTR (Link Click)" value={totals.link_clicks > 0 && totals.impressions > 0 ? fmt.pct(totals.link_clicks / totals.impressions * 100) : '—'} sub={`${fmt.num(totals.link_clicks)} cliques | CPC: ${totals.link_clicks > 0 ? fmt.money(totals.spend / totals.link_clicks) : '—'}`} />
           <KpiCard icon={Layers} label="Frequencia" value={totals.frequency.toFixed(2)} color={totals.frequency > 3 ? 'text-red-400' : totals.frequency > 2 ? 'text-yellow-400' : 'text-zinc-100'} sub={totals.frequency > 3 ? 'Saturacao!' : totals.frequency > 2 ? 'Atencao' : 'Saudavel'} />
           <KpiCard icon={Target} label="Taxa Conv. LP" value={totals.landing_page_views > 0 ? fmt.pct(totals.purchases / totals.landing_page_views * 100) : '—'} sub={`${fmt.num(totals.purchases)} / ${fmt.num(totals.landing_page_views)}`} color={totals.landing_page_views > 0 && (totals.purchases / totals.landing_page_views * 100) >= 1 ? 'text-emerald-400' : 'text-yellow-400'} />
         </div>

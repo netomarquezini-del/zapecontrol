@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { TrendingUp, DollarSign, ShoppingCart, Target, Eye, MousePointerClick, RefreshCw, BarChart3, Layers } from 'lucide-react'
+import { TrendingUp, DollarSign, ShoppingCart, Target, Eye, MousePointerClick, RefreshCw, BarChart3, Layers, CreditCard, FileText } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import DatePicker from '@/components/date-picker'
 
@@ -44,22 +44,23 @@ function roasPillClass(roas: number | null): string {
 }
 
 interface Totals {
-  spend: number; impressions: number; clicks: number; reach: number;
-  purchases: number; revenue: number; add_to_cart: number;
-  initiate_checkout: number; landing_page_views: number;
-  ctr: number; cpc: number; cpm: number; cost_per_purchase: number;
-  roas: number; frequency: number;
+  spend: number; impressions: number; clicks: number; reach: number
+  purchases: number; revenue: number; add_to_cart: number
+  initiate_checkout: number; landing_page_views: number; add_payment_info: number
+  ctr: number; cpc: number; cpm: number; cost_per_purchase: number
+  cost_per_landing_page_view: number; cost_per_add_payment_info: number
+  roas: number; frequency: number; imposto: number; margem: number
 }
 
 interface DailyRow {
-  date: string; spend: number; purchases: number; revenue: number; roas: number;
-  impressions: number; clicks: number;
+  date: string; spend: number; purchases: number; revenue: number; roas: number
+  impressions: number; clicks: number
 }
 
 interface EntityRow {
-  campaign_id?: string; campaign_name?: string; ad_id?: string; ad_name?: string;
-  status?: string; spend: number; impressions: number; clicks: number;
-  purchases: number; revenue: number; ctr: number; cost_per_purchase: number; roas: number;
+  campaign_id?: string; campaign_name?: string; ad_id?: string; ad_name?: string
+  status?: string; spend: number; impressions: number; clicks: number
+  purchases: number; revenue: number; ctr: number; cost_per_purchase: number; roas: number
 }
 
 export default function MetaAdsPage() {
@@ -116,17 +117,13 @@ export default function MetaAdsPage() {
           <h1 className="text-2xl font-bold text-zinc-100">Meta Ads</h1>
           <p className="text-sm text-zinc-500 mt-1">Shopee ADS 2.0 | R$97</p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-zinc-600">
-          {lastUpdate && <span>Atualizado: {lastUpdate}</span>}
-          <button onClick={fetchData} className="p-1.5 rounded-lg hover:bg-zinc-800 transition">
+        <div className="flex items-center gap-3">
+          <div className="text-xs text-zinc-600">{lastUpdate && lastUpdate}</div>
+          <button onClick={fetchData} className="p-1.5 rounded-lg hover:bg-zinc-800 transition text-zinc-600">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
+          <DatePicker startDate={dates.startDate} endDate={dates.endDate} onChange={(s, e) => setDates({ startDate: s, endDate: e })} />
         </div>
-      </div>
-
-      {/* Date Picker */}
-      <div className="flex justify-end">
-        <DatePicker startDate={dates.startDate} endDate={dates.endDate} onChange={(s, e) => setDates({ startDate: s, endDate: e })} />
       </div>
 
       {/* ROAS Hero */}
@@ -139,7 +136,6 @@ export default function MetaAdsPage() {
           <p className="text-sm text-zinc-500 mt-2">
             Receita {fmt.money(totals.revenue)} / Gasto {fmt.money(totals.spend)}
           </p>
-          {/* ROAS Bar */}
           <div className="max-w-md mx-auto mt-4">
             <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
               <div className="h-full rounded-full transition-all duration-500"
@@ -156,24 +152,49 @@ export default function MetaAdsPage() {
         </div>
       )}
 
-      {/* KPI Grid */}
+      {/* KPI Cards - Funil */}
       {totals && (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-          <KpiCard icon={DollarSign} label="Gasto" value={fmt.money(totals.spend)} color="text-blue-400" />
-          <KpiCard icon={TrendingUp} label="Receita" value={totals.revenue > 0 ? fmt.money(totals.revenue) : '—'} color="text-emerald-400"
-            sub={totals.revenue > 0 ? `Lucro: ${fmt.money(totals.revenue - totals.spend)}` : undefined} />
-          <KpiCard icon={ShoppingCart} label="Vendas" value={fmt.num(totals.purchases)} sub="Ticket: R$ 97" />
-          <KpiCard icon={Target} label="CPA" value={totals.cost_per_purchase > 0 ? fmt.money(totals.cost_per_purchase) : '—'}
-            color={totals.cost_per_purchase <= 60 ? 'text-emerald-400' : totals.cost_per_purchase <= 80 ? 'text-yellow-400' : 'text-red-400'}
-            sub="Target: R$ 60" />
-          <KpiCard icon={Eye} label="Impressoes" value={fmt.num(totals.impressions)} sub={`Alcance: ${fmt.num(totals.reach)}`} />
-          <KpiCard icon={MousePointerClick} label="CTR" value={fmt.pct(totals.ctr)} sub={`CPC: ${fmt.money(totals.cpc)}`} />
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+          <KpiCard icon={Eye} label="CPM" value={fmt.money(totals.cpm)} color="text-zinc-100" />
+          <KpiCard icon={MousePointerClick} label="Vis. Pag. Destino" value={fmt.num(totals.landing_page_views)}
+            sub={`Custo: ${totals.cost_per_landing_page_view > 0 ? fmt.money(totals.cost_per_landing_page_view) : '—'}`} color="text-blue-400" />
+          <KpiCard icon={CreditCard} label="Info Pagamento" value={fmt.num(totals.add_payment_info)}
+            sub={`Custo: ${totals.cost_per_add_payment_info > 0 ? fmt.money(totals.cost_per_add_payment_info) : '—'}`} color="text-purple-400" />
+          <KpiCard icon={ShoppingCart} label="Compras" value={fmt.num(totals.purchases)}
+            sub={`Custo: ${totals.cost_per_purchase > 0 ? fmt.money(totals.cost_per_purchase) : '—'}`}
+            color={totals.cost_per_purchase <= 60 ? 'text-emerald-400' : totals.cost_per_purchase <= 80 ? 'text-yellow-400' : 'text-red-400'} />
+          <KpiCard icon={BarChart3} label="CTR" value={fmt.pct(totals.ctr)} sub={`CPC: ${fmt.money(totals.cpc)}`} />
           <KpiCard icon={Layers} label="Frequencia" value={totals.frequency.toFixed(2)}
             color={totals.frequency > 3 ? 'text-red-400' : totals.frequency > 2 ? 'text-yellow-400' : 'text-zinc-100'}
             sub={totals.frequency > 3 ? 'Saturacao!' : totals.frequency > 2 ? 'Atencao' : 'Saudavel'} />
-          <KpiCard icon={BarChart3} label="Funil"
-            value={`${fmt.num(totals.landing_page_views)} → ${fmt.num(totals.purchases)}`}
+          <KpiCard icon={Target} label="Funil" value={`${fmt.num(totals.landing_page_views)} → ${fmt.num(totals.add_payment_info)} → ${fmt.num(totals.purchases)}`}
             sub={totals.landing_page_views > 0 ? `CVR: ${(totals.purchases / totals.landing_page_views * 100).toFixed(1)}%` : undefined} />
+        </div>
+      )}
+
+      {/* Financeiro */}
+      {totals && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+            <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-1">Receita</p>
+            <p className="text-2xl font-black text-emerald-400">{totals.revenue > 0 ? fmt.money(totals.revenue) : '—'}</p>
+          </div>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+            <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-1">Gasto</p>
+            <p className="text-2xl font-black text-blue-400">{fmt.money(totals.spend)}</p>
+          </div>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+            <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-1">Imposto (12%)</p>
+            <p className="text-2xl font-black text-orange-400">{fmt.money(totals.imposto)}</p>
+          </div>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 relative overflow-hidden">
+            <div className={`absolute inset-0 ${totals.margem >= 0 ? 'bg-emerald-400/[0.03]' : 'bg-red-400/[0.03]'} pointer-events-none`} />
+            <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-1">Margem</p>
+            <p className={`text-2xl font-black ${totals.margem >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              {totals.margem >= 0 ? '+' : ''}{fmt.money(totals.margem)}
+            </p>
+            <p className="text-[10px] text-zinc-600 mt-1">Receita - Gasto - Imposto</p>
+          </div>
         </div>
       )}
 
@@ -189,9 +210,7 @@ export default function MetaAdsPage() {
               <Tooltip
                 contentStyle={{ background: '#111', border: '1px solid #333', borderRadius: '12px', fontSize: '12px' }}
                 labelStyle={{ color: '#999' }}
-                formatter={(value) => {
-                  return `R$ ${Number(value).toFixed(2)}`
-                }}
+                formatter={(value) => `R$ ${Number(value).toFixed(2)}`}
               />
               <Bar dataKey="spend" radius={[4, 4, 0, 0]}>
                 {chartData.map((entry, idx) => (
@@ -304,7 +323,7 @@ export default function MetaAdsPage() {
 }
 
 function KpiCard({ icon: Icon, label, value, color, sub }: {
-  icon: React.ComponentType<{ className?: string }>; label: string; value: string; color?: string; sub?: string;
+  icon: React.ComponentType<{ className?: string }>; label: string; value: string; color?: string; sub?: string
 }) {
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">

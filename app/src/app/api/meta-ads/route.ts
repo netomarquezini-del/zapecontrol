@@ -54,18 +54,24 @@ export async function GET(req: NextRequest) {
         add_to_cart: acc.add_to_cart + Number(row.add_to_cart || 0),
         initiate_checkout: acc.initiate_checkout + Number(row.initiate_checkout || 0),
         landing_page_views: acc.landing_page_views + Number(row.landing_page_views || 0),
+        add_payment_info: acc.add_payment_info + Number(row.add_payment_info || 0),
       }),
-      { spend: 0, impressions: 0, clicks: 0, reach: 0, purchases: 0, revenue: 0, add_to_cart: 0, initiate_checkout: 0, landing_page_views: 0 }
+      { spend: 0, impressions: 0, clicks: 0, reach: 0, purchases: 0, revenue: 0, add_to_cart: 0, initiate_checkout: 0, landing_page_views: 0, add_payment_info: 0 }
     )
 
+    const imposto = totals.spend * 0.12
     const t = {
       ...totals,
       ctr: totals.impressions > 0 ? (totals.clicks / totals.impressions) * 100 : 0,
       cpc: totals.clicks > 0 ? totals.spend / totals.clicks : 0,
       cpm: totals.impressions > 0 ? (totals.spend / totals.impressions) * 1000 : 0,
       cost_per_purchase: totals.purchases > 0 ? totals.spend / totals.purchases : 0,
+      cost_per_landing_page_view: totals.landing_page_views > 0 ? totals.spend / totals.landing_page_views : 0,
+      cost_per_add_payment_info: totals.add_payment_info > 0 ? totals.spend / totals.add_payment_info : 0,
       roas: totals.spend > 0 ? totals.revenue / totals.spend : 0,
       frequency: totals.reach > 0 ? totals.impressions / totals.reach : 0,
+      imposto,
+      margem: totals.revenue - totals.spend - imposto,
     }
 
     return NextResponse.json({ totals: t, daily: data })

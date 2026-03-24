@@ -54,11 +54,11 @@ const navGroups: NavGroup[] = [
     label: "Comercial",
     icon: Briefcase,
     children: [
-      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, perm: "dashboard" },
-      { href: "/acompanhamento", label: "Acompanhamento", icon: BarChart3, perm: "acompanhamento" },
-      { href: "/lancamentos-ext", label: "Lancamentos", icon: FileEdit, external: true, perm: "lancamentos" },
-      { href: "/metas", label: "Metas", icon: Target, perm: "metas" },
-      { href: "/cadastros", label: "Cadastros", icon: Users, perm: "cadastros" },
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, perm: "comercial.dashboard" },
+      { href: "/acompanhamento", label: "Acompanhamento", icon: BarChart3, perm: "comercial.acompanhamento" },
+      { href: "/lancamentos-ext", label: "Lancamentos", icon: FileEdit, external: true, perm: "comercial.lancamentos" },
+      { href: "/metas", label: "Metas", icon: Target, perm: "comercial.metas" },
+      { href: "/cadastros", label: "Cadastros", icon: Users, perm: "comercial.cadastros" },
     ],
   },
   {
@@ -66,14 +66,14 @@ const navGroups: NavGroup[] = [
     label: "Customer Success",
     icon: HeartHandshake,
     children: [
-      { href: "/cs-monitor", label: "CS Monitor", icon: HeartHandshake, perm: "cs-monitor" },
-      { href: "/cs-analytics", label: "Analytics Geral", icon: BarChart3, perm: "cs-monitor" },
-      { href: "/cs-consultores", label: "Consultores", icon: Users, perm: "cs-monitor" },
-      { href: "/cs-clientes", label: "Clientes", icon: HeartHandshake, perm: "cs-monitor" },
-      { href: "/cs-comunidade", label: "Prog. Aceleração", icon: Users, perm: "cs-monitor" },
-      { href: "/cs-shopee-ads", label: "Shopee ADS", icon: Zap, perm: "cs-monitor" },
-      { href: "/cs-healthscore", label: "Health Score", icon: Activity, perm: "cs-monitor" },
-      { href: "/cs-relatorios", label: "Relatórios", icon: FileText, perm: "cs-monitor" },
+      { href: "/cs-monitor", label: "CS Monitor", icon: HeartHandshake, perm: "cs.monitor" },
+      { href: "/cs-analytics", label: "Analytics Geral", icon: BarChart3, perm: "cs.analytics" },
+      { href: "/cs-consultores", label: "Consultores", icon: Users, perm: "cs.consultores" },
+      { href: "/cs-clientes", label: "Clientes", icon: HeartHandshake, perm: "cs.clientes" },
+      { href: "/cs-comunidade", label: "Prog. Aceleração", icon: Users, perm: "cs.comunidade" },
+      { href: "/cs-shopee-ads", label: "Shopee ADS", icon: Zap, perm: "cs.shopee-ads" },
+      { href: "/cs-healthscore", label: "Health Score", icon: Activity, perm: "cs.healthscore" },
+      { href: "/cs-relatorios", label: "Relatórios", icon: FileText, perm: "cs.relatorios" },
     ],
   },
   {
@@ -81,10 +81,10 @@ const navGroups: NavGroup[] = [
     label: "Trafego Pago",
     icon: TrendingUp,
     children: [
-      { href: "/meta-ads", label: "Meta Ads", icon: TrendingUp, perm: "cs-monitor" },
-      { href: "/meta-ads/roas-real", label: "ROAS Real", icon: ArrowLeftRight, perm: "cs-monitor" },
-      { href: "/infoprodutos", label: "Vendas Ticto", icon: ShoppingBag, perm: "cs-monitor" },
-      { href: "/infoprodutos/transacoes", label: "Transacoes", icon: CreditCard, perm: "cs-monitor" },
+      { href: "/meta-ads", label: "Meta Ads", icon: TrendingUp, perm: "trafego.meta-ads" },
+      { href: "/meta-ads/roas-real", label: "ROAS Real", icon: ArrowLeftRight, perm: "trafego.roas-real" },
+      { href: "/infoprodutos", label: "Vendas Ticto", icon: ShoppingBag, perm: "trafego.vendas-ticto" },
+      { href: "/infoprodutos/transacoes", label: "Transacoes", icon: CreditCard, perm: "trafego.transacoes" },
     ],
   },
   {
@@ -92,7 +92,7 @@ const navGroups: NavGroup[] = [
     label: "Configuracoes",
     icon: Shield,
     children: [
-      { href: "/usuarios", label: "Usuarios", icon: Users, perm: "usuarios" },
+      { href: "/usuarios", label: "Usuarios", icon: Users, perm: "configuracoes.usuarios" },
     ],
   },
 ];

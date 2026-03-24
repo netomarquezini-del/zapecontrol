@@ -4,40 +4,10 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { getSupabase } from '@/lib/supabase'
 import { useRouter, usePathname } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
-
-// Routes that require specific permissions
-// If a route is NOT listed here, it's accessible to ALL logged-in users
-const RESTRICTED_ROUTES: Record<string, string> = {
-  '/dashboard': 'dashboard',
-  '/acompanhamento': 'acompanhamento',
-  '/lancamentos-ext': 'lancamentos',
-  '/metas': 'metas',
-  '/cadastros': 'cadastros',
-  '/usuarios': 'usuarios',
-  '/diario': 'diario',
-  '/diario-registro': 'diario',
-  '/cs-monitor': 'cs-monitor',
-  '/cs-healthscore': 'cs-monitor',
-  '/cs-relatorios': 'cs-monitor',
-  '/cs-analytics': 'cs-monitor',
-  '/cs-consultores': 'cs-monitor',
-  '/cs-clientes': 'cs-monitor',
-  '/cs-comunidade': 'cs-monitor',
-  '/cs-shopee-ads': 'cs-monitor',
-}
+import { ROUTE_TO_PERM } from '@/lib/permissions'
 
 // /inicio is always accessible to any logged-in user
-
-const PERM_TO_ROUTE: Record<string, string> = {
-  dashboard: '/dashboard',
-  acompanhamento: '/acompanhamento',
-  lancamentos: '/lancamentos-ext',
-  metas: '/metas',
-  cadastros: '/cadastros',
-  usuarios: '/usuarios',
-  diario: '/diario',
-  'cs-monitor': '/cs-monitor',
-}
+// All other routes are checked against ROUTE_TO_PERM from permissions.ts
 
 interface AuthContextType {
   permissions: string[]
@@ -91,7 +61,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         }
 
         // Check if this route is restricted
-        const requiredPerm = RESTRICTED_ROUTES[pathname]
+        const requiredPerm = ROUTE_TO_PERM[pathname]
 
         if (!requiredPerm) {
           // Route is not restricted — everyone can access (dashboard, home, etc)

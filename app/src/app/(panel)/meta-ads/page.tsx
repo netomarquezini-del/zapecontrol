@@ -184,7 +184,7 @@ export default function MetaAdsPage() {
   function SortTH({ label, field }: { label: string; field: SortKey }) {
     const active = sortKey === field
     return (
-      <th className="text-right px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-500 font-semibold whitespace-nowrap cursor-pointer hover:text-zinc-300 select-none" onClick={() => handleSort(field)}>
+      <th className="text-right px-3 py-2.5 text-[9px] uppercase tracking-wider text-zinc-500 font-semibold whitespace-nowrap cursor-pointer hover:text-zinc-300 select-none" onClick={() => handleSort(field)}>
         <span className="inline-flex items-center gap-1">
           {label}
           {active ? (sortDir === 'desc' ? <ChevronDown className="w-3 h-3 text-lime-400" /> : <ChevronUp className="w-3 h-3 text-lime-400" />) : <ChevronDown className="w-3 h-3 text-zinc-700" />}
@@ -305,7 +305,7 @@ export default function MetaAdsPage() {
                   </button>
                 </th>
               )}
-              <th className="text-left px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">{tab === 'campaigns' ? 'Campanha' : tab === 'adsets' ? 'Conjunto' : 'Anuncio'}</th>
+              <th className="text-left px-3 py-2.5 text-[9px] uppercase tracking-wider text-zinc-500 font-semibold">{tab === 'campaigns' ? 'Campanha' : tab === 'adsets' ? 'Conjunto' : 'Anuncio'}</th>
               <SortTH label="Gasto" field="spend" />
               <SortTH label="CPM" field="cpm" />
               <SortTH label="C/ Vis. LP" field="cost_per_landing_page_view" />
@@ -330,15 +330,15 @@ export default function MetaAdsPage() {
                       </button>
                     </td>
                   )}
-                  <td className="px-4 py-3 text-sm text-zinc-300 max-w-[280px] truncate">{name}</td>
-                  <td className="px-4 py-3 text-sm text-white text-right tabular-nums font-semibold">{fmt.money(r.spend)}</td>
-                  <td className="px-4 py-3 text-sm text-zinc-400 text-right tabular-nums">{r.cpm > 0 ? fmt.money(r.cpm) : '—'}</td>
-                  <td className="px-4 py-3 text-sm text-zinc-300 text-right tabular-nums">{r.cost_per_landing_page_view > 0 ? fmt.money(r.cost_per_landing_page_view) : '—'}</td>
-                  <td className="px-4 py-3 text-sm text-zinc-300 text-right tabular-nums">{r.cost_per_add_payment_info > 0 ? fmt.money(r.cost_per_add_payment_info) : '—'}</td>
-                  <td className={`px-4 py-3 text-sm text-right tabular-nums font-semibold ${r.cost_per_purchase > 80 ? 'text-red-400' : r.cost_per_purchase > 60 ? 'text-yellow-400' : r.cost_per_purchase > 0 ? 'text-lime-400' : 'text-zinc-500'}`}>{r.cost_per_purchase > 0 ? fmt.money(r.cost_per_purchase) : '—'}</td>
-                  <td className="px-4 py-3 text-sm text-lime-400 text-right tabular-nums font-semibold">{r.purchases > 0 ? fmt.num(r.purchases) : '—'}</td>
-                  <td className="px-4 py-3 text-sm text-lime-400 text-right tabular-nums font-semibold">{r.revenue > 0 ? fmt.money(r.revenue) : '—'}</td>
-                  <td className="px-4 py-3 text-right"><span className={`inline-block px-2 py-0.5 rounded-md text-xs font-bold tabular-nums ${roasPill(r.roas)}`}>{r.roas > 0 ? fmt.roas(r.roas) : '—'}</span></td>
+                  <td className="px-3 py-2.5 text-xs text-zinc-300 max-w-[240px] truncate">{name}</td>
+                  <td className="px-3 py-2.5 text-xs text-white text-right tabular-nums font-semibold">{fmt.money(r.spend)}</td>
+                  <td className="px-3 py-2.5 text-xs text-zinc-400 text-right tabular-nums">{r.cpm > 0 ? fmt.money(r.cpm) : '—'}</td>
+                  <td className="px-3 py-2.5 text-xs text-zinc-300 text-right tabular-nums">{r.cost_per_landing_page_view > 0 ? fmt.money(r.cost_per_landing_page_view) : '—'}</td>
+                  <td className="px-3 py-2.5 text-xs text-zinc-300 text-right tabular-nums">{r.cost_per_add_payment_info > 0 ? fmt.money(r.cost_per_add_payment_info) : '—'}</td>
+                  <td className={`px-3 py-2.5 text-xs text-right tabular-nums font-semibold ${r.cost_per_purchase > 80 ? 'text-red-400' : r.cost_per_purchase > 60 ? 'text-yellow-400' : r.cost_per_purchase > 0 ? 'text-lime-400' : 'text-zinc-500'}`}>{r.cost_per_purchase > 0 ? fmt.money(r.cost_per_purchase) : '—'}</td>
+                  <td className="px-3 py-2.5 text-xs text-lime-400 text-right tabular-nums font-semibold">{r.purchases > 0 ? fmt.num(r.purchases) : '—'}</td>
+                  <td className="px-3 py-2.5 text-xs text-lime-400 text-right tabular-nums font-semibold">{r.revenue > 0 ? fmt.money(r.revenue) : '—'}</td>
+                  <td className="px-3 py-2.5 text-right"><span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-bold tabular-nums ${roasPill(r.roas)}`}>{r.roas > 0 ? fmt.roas(r.roas) : '—'}</span></td>
                 </tr>
               )
             })}

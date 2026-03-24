@@ -367,65 +367,48 @@ function ConversionFunnel({ totals }: { totals: Totals }) {
     { label: 'Compras', value: totals.purchases, cost: totals.cost_per_purchase, rateName: 'Taxa de Compra' },
   ]
 
-  const maxVal = Math.max(...steps.map(s => s.value), 1)
-  // Opacity steps: each level gets slightly more opaque lime
-  const opacities = [0.06, 0.12, 0.20, 0.35, 0.55]
+  // Fixed widths for true funnel shape — centered, decreasing
+  const widths = [100, 78, 58, 40, 26]
+  const opacities = [0.08, 0.14, 0.22, 0.35, 0.55]
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 md:p-8">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <h3 className="text-sm font-bold text-zinc-200">Funil de Conversao</h3>
         <span className="text-[10px] uppercase tracking-wider text-zinc-600 font-semibold">Impressao → Compra</span>
       </div>
 
-      <div className="space-y-0">
+      <div className="flex flex-col items-center">
         {steps.map((step, i) => {
           const prev = i > 0 ? steps[i - 1].value : 0
           const rate = prev > 0 ? (step.value / prev) * 100 : 0
-          const widthPct = maxVal > 0 ? Math.max((step.value / maxVal) * 100, 8) : 8
 
           return (
-            <div key={step.label}>
-              {/* Rate badge between steps */}
+            <div key={step.label} className="w-full flex flex-col items-center">
+              {/* Rate badge — centered */}
               {i > 0 && (
-                <div className="flex items-center gap-3 py-2 ml-4">
-                  <div className="w-px h-4 bg-lime-400/20" />
-                  <span className={`text-sm font-black tabular-nums ${rate >= 50 ? 'text-lime-400' : rate >= 20 ? 'text-lime-400/70' : rate >= 5 ? 'text-lime-400/50' : 'text-zinc-500'}`}>
-                    {rate > 0 ? rate.toFixed(1) + '%' : '—'}
+                <div className="flex items-center gap-2 py-1">
+                  <span className={`text-xs font-black tabular-nums ${rate >= 50 ? 'text-lime-400' : rate >= 20 ? 'text-lime-400/70' : rate >= 5 ? 'text-lime-400/50' : 'text-zinc-500'}`}>
+                    ↓ {rate > 0 ? rate.toFixed(1) + '%' : '—'}
                   </span>
-                  <span className="text-[10px] text-zinc-600 font-medium">{step.rateName}</span>
+                  <span className="text-[10px] text-zinc-600">{step.rateName}</span>
                 </div>
               )}
 
-              {/* Funnel row */}
-              <div className="flex items-center gap-4">
-                {/* Bar */}
-                <div className="flex-1 relative">
-                  <div
-                    className="h-14 rounded-xl flex items-center transition-all duration-700"
-                    style={{
-                      width: `${widthPct}%`,
-                      minWidth: '180px',
-                      background: `linear-gradient(90deg, rgba(163, 230, 53, ${opacities[i]}) 0%, rgba(163, 230, 53, ${opacities[i] * 0.3}) 100%)`,
-                      borderLeft: '3px solid rgba(163, 230, 53, 0.4)',
-                    }}
-                  >
-                    <div className="flex items-center justify-between w-full px-5">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-300">{step.label}</span>
-                      <span className="text-sm font-black tabular-nums text-white">{fmt.num(step.value)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Cost per action — HIGHLIGHTED */}
-                <div className="w-[150px] text-right flex-shrink-0">
-                  {step.cost !== null && step.cost > 0 ? (
-                    <div>
-                      <p className="text-lg font-black tabular-nums text-lime-400">{fmt.money(step.cost)}</p>
-                      <p className="text-[9px] uppercase tracking-wider text-zinc-600 font-semibold">custo / acao</p>
-                    </div>
-                  ) : (
-                    <p className="text-[11px] text-zinc-700">—</p>
+              {/* Funnel bar — centered, getting narrower */}
+              <div
+                className="h-12 rounded-lg flex items-center justify-between px-4 transition-all duration-700"
+                style={{
+                  width: `${widths[i]}%`,
+                  minWidth: '200px',
+                  background: `rgba(163, 230, 53, ${opacities[i]})`,
+                }}
+              >
+                <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-300">{step.label}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-black tabular-nums text-white">{fmt.num(step.value)}</span>
+                  {step.cost !== null && step.cost > 0 && (
+                    <span className="text-sm font-black tabular-nums text-lime-400">{fmt.money(step.cost)}</span>
                   )}
                 </div>
               </div>
@@ -433,7 +416,6 @@ function ConversionFunnel({ totals }: { totals: Totals }) {
           )
         })}
       </div>
-
     </div>
   )
 }

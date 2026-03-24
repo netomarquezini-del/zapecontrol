@@ -218,19 +218,18 @@ export default function MetaAdsPage() {
         </div>
       )}
 
-      {/* KPIs */}
+      {/* Metricas gerais */}
       {totals && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <KpiCard icon={Eye} label="CPM" value={fmt.money(totals.cpm)} />
-          <KpiCard icon={TrendingUp} label="Connect Rate" value={totals.link_clicks > 0 ? fmt.pct(totals.landing_page_views / totals.link_clicks * 100) : '—'} sub={`${fmt.num(totals.landing_page_views)} LP / ${fmt.num(totals.link_clicks)} clicks`} color={totals.link_clicks > 0 && (totals.landing_page_views / totals.link_clicks * 100) >= 80 ? 'text-emerald-400' : totals.link_clicks > 0 && (totals.landing_page_views / totals.link_clicks * 100) >= 60 ? 'text-yellow-400' : 'text-red-400'} />
-          <KpiCard icon={MousePointerClick} label="Vis. Pag. Destino" value={fmt.num(totals.landing_page_views)} sub={`Custo: ${totals.cost_per_landing_page_view > 0 ? fmt.money(totals.cost_per_landing_page_view) : '—'}`} color="text-blue-400" />
-          <KpiCard icon={CreditCard} label="Info Pagamento" value={fmt.num(totals.add_payment_info)} sub={`Custo: ${totals.cost_per_add_payment_info > 0 ? fmt.money(totals.cost_per_add_payment_info) : '—'}`} color="text-purple-400" />
-          <KpiCard icon={ShoppingCart} label="Compras" value={fmt.num(totals.purchases)} sub={`CPA: ${totals.cost_per_purchase > 0 ? fmt.money(totals.cost_per_purchase) : '—'}`} color={totals.cost_per_purchase <= 60 ? 'text-emerald-400' : totals.cost_per_purchase <= 80 ? 'text-yellow-400' : 'text-red-400'} />
-          <KpiCard icon={BarChart3} label="CTR (Link Click)" value={totals.link_clicks > 0 && totals.impressions > 0 ? fmt.pct(totals.link_clicks / totals.impressions * 100) : '—'} sub={`${fmt.num(totals.link_clicks)} clicks | CPC: ${totals.link_clicks > 0 ? fmt.money(totals.spend / totals.link_clicks) : '—'}`} />
           <KpiCard icon={Layers} label="Frequencia" value={totals.frequency.toFixed(2)} color={totals.frequency > 3 ? 'text-red-400' : totals.frequency > 2 ? 'text-yellow-400' : 'text-zinc-100'} sub={totals.frequency > 3 ? 'Saturacao!' : totals.frequency > 2 ? 'Atencao' : 'Saudavel'} />
-          <KpiCard icon={Target} label="Taxa Conv. LP" value={totals.landing_page_views > 0 ? fmt.pct(totals.purchases / totals.landing_page_views * 100) : '—'} sub={`${fmt.num(totals.purchases)} / ${fmt.num(totals.landing_page_views)}`} color={totals.landing_page_views > 0 && (totals.purchases / totals.landing_page_views * 100) >= 1 ? 'text-emerald-400' : 'text-yellow-400'} />
+          <KpiCard icon={BarChart3} label="CTR (Link Click)" value={totals.link_clicks > 0 && totals.impressions > 0 ? fmt.pct(totals.link_clicks / totals.impressions * 100) : '—'} sub={`${fmt.num(totals.link_clicks)} clicks | CPC: ${totals.link_clicks > 0 ? fmt.money(totals.spend / totals.link_clicks) : '—'}`} />
+          <KpiCard icon={Target} label="Taxa Conv. LP" value={totals.landing_page_views > 0 ? fmt.pct(totals.purchases / totals.landing_page_views * 100) : '—'} sub={`${fmt.num(totals.purchases)} compras / ${fmt.num(totals.landing_page_views)} visitantes`} color={totals.landing_page_views > 0 && (totals.purchases / totals.landing_page_views * 100) >= 1 ? 'text-emerald-400' : 'text-yellow-400'} />
         </div>
       )}
+
+      {/* Funil de Conversao */}
+      {totals && <ConversionFunnel totals={totals} />}
 
       {/* Financeiro */}
       {totals && (
@@ -356,6 +355,139 @@ export default function MetaAdsPage() {
       {loading && !totals && (
         <div className="flex items-center justify-center py-20 text-zinc-500"><RefreshCw className="w-5 h-5 animate-spin mr-3" />Carregando...</div>
       )}
+    </div>
+  )
+}
+
+function ConversionFunnel({ totals }: { totals: Totals }) {
+  const impressions = totals.impressions
+  const linkClicks = totals.link_clicks
+  const lpViews = totals.landing_page_views
+  const paymentInfo = totals.add_payment_info
+  const purchases = totals.purchases
+
+  const steps = [
+    {
+      label: 'Impressoes',
+      value: impressions,
+      cost: null,
+      color: 'from-zinc-500/20 to-zinc-500/5',
+      barColor: 'bg-zinc-500',
+      textColor: 'text-zinc-300',
+    },
+    {
+      label: 'Cliques no Link',
+      value: linkClicks,
+      cost: linkClicks > 0 ? totals.spend / linkClicks : 0,
+      color: 'from-blue-500/20 to-blue-500/5',
+      barColor: 'bg-blue-500',
+      textColor: 'text-blue-400',
+    },
+    {
+      label: 'Vis. Pag. Destino',
+      value: lpViews,
+      cost: totals.cost_per_landing_page_view,
+      color: 'from-cyan-500/20 to-cyan-500/5',
+      barColor: 'bg-cyan-500',
+      textColor: 'text-cyan-400',
+    },
+    {
+      label: 'Info Pagamento',
+      value: paymentInfo,
+      cost: totals.cost_per_add_payment_info,
+      color: 'from-purple-500/20 to-purple-500/5',
+      barColor: 'bg-purple-500',
+      textColor: 'text-purple-400',
+    },
+    {
+      label: 'Compras',
+      value: purchases,
+      cost: totals.cost_per_purchase,
+      color: 'from-emerald-500/20 to-emerald-500/5',
+      barColor: 'bg-emerald-500',
+      textColor: 'text-emerald-400',
+    },
+  ]
+
+  const maxVal = Math.max(...steps.map(s => s.value), 1)
+
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-sm font-bold text-zinc-300">Funil de Conversao</h3>
+        <span className="text-[10px] text-zinc-600">Impressao → Compra</span>
+      </div>
+
+      <div className="space-y-1">
+        {steps.map((step, i) => {
+          const prev = i > 0 ? steps[i - 1].value : 0
+          const rate = prev > 0 ? (step.value / prev) * 100 : 0
+          const widthPct = maxVal > 0 ? Math.max((step.value / maxVal) * 100, 4) : 4
+
+          return (
+            <div key={step.label}>
+              {/* Conversion rate between steps */}
+              {i > 0 && (
+                <div className="flex items-center gap-2 py-1.5 pl-2">
+                  <ChevronDown className="w-3 h-3 text-zinc-700" />
+                  <span className={`text-xs font-bold tabular-nums ${rate >= 50 ? 'text-emerald-400' : rate >= 20 ? 'text-yellow-400' : rate >= 5 ? 'text-orange-400' : 'text-red-400'}`}>
+                    {rate > 0 ? rate.toFixed(1) + '%' : '—'}
+                  </span>
+                  <span className="text-[10px] text-zinc-600">
+                    {i === 1 ? 'CTR (Link Click)' : i === 2 ? 'Connect Rate' : i === 3 ? 'Taxa Info Pag.' : 'Taxa de Compra'}
+                  </span>
+                </div>
+              )}
+
+              {/* Funnel bar */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1">
+                  <div className="relative">
+                    {/* Background bar (full width reference) */}
+                    <div className="h-12 bg-zinc-800/30 rounded-lg overflow-hidden">
+                      {/* Colored bar (proportional) */}
+                      <div
+                        className={`h-full rounded-lg bg-gradient-to-r ${step.color} flex items-center transition-all duration-700`}
+                        style={{ width: `${widthPct}%`, minWidth: '120px' }}
+                      >
+                        <div className="flex items-center justify-between w-full px-4">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${step.barColor} flex-shrink-0`} />
+                            <span className="text-[11px] font-semibold text-zinc-400 whitespace-nowrap">{step.label}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Value + Cost */}
+                <div className="w-[180px] flex-shrink-0 flex items-center gap-4">
+                  <div className="text-right flex-1">
+                    <p className={`text-base font-extrabold tabular-nums ${step.textColor}`}>{fmt.num(step.value)}</p>
+                  </div>
+                  <div className="text-right w-[90px]">
+                    {step.cost !== null && step.cost > 0 ? (
+                      <p className="text-[11px] text-zinc-500 tabular-nums">{fmt.money(step.cost)}<span className="text-zinc-700">/un</span></p>
+                    ) : (
+                      <p className="text-[11px] text-zinc-700">—</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Summary line */}
+      <div className="mt-4 pt-4 border-t border-zinc-800 flex items-center justify-between text-xs">
+        <span className="text-zinc-600">Conversao total: Impressao → Compra</span>
+        <span className={`font-bold tabular-nums ${impressions > 0 && purchases > 0 ? 'text-lime-400' : 'text-zinc-600'}`}>
+          {impressions > 0 && purchases > 0 ? (purchases / impressions * 100).toFixed(3) + '%' : '—'}
+          {impressions > 0 && purchases > 0 && <span className="text-zinc-600 font-normal ml-2">({fmt.num(purchases)} de {fmt.num(impressions)})</span>}
+        </span>
+      </div>
     </div>
   )
 }

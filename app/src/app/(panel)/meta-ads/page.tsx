@@ -185,8 +185,9 @@ export default function MetaAdsPage() {
 
       {/* KPI Cards */}
       {totals && (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
           <KpiCard icon={Eye} label="CPM" value={fmt.money(totals.cpm)} />
+          <KpiCard icon={TrendingUp} label="Connect Rate" value={totals.clicks > 0 ? fmt.pct(totals.landing_page_views / totals.clicks * 100) : '—'} sub={`${fmt.num(totals.landing_page_views)} LP / ${fmt.num(totals.clicks)} cliques`} color={totals.clicks > 0 && (totals.landing_page_views / totals.clicks * 100) >= 80 ? 'text-emerald-400' : totals.clicks > 0 && (totals.landing_page_views / totals.clicks * 100) >= 60 ? 'text-yellow-400' : 'text-red-400'} />
           <KpiCard icon={MousePointerClick} label="Vis. Pag. Destino" value={fmt.num(totals.landing_page_views)} sub={`Custo: ${totals.cost_per_landing_page_view > 0 ? fmt.money(totals.cost_per_landing_page_view) : '—'}`} color="text-blue-400" />
           <KpiCard icon={CreditCard} label="Info Pagamento" value={fmt.num(totals.add_payment_info)} sub={`Custo: ${totals.cost_per_add_payment_info > 0 ? fmt.money(totals.cost_per_add_payment_info) : '—'}`} color="text-purple-400" />
           <KpiCard icon={ShoppingCart} label="Compras" value={fmt.num(totals.purchases)} sub={`CPA: ${totals.cost_per_purchase > 0 ? fmt.money(totals.cost_per_purchase) : '—'}`} color={totals.cost_per_purchase <= 60 ? 'text-emerald-400' : totals.cost_per_purchase <= 80 ? 'text-yellow-400' : 'text-red-400'} />

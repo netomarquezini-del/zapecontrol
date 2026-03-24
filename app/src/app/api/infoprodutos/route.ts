@@ -3,46 +3,49 @@ import { getServiceSupabase } from '@/lib/supabase'
 
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams
-  const period = params.get('period') || '7d'
-  const view = params.get('view') || 'dashboard' // dashboard | transactions
+  const view = params.get('view') || 'dashboard'
 
   const supabase = getServiceSupabase()
 
-  const now = new Date()
-  const startDate = new Date()
-  switch (period) {
-    case 'today': startDate.setHours(0, 0, 0, 0); break
-    case 'yesterday': startDate.setDate(now.getDate() - 1); startDate.setHours(0, 0, 0, 0); break
-    case '3d': startDate.setDate(now.getDate() - 3); break
-    case '7d': startDate.setDate(now.getDate() - 7); break
-    case '14d': startDate.setDate(now.getDate() - 14); break
-    case '30d': startDate.setDate(now.getDate() - 30); break
-    case 'this_month': startDate.setDate(1); startDate.setHours(0, 0, 0, 0); break
-    default: startDate.setDate(now.getDate() - 7)
+  let startStr = params.get('startDate') || ''
+  let endStr = params.get('endDate') || ''
+
+  if (!startStr) {
+    const period = params.get('period') || '7d'
+    const now = new Date()
+    const sd = new Date()
+    switch (period) {
+      case 'today': sd.setHours(0, 0, 0, 0); break
+      case 'yesterday': sd.setDate(now.getDate() - 1); sd.setHours(0, 0, 0, 0); break
+      case '3d': sd.setDate(now.getDate() - 3); break
+      case '7d': sd.setDate(now.getDate() - 7); break
+      case '14d': sd.setDate(now.getDate() - 14); break
+      case '30d': sd.setDate(now.getDate() - 30); break
+      case 'this_month': sd.setDate(1); sd.setHours(0, 0, 0, 0); break
+      default: sd.setDate(now.getDate() - 7)
+    }
+    startStr = sd.toISOString().split('T')[0]
   }
 
+  const startDate = new Date(startStr + 'T00:00:00')
+  const endDate = endStr ? new Date(endStr + 'T23:59:59') : new Date()
+
   // Vendas aprovadas
-  const { data: sales, error: salesError } = await supabase
-    .from('ticto_sales')
-    .select('*')
-    .eq('status', 'authorized')
-    .gte('status_date', startDate.toISOString())
-    .order('status_date', { ascending: false })
+  let salesQuery = supabase.from('ticto_sales').select('*').eq('status', 'authorized').gte('status_date', startDate.toISOString())
+  if (endStr) salesQuery = salesQuery.lte('status_date', endDate.toISOString())
+  const { data: sales, error: salesError } = await salesQuery.order('status_date', { ascending: false })
 
   if (salesError) return NextResponse.json({ error: salesError.message }, { status: 500 })
 
   // Reembolsos
-  const { data: refunds } = await supabase
-    .from('ticto_sales')
-    .select('*')
-    .in('status', ['refunded', 'chargeback'])
-    .gte('status_date', startDate.toISOString())
+  let refundQuery = supabase.from('ticto_sales').select('*').in('status', ['refunded', 'chargeback']).gte('status_date', startDate.toISOString())
+  if (endStr) refundQuery = refundQuery.lte('status_date', endDate.toISOString())
+  const { data: refunds } = await refundQuery
 
   // Gasto Meta Ads
-  const { data: metaData } = await supabase
-    .from('meta_ads_account_insights')
-    .select('date, spend')
-    .gte('date', startDate.toISOString().split('T')[0])
+  let metaQuery = supabase.from('meta_ads_account_insights').select('date, spend').gte('date', startStr)
+  if (endStr) metaQuery = metaQuery.lte('date', endStr)
+  const { data: metaData } = await metaQuery
 
   const allSales = sales || []
   const allRefunds = refunds || []

@@ -2,14 +2,16 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { CreditCard, RefreshCw, Search, ArrowUpRight, ArrowDownRight, Check, XCircle } from 'lucide-react'
+import DatePicker from '@/components/date-picker'
 
-const PERIODS = [
-  { key: 'today', label: 'Hoje' },
-  { key: '3d', label: '3 dias' },
-  { key: '7d', label: '7 dias' },
-  { key: '14d', label: '14 dias' },
-  { key: '30d', label: '30 dias' },
-]
+function defaultDates() {
+  const now = new Date()
+  const start = new Date(now)
+  start.setDate(start.getDate() - 6)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const toISO = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  return { startDate: toISO(start), endDate: toISO(now) }
+}
 
 const fmt = {
   money: (v: number) => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
@@ -23,7 +25,7 @@ interface Transaction {
 }
 
 export default function TransacoesPage() {
-  const [period, setPeriod] = useState('7d')
+  const [dates, setDates] = useState(defaultDates)
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
@@ -32,12 +34,12 @@ export default function TransacoesPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/infoprodutos?period=${period}&view=transactions`)
+      const res = await fetch(`/api/infoprodutos?startDate=${dates.startDate}&endDate=${dates.endDate}&view=transactions`)
       const data = await res.json()
       if (data.transactions) setTransactions(data.transactions)
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
-  }, [period])
+  }, [dates])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -88,16 +90,7 @@ export default function TransacoesPage() {
 
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex gap-2">
-          {PERIODS.map(p => (
-            <button key={p.key} onClick={() => setPeriod(p.key)}
-              className={`px-3 py-1.5 text-xs rounded-lg border transition ${
-                period === p.key
-                  ? 'border-lime-400/30 bg-lime-400/10 text-lime-400'
-                  : 'border-zinc-800 bg-zinc-900 text-zinc-500 hover:text-zinc-300'
-              }`}>{p.label}</button>
-          ))}
-        </div>
+        <DatePicker startDate={dates.startDate} endDate={dates.endDate} onChange={(s, e) => setDates({ startDate: s, endDate: e })} />
 
         <div className="flex gap-2 ml-auto">
           {(['all', 'authorized', 'refunded'] as const).map(f => (

@@ -3,15 +3,16 @@
 import { useEffect, useState, useCallback } from 'react'
 import { ArrowLeftRight, RefreshCw, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts'
+import DatePicker from '@/components/date-picker'
 
-const PERIODS = [
-  { key: 'today', label: 'Hoje' },
-  { key: '3d', label: '3 dias' },
-  { key: '7d', label: '7 dias' },
-  { key: '14d', label: '14 dias' },
-  { key: '30d', label: '30 dias' },
-  { key: 'this_month', label: 'Este mes' },
-]
+function defaultDates() {
+  const now = new Date()
+  const start = new Date(now)
+  start.setDate(start.getDate() - 6)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const toISO = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  return { startDate: toISO(start), endDate: toISO(now) }
+}
 
 const fmt = {
   money: (v: number) => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
@@ -41,7 +42,7 @@ interface DailyRow {
 }
 
 export default function RoasRealPage() {
-  const [period, setPeriod] = useState('7d')
+  const [dates, setDates] = useState(defaultDates)
   const [totals, setTotals] = useState<Totals | null>(null)
   const [daily, setDaily] = useState<DailyRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -50,14 +51,14 @@ export default function RoasRealPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/meta-ads/real-roas?period=${period}&breakdown=daily`)
+      const res = await fetch(`/api/meta-ads/real-roas?startDate=${dates.startDate}&endDate=${dates.endDate}&breakdown=daily`)
       const data = await res.json()
       if (data.totals) setTotals(data.totals)
       if (data.daily) setDaily(data.daily)
       setLastUpdate(new Date().toLocaleTimeString('pt-BR'))
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
-  }, [period])
+  }, [dates])
 
   useEffect(() => { fetchData() }, [fetchData])
   useEffect(() => { const iv = setInterval(fetchData, 5 * 60 * 1000); return () => clearInterval(iv) }, [fetchData])
@@ -89,15 +90,8 @@ export default function RoasRealPage() {
         </div>
       </div>
 
-      <div className="flex gap-2 flex-wrap">
-        {PERIODS.map(p => (
-          <button key={p.key} onClick={() => setPeriod(p.key)}
-            className={`px-4 py-2 text-sm rounded-lg border transition ${
-              period === p.key
-                ? 'border-lime-400/30 bg-lime-400/10 text-lime-400'
-                : 'border-zinc-800 bg-zinc-900 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
-            }`}>{p.label}</button>
-        ))}
+      <div className="flex justify-end">
+        <DatePicker startDate={dates.startDate} endDate={dates.endDate} onChange={(s, e) => setDates({ startDate: s, endDate: e })} />
       </div>
 
       {totals && (

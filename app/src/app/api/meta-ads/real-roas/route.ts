@@ -13,51 +13,51 @@ import { getServiceSupabase } from '@/lib/supabase'
 
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams
-  const period = params.get('period') || '7d'
-  const breakdown = params.get('breakdown') || 'daily' // daily | campaign | utm
+  const breakdown = params.get('breakdown') || 'daily'
 
   const supabase = getServiceSupabase()
 
-  const now = new Date()
-  const startDate = new Date()
-  switch (period) {
-    case 'today': startDate.setHours(0, 0, 0, 0); break
-    case 'yesterday': startDate.setDate(now.getDate() - 1); startDate.setHours(0, 0, 0, 0); break
-    case '3d': startDate.setDate(now.getDate() - 3); break
-    case '7d': startDate.setDate(now.getDate() - 7); break
-    case '14d': startDate.setDate(now.getDate() - 14); break
-    case '30d': startDate.setDate(now.getDate() - 30); break
-    case 'this_month': startDate.setDate(1); startDate.setHours(0, 0, 0, 0); break
-    default: startDate.setDate(now.getDate() - 7)
+  let startStr = params.get('startDate') || ''
+  let endStr = params.get('endDate') || ''
+
+  if (!startStr) {
+    const period = params.get('period') || '7d'
+    const now = new Date()
+    const sd = new Date()
+    switch (period) {
+      case 'today': sd.setHours(0, 0, 0, 0); break
+      case 'yesterday': sd.setDate(now.getDate() - 1); sd.setHours(0, 0, 0, 0); break
+      case '3d': sd.setDate(now.getDate() - 3); break
+      case '7d': sd.setDate(now.getDate() - 7); break
+      case '14d': sd.setDate(now.getDate() - 14); break
+      case '30d': sd.setDate(now.getDate() - 30); break
+      case 'this_month': sd.setDate(1); sd.setHours(0, 0, 0, 0); break
+      default: sd.setDate(now.getDate() - 7)
+    }
+    startStr = sd.toISOString().split('T')[0]
   }
 
-  const startStr = startDate.toISOString().split('T')[0]
+  const startDate = new Date(startStr + 'T00:00:00')
+  const endDate = endStr ? new Date(endStr + 'T23:59:59') : new Date()
 
   // 1. Buscar gasto Meta Ads (por dia)
-  const { data: metaData, error: metaError } = await supabase
-    .from('meta_ads_account_insights')
-    .select('date, spend, purchases, revenue, roas')
-    .gte('date', startStr)
-    .order('date', { ascending: true })
+  let metaQuery = supabase.from('meta_ads_account_insights').select('date, spend, purchases, revenue, roas').gte('date', startStr)
+  if (endStr) metaQuery = metaQuery.lte('date', endStr)
+  const { data: metaData, error: metaError } = await metaQuery.order('date', { ascending: true })
 
   if (metaError) return NextResponse.json({ error: metaError.message }, { status: 500 })
 
   // 2. Buscar vendas reais Ticto (authorized = venda confirmada)
-  const { data: tictoData, error: tictoError } = await supabase
-    .from('ticto_sales')
-    .select('*')
-    .eq('status', 'authorized')
-    .gte('status_date', startDate.toISOString())
-    .order('status_date', { ascending: true })
+  let tictoQuery = supabase.from('ticto_sales').select('*').eq('status', 'authorized').gte('status_date', startDate.toISOString())
+  if (endStr) tictoQuery = tictoQuery.lte('status_date', endDate.toISOString())
+  const { data: tictoData, error: tictoError } = await tictoQuery.order('status_date', { ascending: true })
 
   if (tictoError) return NextResponse.json({ error: tictoError.message }, { status: 500 })
 
   // 3. Buscar reembolsos
-  const { data: refundData } = await supabase
-    .from('ticto_sales')
-    .select('*')
-    .in('status', ['refunded', 'chargeback'])
-    .gte('status_date', startDate.toISOString())
+  let refundQuery = supabase.from('ticto_sales').select('*').in('status', ['refunded', 'chargeback']).gte('status_date', startDate.toISOString())
+  if (endStr) refundQuery = refundQuery.lte('status_date', endDate.toISOString())
+  const { data: refundData } = await refundQuery
 
   const refunds = refundData || []
 
@@ -152,7 +152,8 @@ export async function GET(req: NextRequest) {
     daily: breakdown === 'daily' ? daily : undefined,
     by_utm: breakdown === 'utm' ? byUtm : undefined,
     payment_methods: paymentMethods,
-    period,
+    startDate: startStr,
+    endDate: endStr || null,
     last_sale: sales.length > 0 ? sales[sales.length - 1].status_date : null,
   })
 }

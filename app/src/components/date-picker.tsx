@@ -9,7 +9,9 @@ function toISO(d: Date) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${
 const PRESETS = [
   { label: "Hoje", key: "today" },
   { label: "Ontem", key: "yesterday" },
-  { label: "Ultimos 7D", key: "last7" },
+  { label: "3 dias", key: "last3" },
+  { label: "7 dias", key: "last7" },
+  { label: "14 dias", key: "last14" },
   { label: "Esse Mes", key: "thisMonth" },
   { label: "Mes Passado", key: "lastMonth" },
 ] as const;
@@ -23,8 +25,10 @@ function getPreset(key: string): { start: string; end: string } {
   switch (key) {
     case "today": return { start: today, end: today };
     case "yesterday": { const y = new Date(now); y.setDate(y.getDate() - 1); return { start: toISO(y), end: toISO(y) }; }
+    case "last3": { const s = new Date(now); s.setDate(s.getDate() - 2); return { start: toISO(s), end: today }; }
     case "last7": { const s = new Date(now); s.setDate(s.getDate() - 6); return { start: toISO(s), end: today }; }
-    case "thisMonth": return { start: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`, end: toISO(new Date(now.getFullYear(), now.getMonth() + 1, 0)) };
+    case "last14": { const s = new Date(now); s.setDate(s.getDate() - 13); return { start: toISO(s), end: today }; }
+    case "thisMonth": return { start: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`, end: today };
     case "lastMonth": return { start: toISO(new Date(now.getFullYear(), now.getMonth() - 1, 1)), end: toISO(new Date(now.getFullYear(), now.getMonth(), 0)) };
     default: return { start: today, end: today };
   }

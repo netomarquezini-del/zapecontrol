@@ -3,25 +3,30 @@ import { getServiceSupabase } from '@/lib/supabase'
 
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams
-  const period = params.get('period') || '7d'
   const level = params.get('level') || 'account'
 
   const supabase = getServiceSupabase()
 
-  const now = new Date()
-  const startDate = new Date()
-  switch (period) {
-    case 'today': startDate.setHours(0, 0, 0, 0); break
-    case 'yesterday': startDate.setDate(now.getDate() - 1); startDate.setHours(0, 0, 0, 0); break
-    case '3d': startDate.setDate(now.getDate() - 3); break
-    case '7d': startDate.setDate(now.getDate() - 7); break
-    case '14d': startDate.setDate(now.getDate() - 14); break
-    case '30d': startDate.setDate(now.getDate() - 30); break
-    case 'this_month': startDate.setDate(1); startDate.setHours(0, 0, 0, 0); break
-    default: startDate.setDate(now.getDate() - 7)
-  }
+  // Accept explicit startDate/endDate or fallback to period
+  let startStr = params.get('startDate') || ''
+  let endStr = params.get('endDate') || ''
 
-  const startStr = startDate.toISOString().split('T')[0]
+  if (!startStr) {
+    const period = params.get('period') || '7d'
+    const now = new Date()
+    const sd = new Date()
+    switch (period) {
+      case 'today': sd.setHours(0, 0, 0, 0); break
+      case 'yesterday': sd.setDate(now.getDate() - 1); sd.setHours(0, 0, 0, 0); break
+      case '3d': sd.setDate(now.getDate() - 3); break
+      case '7d': sd.setDate(now.getDate() - 7); break
+      case '14d': sd.setDate(now.getDate() - 14); break
+      case '30d': sd.setDate(now.getDate() - 30); break
+      case 'this_month': sd.setDate(1); sd.setHours(0, 0, 0, 0); break
+      default: sd.setDate(now.getDate() - 7)
+    }
+    startStr = sd.toISOString().split('T')[0]
+  }
 
   const tableMap: Record<string, string> = {
     account: 'meta_ads_account_insights',
@@ -31,11 +36,9 @@ export async function GET(req: NextRequest) {
 
   const table = tableMap[level] || tableMap.account
 
-  const { data, error } = await supabase
-    .from(table)
-    .select('*')
-    .gte('date', startStr)
-    .order('date', { ascending: true })
+  let query = supabase.from(table).select('*').gte('date', startStr)
+  if (endStr) query = query.lte('date', endStr)
+  const { data, error } = await query.order('date', { ascending: true })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

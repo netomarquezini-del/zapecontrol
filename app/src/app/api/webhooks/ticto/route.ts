@@ -18,7 +18,27 @@ const TICTO_WEBHOOK_TOKEN = process.env.TICTO_WEBHOOK_TOKEN || ''
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
+    // Suportar JSON e URL-encoded
+    const contentType = req.headers.get('content-type') || ''
+    let body: Record<string, unknown>
+
+    if (contentType.includes('application/x-www-form-urlencoded')) {
+      const text = await req.text()
+      const params = new URLSearchParams(text)
+      // Ticto pode mandar JSON stringificado em form fields
+      const raw: Record<string, string> = {}
+      params.forEach((v, k) => { raw[k] = v })
+      // Tentar parsear valores JSON dentro dos campos
+      body = {}
+      for (const [k, v] of Object.entries(raw)) {
+        try { body[k] = JSON.parse(v) } catch { body[k] = v }
+      }
+    } else {
+      body = await req.json()
+    }
+
+    console.log('[Ticto Webhook] Content-Type:', contentType)
+    console.log('[Ticto Webhook] Body keys:', Object.keys(body).join(', '))
 
     // Validar token de segurança
     // Ticto pode enviar token no body.token ou não enviar

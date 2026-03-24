@@ -105,7 +105,7 @@ export default function RoasRealPage() {
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 text-center flex flex-col items-center justify-center">
               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 ${
                 Math.abs(totals.divergence) <= 10 ? 'bg-emerald-400/10 text-emerald-400' :
-                Math.abs(totals.divergence) <= 30 ? 'bg-yellow-400/10 text-yellow-400' :
+                Math.abs(totals.divergence) <= 25 ? 'bg-yellow-400/10 text-yellow-400' :
                 'bg-red-400/10 text-red-400'
               }`}>
                 {Math.abs(totals.divergence) <= 10 ? <CheckCircle className="w-6 h-6" /> : <AlertTriangle className="w-6 h-6" />}
@@ -113,13 +113,14 @@ export default function RoasRealPage() {
               <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">Divergencia</p>
               <p className={`text-3xl font-black mt-1 ${
                 Math.abs(totals.divergence) <= 10 ? 'text-emerald-400' :
-                Math.abs(totals.divergence) <= 30 ? 'text-yellow-400' : 'text-red-400'
+                Math.abs(totals.divergence) <= 25 ? 'text-yellow-400' : 'text-red-400'
               }`}>
                 {totals.divergence > 0 ? '+' : ''}{fmt.pct(totals.divergence)}
               </p>
               <p className="text-[11px] text-zinc-600 mt-2">
                 {Math.abs(totals.divergence) <= 10 ? 'Dados confiaveis' :
-                 totals.divergence > 0 ? 'Ticto registra mais vendas' : 'Meta superestima vendas'}
+                 Math.abs(totals.divergence) <= 25 ? 'Atencao — divergencia moderada' :
+                 totals.divergence > 0 ? 'Ticto registra muito mais vendas' : 'Meta superestima vendas'}
               </p>
             </div>
 

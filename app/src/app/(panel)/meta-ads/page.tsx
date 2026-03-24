@@ -397,18 +397,18 @@ function ConversionFunnel({ totals }: { totals: Totals }) {
 
               {/* Funnel bar — centered, getting narrower */}
               <div
-                className="h-12 rounded-lg flex items-center justify-between px-4 transition-all duration-700"
+                className="h-14 rounded-lg flex items-center justify-between px-5 transition-all duration-700"
                 style={{
                   width: `${widths[i]}%`,
                   minWidth: '200px',
                   background: `rgba(163, 230, 53, ${opacities[i]})`,
                 }}
               >
-                <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-300">{step.label}</span>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-black tabular-nums text-white">{fmt.num(step.value)}</span>
+                <span className="text-[13px] font-extrabold uppercase tracking-wide text-white">{step.label}</span>
+                <div className="flex items-center gap-4">
+                  <span className="text-base font-black tabular-nums text-white">{fmt.num(step.value)}</span>
                   {step.cost !== null && step.cost > 0 && (
-                    <span className="text-sm font-black tabular-nums text-lime-400">{fmt.money(step.cost)}</span>
+                    <span className="text-base font-black tabular-nums text-lime-400">{fmt.money(step.cost)}</span>
                   )}
                 </div>
               </div>

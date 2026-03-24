@@ -351,7 +351,21 @@ function ConversionFunnel({ totals }: { totals: Totals }) {
 
   // Fixed widths for true funnel shape — centered, decreasing
   const widths = [100, 78, 58, 40, 26]
-  const opacities = [0.12, 0.18, 0.28, 0.42, 0.65]
+  // Backgrounds using Zape palette: bg-card → bg-card-hover → accent-subtle → accent-border
+  const backgrounds = [
+    '#111111',  // --bg-card
+    '#151515',
+    '#181818',  // --bg-card-hover
+    '#1c1c1c',
+    '#202020',
+  ]
+  const borders = [
+    'rgba(163, 230, 53, 0.06)',  // --accent-subtle
+    'rgba(163, 230, 53, 0.10)',
+    'rgba(163, 230, 53, 0.14)',
+    'rgba(163, 230, 53, 0.20)',
+    'rgba(163, 230, 53, 0.30)',
+  ]
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 md:p-8">
@@ -383,7 +397,8 @@ function ConversionFunnel({ totals }: { totals: Totals }) {
                 style={{
                   width: `${widths[i]}%`,
                   minWidth: '200px',
-                  background: `rgba(163, 230, 53, ${opacities[i]})`,
+                  background: backgrounds[i],
+                  border: `1px solid ${borders[i]}`,
                 }}
               >
                 <span className="text-[13px] font-extrabold uppercase tracking-wide text-white">{step.label}</span>

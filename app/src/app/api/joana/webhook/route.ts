@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceClient } from '@/lib/joana/supabase'
-import { extractGroupMessage } from '@/lib/joana/extract-message'
+import { extractGroupMessage, isTeamMember } from '@/lib/joana/extract-message'
 
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json()
+
+    // Handle reaction events — Z-API sends reactions without body/text/message
+    if (data.type === 'reaction' || data.reaction) {
+      return handleReaction(data)
+    }
 
     // Ignore ack-only events
     if (data.ack && !data.body && !data.text && !data.message) {
@@ -76,6 +81,77 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: 'received' })
   } catch (e: any) {
     console.error('[JOANA-CS] Webhook error:', e.message)
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+  }
+}
+
+/**
+ * Handle reaction events from Z-API.
+ * Reactions count as team interaction — saves as a message so checkAlerts
+ * sees it as a team response (prevents false SLA alerts).
+ */
+async function handleReaction(data: Record<string, any>) {
+  try {
+    const groupId = data.chatId || data.phone
+    if (!groupId || (!groupId.includes('@g.us') && !groupId.includes('-group'))) {
+      return NextResponse.json({ status: 'ignored', reason: 'reaction not from group' })
+    }
+
+    const senderPhone = (data.participantPhone || data.participant || data.senderPhone || '').replace(/\D/g, '')
+    const senderName = data.senderName || data.participantName || data.pushName || ''
+    const isTeam = isTeamMember(senderName, data.fromMe === true, senderPhone)
+
+    // Only save team reactions (we care about consultors reacting to client msgs)
+    if (!isTeam) {
+      return NextResponse.json({ status: 'ignored', reason: 'client reaction — not tracked' })
+    }
+
+    const emoji = data.reaction?.value || data.reaction || ''
+    const groupName = data.chatName || data.chat?.name || groupId
+
+    let timestamp: string
+    if (data.momment) {
+      timestamp = new Date(data.momment).toISOString()
+    } else if (data.timestamp) {
+      const ts = data.timestamp > 1e12 ? data.timestamp : data.timestamp * 1000
+      timestamp = new Date(ts).toISOString()
+    } else {
+      timestamp = new Date().toISOString()
+    }
+
+    const reactionMsgId = data.messageId || data.id?.id || `reaction-${groupId}-${Date.now()}`
+
+    const supabase = getServiceClient()
+
+    // Upsert group activity
+    await supabase.from('cs_groups').upsert({
+      id: groupId,
+      name: groupName,
+      last_activity: timestamp,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'id' })
+
+    // Save reaction as a team message — this is what checkAlerts looks for
+    const { error } = await supabase.from('cs_messages').insert({
+      message_id: reactionMsgId,
+      group_id: groupId,
+      sender_phone: senderPhone || 'unknown',
+      sender_name: senderName,
+      is_team_member: true,
+      content: `[reação: ${emoji}]`,
+      message_type: 'reaction',
+      media_url: null,
+      timestamp
+    })
+
+    if (error) {
+      console.error('[JOANA-CS] Reaction save error:', error.message)
+      return NextResponse.json({ status: 'partial', errors: [error.message] })
+    }
+
+    return NextResponse.json({ status: 'received', type: 'reaction' })
+  } catch (e: any) {
+    console.error('[JOANA-CS] Reaction error:', e.message)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }

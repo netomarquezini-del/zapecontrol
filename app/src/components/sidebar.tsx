@@ -77,21 +77,14 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    id: "infoprodutos",
-    label: "Infoprodutos",
-    icon: ShoppingBag,
-    children: [
-      { href: "/infoprodutos", label: "Dashboard Vendas", icon: ShoppingBag, perm: "cs-monitor" },
-      { href: "/infoprodutos/transacoes", label: "Transacoes", icon: CreditCard, perm: "cs-monitor" },
-    ],
-  },
-  {
     id: "trafego",
     label: "Trafego Pago",
     icon: TrendingUp,
     children: [
       { href: "/meta-ads", label: "Meta Ads", icon: TrendingUp, perm: "cs-monitor" },
       { href: "/meta-ads/roas-real", label: "ROAS Real", icon: ArrowLeftRight, perm: "cs-monitor" },
+      { href: "/infoprodutos", label: "Vendas Ticto", icon: ShoppingBag, perm: "cs-monitor" },
+      { href: "/infoprodutos/transacoes", label: "Transacoes", icon: CreditCard, perm: "cs-monitor" },
     ],
   },
   {

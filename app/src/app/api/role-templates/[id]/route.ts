@@ -7,10 +7,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const body = await req.json()
     const supabase = getServiceSupabase()
 
-    // Check if system template
-    const { data: tmpl } = await supabase.from('role_templates').select('is_system').eq('id', id).single()
-    if (tmpl?.is_system) {
-      return NextResponse.json({ error: 'Nao e possivel editar template do sistema' }, { status: 403 })
+    // Only the 'admin' template is fully locked
+    const { data: tmpl } = await supabase.from('role_templates').select('slug').eq('id', id).single()
+    if (tmpl?.slug === 'admin') {
+      return NextResponse.json({ error: 'O perfil Admin nao pode ser editado' }, { status: 403 })
     }
 
     const updates: Record<string, unknown> = {}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { X, Plus, Save, Trash2, Loader2, Check, AlertCircle, Lock } from 'lucide-react'
+import { X, Plus, Save, Trash2, Loader2, Check, AlertCircle, Lock, Pencil } from 'lucide-react'
 import type { RoleTemplate } from '@/lib/permissions'
 import PermissionGrid from './permission-grid'
 
@@ -196,21 +196,24 @@ export default function ManageTemplatesModal({ onClose }: ManageTemplatesModalPr
                         <span className="rounded-lg bg-[#111111] border border-[#222222] px-2.5 py-1 text-[10px] font-bold text-zinc-500">
                           {(t.permissions || []).length} perms
                         </span>
-                        {!t.is_system && !isEditing && (
+                        {t.slug !== 'admin' && !isEditing && (
                           <>
                             <button
                               onClick={() => { setEditId(t.id); setEditLabel(t.label); setEditDesc(t.description || ''); setEditPerms(t.permissions || []) }}
                               className="rounded-lg p-2 text-zinc-500 hover:text-white hover:bg-white/5 cursor-pointer"
+                              title="Editar perfil"
                             >
-                              <Save size={13} />
+                              <Pencil size={13} />
                             </button>
-                            <button
-                              onClick={() => handleDelete(t.id)}
-                              className={`rounded-lg p-2 cursor-pointer ${deletingId === t.id ? 'text-red-400 bg-red-400/10' : 'text-zinc-500 hover:text-red-400 hover:bg-red-400/5'}`}
-                              title={deletingId === t.id ? 'Clique novamente para confirmar' : 'Deletar perfil'}
-                            >
-                              <Trash2 size={13} />
-                            </button>
+                            {!t.is_system && (
+                              <button
+                                onClick={() => handleDelete(t.id)}
+                                className={`rounded-lg p-2 cursor-pointer ${deletingId === t.id ? 'text-red-400 bg-red-400/10' : 'text-zinc-500 hover:text-red-400 hover:bg-red-400/5'}`}
+                                title={deletingId === t.id ? 'Clique novamente para confirmar' : 'Deletar perfil'}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
                           </>
                         )}
                         {isEditing && (

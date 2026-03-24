@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { TrendingUp, DollarSign, ShoppingCart, Target, Eye, MousePointerClick, RefreshCw, BarChart3, Layers, CreditCard, ChevronRight, X } from 'lucide-react'
+import { TrendingUp, DollarSign, ShoppingCart, Target, Eye, MousePointerClick, RefreshCw, BarChart3, Layers, CreditCard, ChevronRight, X, Check } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import DatePicker from '@/components/date-picker'
 
@@ -24,14 +24,12 @@ function roasColor(roas: number | null): string {
   if (roas <= 1.8) return 'text-yellow-400'
   return 'text-emerald-400'
 }
-
 function roasBarColor(roas: number | null): string {
   if (roas === null || roas === 0) return '#333'
   if (roas < 1.4) return '#ef4444'
   if (roas <= 1.8) return '#eab308'
   return '#22c55e'
 }
-
 function roasPillClass(roas: number | null): string {
   if (roas === null || roas === 0) return 'text-zinc-500'
   if (roas < 1.4) return 'text-red-400 bg-red-400/10 border border-red-400/20'
@@ -41,22 +39,19 @@ function roasPillClass(roas: number | null): string {
 
 interface Totals {
   spend: number; impressions: number; clicks: number; reach: number
-  purchases: number; revenue: number; add_to_cart: number
-  initiate_checkout: number; landing_page_views: number; add_payment_info: number
+  purchases: number; revenue: number; landing_page_views: number; add_payment_info: number
   ctr: number; cpc: number; cpm: number; cost_per_purchase: number
   cost_per_landing_page_view: number; cost_per_add_payment_info: number
   roas: number; frequency: number; imposto: number; margem: number
 }
-
-interface DailyRow { date: string; spend: number; purchases: number; revenue: number; roas: number }
-
+interface DailyRow { date: string; spend: number; roas: number }
 interface EntityRow {
   campaign_id?: string; campaign_name?: string
   adset_id?: string; adset_name?: string
   ad_id?: string; ad_name?: string
-  spend: number; impressions: number; clicks: number; purchases: number; revenue: number
-  cpm: number; ctr: number; cost_per_purchase: number; cost_per_landing_page_view: number
-  cost_per_add_payment_info: number; roas: number; landing_page_views: number; add_payment_info: number
+  spend: number; impressions: number; purchases: number; revenue: number
+  cpm: number; cost_per_purchase: number; cost_per_landing_page_view: number
+  cost_per_add_payment_info: number; roas: number
 }
 
 type Tab = 'campaigns' | 'adsets' | 'ads'
@@ -67,54 +62,70 @@ export default function MetaAdsPage() {
   const [tab, setTab] = useState<Tab>('campaigns')
   const [totals, setTotals] = useState<Totals | null>(null)
   const [daily, setDaily] = useState<DailyRow[]>([])
-  const [rows, setRows] = useState<EntityRow[]>([])
+  const [campaigns, setCampaigns] = useState<EntityRow[]>([])
+  const [adsets, setAdsets] = useState<EntityRow[]>([])
+  const [ads, setAds] = useState<EntityRow[]>([])
   const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState('')
 
-  // Drill-down filters
-  const [filterCampaign, setFilterCampaign] = useState<{ id: string; name: string } | null>(null)
-  const [filterAdset, setFilterAdset] = useState<{ id: string; name: string } | null>(null)
+  // Checkbox filters
+  const [selectedCampaign, setSelectedCampaign] = useState<string | null>(null)
+  const [selectedAdset, setSelectedAdset] = useState<string | null>(null)
 
-  const fetchData = useCallback(async () => {
+  const qs = `startDate=${dates.startDate}&endDate=${dates.endDate}`
+
+  // Fetch account totals + all campaigns
+  const fetchBase = useCallback(async () => {
     setLoading(true)
-    const qs = `startDate=${dates.startDate}&endDate=${dates.endDate}`
     try {
-      // Account totals
-      const accountRes = await fetch(`/api/meta-ads?${qs}&level=account`)
-      const accountData = await accountRes.json()
-      if (accountData.totals) setTotals(accountData.totals)
-      if (accountData.daily) setDaily(accountData.daily)
-
-      // Tab data with filters
-      let tabQs = `${qs}&level=${tab}`
-      if (filterCampaign && (tab === 'adsets' || tab === 'ads')) tabQs += `&campaign_id=${filterCampaign.id}`
-      if (filterAdset && tab === 'ads') tabQs += `&adset_id=${filterAdset.id}`
-      const tabRes = await fetch(`/api/meta-ads?${tabQs}`)
-      const tabData = await tabRes.json()
-      if (tabData.data) setRows(tabData.data)
-
+      const [accRes, campRes] = await Promise.all([
+        fetch(`/api/meta-ads?${qs}&level=account`),
+        fetch(`/api/meta-ads?${qs}&level=campaigns`),
+      ])
+      const accData = await accRes.json()
+      const campData = await campRes.json()
+      if (accData.totals) setTotals(accData.totals)
+      if (accData.daily) setDaily(accData.daily)
+      if (campData.data) setCampaigns(campData.data)
       setLastUpdate(new Date().toLocaleTimeString('pt-BR'))
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
-  }, [dates, tab, filterCampaign, filterAdset])
+  }, [qs])
 
-  useEffect(() => { fetchData() }, [fetchData])
-  useEffect(() => { const iv = setInterval(fetchData, 5 * 60 * 1000); return () => clearInterval(iv) }, [fetchData])
+  // Fetch adsets when campaign selected
+  useEffect(() => {
+    if (!selectedCampaign) { setAdsets([]); setSelectedAdset(null); return }
+    fetch(`/api/meta-ads?${qs}&level=adsets&campaign_id=${selectedCampaign}`)
+      .then(r => r.json()).then(d => { if (d.data) setAdsets(d.data) })
+  }, [selectedCampaign, qs])
+
+  // Fetch ads when adset selected
+  useEffect(() => {
+    if (!selectedAdset) { setAds([]); return }
+    let url = `/api/meta-ads?${qs}&level=ads&adset_id=${selectedAdset}`
+    if (selectedCampaign) url += `&campaign_id=${selectedCampaign}`
+    fetch(url).then(r => r.json()).then(d => { if (d.data) setAds(d.data) })
+  }, [selectedAdset, selectedCampaign, qs])
+
+  useEffect(() => { fetchBase() }, [fetchBase])
+  useEffect(() => { const iv = setInterval(fetchBase, 5 * 60 * 1000); return () => clearInterval(iv) }, [fetchBase])
+
+  // Reset filters when dates change
+  useEffect(() => { setSelectedCampaign(null); setSelectedAdset(null) }, [dates])
 
   const handleTabChange = (t: Tab) => {
     setTab(t)
-    if (t === 'campaigns') { setFilterCampaign(null); setFilterAdset(null) }
-    if (t === 'adsets') { setFilterAdset(null) }
+    if (t === 'campaigns') { setSelectedCampaign(null); setSelectedAdset(null) }
   }
 
-  const handleDrillDown = (row: EntityRow) => {
-    if (tab === 'campaigns' && row.campaign_id) {
-      setFilterCampaign({ id: row.campaign_id, name: row.campaign_name || '' })
-      setTab('adsets')
-    } else if (tab === 'adsets' && row.adset_id) {
-      setFilterAdset({ id: row.adset_id, name: row.adset_name || '' })
-      setTab('ads')
-    }
+  const toggleCampaign = (id: string) => {
+    if (selectedCampaign === id) { setSelectedCampaign(null); setSelectedAdset(null) }
+    else { setSelectedCampaign(id); setSelectedAdset(null); setTab('adsets') }
+  }
+
+  const toggleAdset = (id: string) => {
+    if (selectedAdset === id) setSelectedAdset(null)
+    else { setSelectedAdset(id); setTab('ads') }
   }
 
   const chartData = daily.map(d => ({
@@ -123,8 +134,15 @@ export default function MetaAdsPage() {
     color: roasBarColor(Number(d.roas)),
   }))
 
+  // Determine which rows to show
+  const activeRows = tab === 'campaigns' ? campaigns : tab === 'adsets' ? adsets : ads
   const nameField = tab === 'campaigns' ? 'campaign_name' : tab === 'adsets' ? 'adset_name' : 'ad_name'
-  const canDrill = tab !== 'ads'
+  const idField = tab === 'campaigns' ? 'campaign_id' : tab === 'adsets' ? 'adset_id' : 'ad_id'
+  const selectedId = tab === 'campaigns' ? selectedCampaign : tab === 'adsets' ? selectedAdset : null
+  const onToggle = tab === 'campaigns' ? toggleCampaign : tab === 'adsets' ? toggleAdset : undefined
+
+  const selectedCampName = campaigns.find(c => c.campaign_id === selectedCampaign)?.campaign_name
+  const selectedAdsetName = adsets.find(a => a.adset_id === selectedAdset)?.adset_name
 
   return (
     <div className="space-y-6">
@@ -136,7 +154,7 @@ export default function MetaAdsPage() {
         </div>
         <div className="flex items-center gap-3">
           <div className="text-xs text-zinc-600">{lastUpdate}</div>
-          <button onClick={fetchData} className="p-1.5 rounded-lg hover:bg-zinc-800 transition text-zinc-600">
+          <button onClick={fetchBase} className="p-1.5 rounded-lg hover:bg-zinc-800 transition text-zinc-600">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
           <DatePicker startDate={dates.startDate} endDate={dates.endDate} onChange={(s, e) => setDates({ startDate: s, endDate: e })} />
@@ -204,31 +222,33 @@ export default function MetaAdsPage() {
         </div>
       )}
 
-      {/* Tabs */}
+      {/* Tabs + Breadcrumb */}
       <div className="flex items-center gap-2 flex-wrap">
         {(['campaigns', 'adsets', 'ads'] as Tab[]).map(t => (
           <button key={t} onClick={() => handleTabChange(t)}
             className={`px-4 py-2 text-sm rounded-lg transition ${tab === t ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}>
             {t === 'campaigns' ? 'Campanhas' : t === 'adsets' ? 'Conjuntos' : 'Anuncios'}
+            {t === 'campaigns' && <span className="ml-1.5 text-[10px] text-zinc-600">{campaigns.length}</span>}
+            {t === 'adsets' && selectedCampaign && <span className="ml-1.5 text-[10px] text-zinc-600">{adsets.length}</span>}
+            {t === 'ads' && selectedAdset && <span className="ml-1.5 text-[10px] text-zinc-600">{ads.length}</span>}
           </button>
         ))}
 
-        {/* Breadcrumb filters */}
-        {filterCampaign && (
+        {selectedCampaign && (
           <div className="flex items-center gap-1 ml-2">
             <ChevronRight className="w-3 h-3 text-zinc-600" />
-            <span className="text-xs bg-zinc-800 text-zinc-300 px-2 py-1 rounded-lg flex items-center gap-1.5 max-w-[200px] truncate">
-              {filterCampaign.name}
-              <button onClick={() => { setFilterCampaign(null); setFilterAdset(null); setTab('campaigns') }} className="text-zinc-500 hover:text-red-400"><X className="w-3 h-3" /></button>
+            <span className="text-xs bg-lime-400/8 text-lime-400 border border-lime-400/15 px-2 py-1 rounded-lg flex items-center gap-1.5 max-w-[220px] truncate">
+              {selectedCampName}
+              <button onClick={() => { setSelectedCampaign(null); setSelectedAdset(null); setTab('campaigns') }} className="text-lime-400/50 hover:text-red-400"><X className="w-3 h-3" /></button>
             </span>
           </div>
         )}
-        {filterAdset && (
+        {selectedAdset && (
           <div className="flex items-center gap-1">
             <ChevronRight className="w-3 h-3 text-zinc-600" />
-            <span className="text-xs bg-zinc-800 text-zinc-300 px-2 py-1 rounded-lg flex items-center gap-1.5 max-w-[200px] truncate">
-              {filterAdset.name}
-              <button onClick={() => { setFilterAdset(null); setTab('adsets') }} className="text-zinc-500 hover:text-red-400"><X className="w-3 h-3" /></button>
+            <span className="text-xs bg-lime-400/8 text-lime-400 border border-lime-400/15 px-2 py-1 rounded-lg flex items-center gap-1.5 max-w-[220px] truncate">
+              {selectedAdsetName}
+              <button onClick={() => { setSelectedAdset(null); setTab('adsets') }} className="text-lime-400/50 hover:text-red-400"><X className="w-3 h-3" /></button>
             </span>
           </div>
         )}
@@ -239,6 +259,7 @@ export default function MetaAdsPage() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-zinc-800">
+              {onToggle && <TH align="center" width="40px"></TH>}
               <TH align="left">{tab === 'campaigns' ? 'Campanha' : tab === 'adsets' ? 'Conjunto' : 'Anuncio'}</TH>
               <TH>Gasto</TH>
               <TH>CPM</TH>
@@ -251,14 +272,23 @@ export default function MetaAdsPage() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((r, i) => {
+            {activeRows.map((r, i) => {
               const name = (r[nameField as keyof EntityRow] as string) || '—'
+              const id = (r[idField as keyof EntityRow] as string) || ''
+              const isSelected = selectedId === id
               return (
-                <tr key={i} className={`border-b border-zinc-800/50 hover:bg-zinc-800/30 transition ${canDrill ? 'cursor-pointer' : ''}`} onClick={() => canDrill && handleDrillDown(r)}>
-                  <td className="px-4 py-3 text-sm text-zinc-300 max-w-[280px] truncate flex items-center gap-2">
-                    {name}
-                    {canDrill && <ChevronRight className="w-3 h-3 text-zinc-700 flex-shrink-0" />}
-                  </td>
+                <tr key={i} className={`border-b border-zinc-800/50 transition ${isSelected ? 'bg-lime-400/[0.04]' : 'hover:bg-zinc-800/30'}`}>
+                  {onToggle && (
+                    <td className="px-2 py-3 text-center">
+                      <button onClick={() => onToggle(id)}
+                        className={`w-5 h-5 rounded-md border flex items-center justify-center transition ${
+                          isSelected ? 'bg-lime-400/20 border-lime-400/40 text-lime-400' : 'border-zinc-700 hover:border-zinc-500 text-transparent hover:text-zinc-600'
+                        }`}>
+                        <Check className="w-3 h-3" />
+                      </button>
+                    </td>
+                  )}
+                  <td className="px-4 py-3 text-sm text-zinc-300 max-w-[280px] truncate">{name}</td>
                   <td className="px-4 py-3 text-sm text-zinc-300 text-right tabular-nums">{fmt.money(r.spend)}</td>
                   <td className="px-4 py-3 text-sm text-zinc-400 text-right tabular-nums">{r.cpm > 0 ? fmt.money(r.cpm) : '—'}</td>
                   <td className="px-4 py-3 text-sm text-blue-400 text-right tabular-nums">{r.cost_per_landing_page_view > 0 ? fmt.money(r.cost_per_landing_page_view) : '—'}</td>
@@ -274,26 +304,25 @@ export default function MetaAdsPage() {
                 </tr>
               )
             })}
-            {rows.length === 0 && (
-              <tr><td colSpan={9} className="px-4 py-8 text-center text-zinc-600 text-sm">{loading ? 'Carregando...' : 'Sem dados para o periodo'}</td></tr>
+            {activeRows.length === 0 && (
+              <tr><td colSpan={onToggle ? 10 : 9} className="px-4 py-8 text-center text-zinc-600 text-sm">
+                {loading ? 'Carregando...' : tab !== 'campaigns' && !selectedCampaign ? 'Selecione uma campanha primeiro' : 'Sem dados para o periodo'}
+              </td></tr>
             )}
           </tbody>
         </table>
       </div>
 
       {loading && !totals && (
-        <div className="flex items-center justify-center py-20 text-zinc-500">
-          <RefreshCw className="w-5 h-5 animate-spin mr-3" />Carregando dados...
-        </div>
+        <div className="flex items-center justify-center py-20 text-zinc-500"><RefreshCw className="w-5 h-5 animate-spin mr-3" />Carregando...</div>
       )}
     </div>
   )
 }
 
-function TH({ children, align }: { children: React.ReactNode; align?: string }) {
-  return <th className={`${align === 'left' ? 'text-left' : 'text-right'} px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-500 font-semibold whitespace-nowrap`}>{children}</th>
+function TH({ children, align, width }: { children?: React.ReactNode; align?: string; width?: string }) {
+  return <th className={`${align === 'left' ? 'text-left' : align === 'center' ? 'text-center' : 'text-right'} px-4 py-3 text-[10px] uppercase tracking-wider text-zinc-500 font-semibold whitespace-nowrap`} style={width ? { width } : undefined}>{children}</th>
 }
-
 function KpiCard({ icon: Icon, label, value, color, sub }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string; color?: string; sub?: string }) {
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
@@ -303,12 +332,6 @@ function KpiCard({ icon: Icon, label, value, color, sub }: { icon: React.Compone
     </div>
   )
 }
-
 function FinCard({ label, value, color }: { label: string; value: string; color: string }) {
-  return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-      <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-1">{label}</p>
-      <p className={`text-2xl font-black ${color}`}>{value}</p>
-    </div>
-  )
+  return <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5"><p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-1">{label}</p><p className={`text-2xl font-black ${color}`}>{value}</p></div>
 }

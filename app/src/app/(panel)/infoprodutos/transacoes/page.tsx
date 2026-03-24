@@ -4,13 +4,10 @@ import { useEffect, useState, useCallback } from 'react'
 import { CreditCard, RefreshCw, Search, ArrowUpRight, ArrowDownRight, Check, XCircle } from 'lucide-react'
 import DatePicker from '@/components/date-picker'
 
-function defaultDates() {
+function todayISO() {
   const now = new Date()
-  const start = new Date(now)
-  start.setDate(start.getDate() - 6)
   const pad = (n: number) => String(n).padStart(2, '0')
-  const toISO = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-  return { startDate: toISO(start), endDate: toISO(now) }
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
 }
 
 const fmt = {
@@ -25,7 +22,8 @@ interface Transaction {
 }
 
 export default function TransacoesPage() {
-  const [dates, setDates] = useState(defaultDates)
+  const today = todayISO()
+  const [dates, setDates] = useState({ startDate: today, endDate: today })
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)

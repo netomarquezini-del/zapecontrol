@@ -5,13 +5,10 @@ import { ShoppingBag, DollarSign, TrendingUp, RefreshCw, ArrowDownRight, ArrowUp
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts'
 import DatePicker from '@/components/date-picker'
 
-function defaultDates() {
+function todayISO() {
   const now = new Date()
-  const start = new Date(now)
-  start.setDate(start.getDate() - 6)
   const pad = (n: number) => String(n).padStart(2, '0')
-  const toISO = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-  return { startDate: toISO(start), endDate: toISO(now) }
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
 }
 
 const fmt = {
@@ -38,7 +35,8 @@ interface Product {
 interface DailyRow { date: string; count: number; revenue: number; bumps: number; bump_rev: number; total: number; refunds: number; net: number }
 
 export default function InfoprodutosPage() {
-  const [dates, setDates] = useState(defaultDates)
+  const today = todayISO()
+  const [dates, setDates] = useState({ startDate: today, endDate: today })
   const [totals, setTotals] = useState<Totals | null>(null)
   const [products, setProducts] = useState<Product[]>([])
   const [topBumps, setTopBumps] = useState<{ name: string; count: number; revenue: number }[]>([])

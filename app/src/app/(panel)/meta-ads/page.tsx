@@ -224,22 +224,22 @@ export default function MetaAdsPage() {
       {/* Metricas complementares */}
       {totals && (
         <div className="grid grid-cols-3 gap-3">
-          <KpiCard icon={Eye} label="CPM" value={fmt.money(totals.cpm)} />
-          <KpiCard icon={Layers} label="Frequencia" value={totals.frequency.toFixed(2)} color={totals.frequency > 3 ? 'text-red-400' : totals.frequency > 2 ? 'text-yellow-400' : 'text-zinc-100'} sub={totals.frequency > 3 ? 'Saturacao!' : totals.frequency > 2 ? 'Atencao' : 'Saudavel'} />
-          <KpiCard icon={Target} label="Taxa Conv. LP" value={totals.landing_page_views > 0 ? fmt.pct(totals.purchases / totals.landing_page_views * 100) : '—'} sub={`${fmt.num(totals.purchases)} compras / ${fmt.num(totals.landing_page_views)} visitantes`} color={totals.landing_page_views > 0 && (totals.purchases / totals.landing_page_views * 100) >= 1 ? 'text-emerald-400' : 'text-yellow-400'} />
+          <KpiCard icon={Eye} label="CPM" value={fmt.money(totals.cpm)} color="text-lime-400" />
+          <KpiCard icon={Layers} label="Frequencia" value={totals.frequency.toFixed(2)} color={totals.frequency > 3 ? 'text-red-400' : totals.frequency > 2 ? 'text-yellow-400' : 'text-lime-400'} sub={totals.frequency > 3 ? 'Saturacao!' : totals.frequency > 2 ? 'Atencao' : 'Saudavel'} />
+          <KpiCard icon={Target} label="Taxa Conv. LP" value={totals.landing_page_views > 0 ? fmt.pct(totals.purchases / totals.landing_page_views * 100) : '—'} sub={`${fmt.num(totals.purchases)} compras / ${fmt.num(totals.landing_page_views)} visitantes`} color="text-lime-400" />
         </div>
       )}
 
       {/* Financeiro */}
       {totals && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <FinCard label="Receita" value={fmt.money(totals.revenue)} color="text-emerald-400" />
-          <FinCard label="Gasto" value={fmt.money(totals.spend)} color="text-blue-400" />
-          <FinCard label="Imposto (12%)" value={fmt.money(totals.imposto)} color="text-orange-400" />
+          <FinCard label="Receita" value={fmt.money(totals.revenue)} color="text-lime-400" />
+          <FinCard label="Gasto" value={fmt.money(totals.spend)} color="text-white" />
+          <FinCard label="Imposto (12%)" value={fmt.money(totals.imposto)} color="text-zinc-400" />
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-4 relative overflow-hidden">
-            <div className={`absolute inset-0 ${totals.margem >= 0 ? 'bg-emerald-400/[0.03]' : 'bg-red-400/[0.03]'} pointer-events-none`} />
+            <div className={`absolute inset-0 ${totals.margem >= 0 ? 'bg-lime-400/[0.03]' : 'bg-red-400/[0.03]'} pointer-events-none`} />
             <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-3 relative z-10">Margem</p>
-            <p className={`text-2xl font-black tabular-nums relative z-10 ${totals.margem >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{totals.margem >= 0 ? '+' : ''}{fmt.money(totals.margem)}</p>
+            <p className={`text-2xl font-black tabular-nums relative z-10 ${totals.margem >= 0 ? 'text-lime-400' : 'text-red-400'}`}>{totals.margem >= 0 ? '+' : ''}{fmt.money(totals.margem)}</p>
             <p className="text-[10px] text-zinc-600 mt-1 relative z-10">Receita - Gasto - Imposto</p>
           </div>
         </div>
@@ -248,7 +248,7 @@ export default function MetaAdsPage() {
       {/* Chart */}
       {chartData.length > 1 && (
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-          <p className="text-sm font-semibold text-zinc-400 mb-4">Gasto Diario (cor = ROAS)</p>
+          <p className="text-sm font-bold text-zinc-300 mb-4">Gasto Diario <span className="text-zinc-600 font-medium">(cor = ROAS)</span></p>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#222" />
@@ -265,7 +265,7 @@ export default function MetaAdsPage() {
       <div className="flex items-center gap-2 flex-wrap">
         {(['campaigns', 'adsets', 'ads'] as Tab[]).map(t => (
           <button key={t} onClick={() => handleTabChange(t)}
-            className={`px-4 py-2 text-sm rounded-lg transition ${tab === t ? 'bg-zinc-800 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}>
+            className={`px-4 py-2 text-sm rounded-lg transition ${tab === t ? 'bg-lime-400/10 border border-lime-400/20 text-lime-400' : 'text-zinc-500 hover:text-zinc-300 border border-transparent'}`}>
             {t === 'campaigns' ? 'Campanhas' : t === 'adsets' ? 'Conjuntos' : 'Anuncios'}
             <span className="ml-1.5 text-[10px] text-zinc-600">
               {t === 'campaigns' ? campaigns.length : t === 'adsets' ? adsets.length : filteredAds.length}
@@ -331,13 +331,13 @@ export default function MetaAdsPage() {
                     </td>
                   )}
                   <td className="px-4 py-3 text-sm text-zinc-300 max-w-[280px] truncate">{name}</td>
-                  <td className="px-4 py-3 text-sm text-zinc-300 text-right tabular-nums">{fmt.money(r.spend)}</td>
+                  <td className="px-4 py-3 text-sm text-white text-right tabular-nums font-semibold">{fmt.money(r.spend)}</td>
                   <td className="px-4 py-3 text-sm text-zinc-400 text-right tabular-nums">{r.cpm > 0 ? fmt.money(r.cpm) : '—'}</td>
-                  <td className="px-4 py-3 text-sm text-blue-400 text-right tabular-nums">{r.cost_per_landing_page_view > 0 ? fmt.money(r.cost_per_landing_page_view) : '—'}</td>
-                  <td className="px-4 py-3 text-sm text-purple-400 text-right tabular-nums">{r.cost_per_add_payment_info > 0 ? fmt.money(r.cost_per_add_payment_info) : '—'}</td>
-                  <td className={`px-4 py-3 text-sm text-right tabular-nums ${r.cost_per_purchase > 80 ? 'text-red-400' : r.cost_per_purchase > 60 ? 'text-yellow-400' : r.cost_per_purchase > 0 ? 'text-emerald-400' : 'text-zinc-500'}`}>{r.cost_per_purchase > 0 ? fmt.money(r.cost_per_purchase) : '—'}</td>
-                  <td className="px-4 py-3 text-sm text-zinc-300 text-right tabular-nums">{r.purchases > 0 ? fmt.num(r.purchases) : '—'}</td>
-                  <td className="px-4 py-3 text-sm text-emerald-400 text-right tabular-nums">{r.revenue > 0 ? fmt.money(r.revenue) : '—'}</td>
+                  <td className="px-4 py-3 text-sm text-zinc-300 text-right tabular-nums">{r.cost_per_landing_page_view > 0 ? fmt.money(r.cost_per_landing_page_view) : '—'}</td>
+                  <td className="px-4 py-3 text-sm text-zinc-300 text-right tabular-nums">{r.cost_per_add_payment_info > 0 ? fmt.money(r.cost_per_add_payment_info) : '—'}</td>
+                  <td className={`px-4 py-3 text-sm text-right tabular-nums font-semibold ${r.cost_per_purchase > 80 ? 'text-red-400' : r.cost_per_purchase > 60 ? 'text-yellow-400' : r.cost_per_purchase > 0 ? 'text-lime-400' : 'text-zinc-500'}`}>{r.cost_per_purchase > 0 ? fmt.money(r.cost_per_purchase) : '—'}</td>
+                  <td className="px-4 py-3 text-sm text-lime-400 text-right tabular-nums font-semibold">{r.purchases > 0 ? fmt.num(r.purchases) : '—'}</td>
+                  <td className="px-4 py-3 text-sm text-lime-400 text-right tabular-nums font-semibold">{r.revenue > 0 ? fmt.money(r.revenue) : '—'}</td>
                   <td className="px-4 py-3 text-right"><span className={`inline-block px-2 py-0.5 rounded-md text-xs font-bold tabular-nums ${roasPill(r.roas)}`}>{r.roas > 0 ? fmt.roas(r.roas) : '—'}</span></td>
                 </tr>
               )

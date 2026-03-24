@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   const supabase = getServiceSupabase()
 
   let startStr = params.get('startDate') || ''
-  let endStr = params.get('endDate') || ''
+  const endStr = params.get('endDate') || ''
 
   if (!startStr) {
     const period = params.get('period') || '7d'
@@ -30,10 +30,10 @@ export async function GET(req: NextRequest) {
   const startDate = new Date(startStr + 'T00:00:00')
   const endDate = endStr ? new Date(endStr + 'T23:59:59') : new Date()
 
-  // Vendas aprovadas
+  // Todas as vendas aprovadas (incluindo bumps e upsells)
   let salesQuery = supabase.from('ticto_sales').select('*').eq('status', 'authorized').gte('status_date', startDate.toISOString())
   if (endStr) salesQuery = salesQuery.lte('status_date', endDate.toISOString())
-  const { data: sales, error: salesError } = await salesQuery.order('status_date', { ascending: false })
+  const { data: sales, error: salesError } = await salesQuery.order('status_date', { ascending: false }).limit(5000)
 
   if (salesError) return NextResponse.json({ error: salesError.message }, { status: 500 })
 
@@ -47,60 +47,133 @@ export async function GET(req: NextRequest) {
   if (endStr) metaQuery = metaQuery.lte('date', endStr)
   const { data: metaData } = await metaQuery
 
-  const allSales = sales || []
+  const all = sales || []
   const allRefunds = refunds || []
   const totalSpend = (metaData || []).reduce((s, r) => s + Number(r.spend), 0)
 
-  // Totais
-  const totalRevenue = allSales.reduce((s, r) => s + Number(r.paid_amount || 0), 0)
+  // Separar tipos
+  const principais = all.filter(s => !s.is_bump && !s.is_upsell && !s.is_downsell)
+  const bumps = all.filter(s => s.is_bump)
+  const upsells = all.filter(s => s.is_upsell)
+  const downsells = all.filter(s => s.is_downsell)
+
+  // Receitas
+  const revPrincipais = principais.reduce((s, r) => s + Number(r.paid_amount || 0), 0)
+  const revBumps = bumps.reduce((s, r) => s + Number(r.paid_amount || 0), 0)
+  const revUpsells = upsells.reduce((s, r) => s + Number(r.paid_amount || 0), 0)
+  const revDownsells = downsells.reduce((s, r) => s + Number(r.paid_amount || 0), 0)
+  const totalRevenue = revPrincipais + revBumps + revUpsells + revDownsells
   const totalRefundAmount = allRefunds.reduce((s, r) => s + Number(r.paid_amount || 0), 0)
   const netRevenue = totalRevenue - totalRefundAmount
 
-  // Order bump detection (vendas com paid_amount > price = tem bump)
-  const withBump = allSales.filter(s => Number(s.paid_amount) > Number(s.price) && Number(s.price) > 0)
-  const bumpRevenue = withBump.reduce((s, r) => s + (Number(r.paid_amount) - Number(r.price)), 0)
+  // Pedidos únicos (pelo order_id dos principais)
+  const uniqueOrders = new Set(principais.map(s => s.order_id))
+  const ordersWithBump = new Set(bumps.map(s => s.order_id))
+  const bumpRate = uniqueOrders.size > 0 ? (ordersWithBump.size / uniqueOrders.size * 100) : 0
 
-  // Métodos de pagamento
+  // Ticket médio por pedido (soma tudo do mesmo order_id)
+  const orderTotals: Record<string, number> = {}
+  all.forEach(s => {
+    const oid = s.order_id || ''
+    orderTotals[oid] = (orderTotals[oid] || 0) + Number(s.paid_amount || 0)
+  })
+  const avgOrderValue = uniqueOrders.size > 0
+    ? Object.values(orderTotals).reduce((a, b) => a + b, 0) / uniqueOrders.size : 0
+
+  // Breakdown por produto (só principais)
+  const productMap: Record<string, { count: number; revenue: number; bumps: number; bump_revenue: number; upsells: number; upsell_revenue: number; downsells: number; downsell_revenue: number }> = {}
+  principais.forEach(s => {
+    const name = s.product_name || 'Desconhecido'
+    if (!productMap[name]) productMap[name] = { count: 0, revenue: 0, bumps: 0, bump_revenue: 0, upsells: 0, upsell_revenue: 0, downsells: 0, downsell_revenue: 0 }
+    productMap[name].count++
+    productMap[name].revenue += Number(s.paid_amount || 0)
+  })
+  // Adicionar bumps/upsells/downsells ao produto pai
+  bumps.forEach(s => {
+    const parent = s.parent_product || 'Outros'
+    if (!productMap[parent]) productMap[parent] = { count: 0, revenue: 0, bumps: 0, bump_revenue: 0, upsells: 0, upsell_revenue: 0, downsells: 0, downsell_revenue: 0 }
+    productMap[parent].bumps++
+    productMap[parent].bump_revenue += Number(s.paid_amount || 0)
+  })
+  upsells.forEach(s => {
+    const parent = s.parent_product || 'Outros'
+    if (!productMap[parent]) productMap[parent] = { count: 0, revenue: 0, bumps: 0, bump_revenue: 0, upsells: 0, upsell_revenue: 0, downsells: 0, downsell_revenue: 0 }
+    productMap[parent].upsells++
+    productMap[parent].upsell_revenue += Number(s.paid_amount || 0)
+  })
+  downsells.forEach(s => {
+    const parent = s.parent_product || 'Outros'
+    if (!productMap[parent]) productMap[parent] = { count: 0, revenue: 0, bumps: 0, bump_revenue: 0, upsells: 0, upsell_revenue: 0, downsells: 0, downsell_revenue: 0 }
+    productMap[parent].downsells++
+    productMap[parent].downsell_revenue += Number(s.paid_amount || 0)
+  })
+
+  const products = Object.entries(productMap)
+    .map(([name, d]) => ({
+      name,
+      ...d,
+      total_revenue: d.revenue + d.bump_revenue + d.upsell_revenue + d.downsell_revenue,
+      bump_rate: d.count > 0 ? Number((d.bumps / d.count * 100).toFixed(1)) : 0,
+    }))
+    .sort((a, b) => b.total_revenue - a.total_revenue)
+
+  // Top bumps (quais bumps vendem mais)
+  const bumpProducts: Record<string, { name: string; count: number; revenue: number }> = {}
+  bumps.forEach(s => {
+    const name = s.product_name || ''
+    if (!bumpProducts[name]) bumpProducts[name] = { name, count: 0, revenue: 0 }
+    bumpProducts[name].count++
+    bumpProducts[name].revenue += Number(s.paid_amount || 0)
+  })
+  const topBumps = Object.values(bumpProducts).sort((a, b) => b.count - a.count)
+
+  // Métodos de pagamento (só principais, sem duplicar por bump)
   const paymentMethods: Record<string, number> = {}
-  allSales.forEach(s => {
+  principais.forEach(s => {
     const m = s.payment_method || 'unknown'
     paymentMethods[m] = (paymentMethods[m] || 0) + 1
   })
 
-  // Vendas por dia
-  const dailyMap: Record<string, { count: number; revenue: number; refunds: number; refund_amount: number }> = {}
-  allSales.forEach(s => {
+  // Vendas por dia (principais = pedidos)
+  const dailyMap: Record<string, { count: number; revenue: number; bumps: number; bump_rev: number; refunds: number; refund_amount: number }> = {}
+  principais.forEach(s => {
     const date = s.status_date ? new Date(s.status_date).toISOString().split('T')[0] : ''
     if (!date) return
-    if (!dailyMap[date]) dailyMap[date] = { count: 0, revenue: 0, refunds: 0, refund_amount: 0 }
+    if (!dailyMap[date]) dailyMap[date] = { count: 0, revenue: 0, bumps: 0, bump_rev: 0, refunds: 0, refund_amount: 0 }
     dailyMap[date].count++
     dailyMap[date].revenue += Number(s.paid_amount || 0)
+  })
+  bumps.forEach(s => {
+    const date = s.status_date ? new Date(s.status_date).toISOString().split('T')[0] : ''
+    if (!date || !dailyMap[date]) return
+    dailyMap[date].bumps++
+    dailyMap[date].bump_rev += Number(s.paid_amount || 0)
   })
   allRefunds.forEach(r => {
     const date = r.status_date ? new Date(r.status_date).toISOString().split('T')[0] : ''
     if (!date) return
-    if (!dailyMap[date]) dailyMap[date] = { count: 0, revenue: 0, refunds: 0, refund_amount: 0 }
+    if (!dailyMap[date]) dailyMap[date] = { count: 0, revenue: 0, bumps: 0, bump_rev: 0, refunds: 0, refund_amount: 0 }
     dailyMap[date].refunds++
     dailyMap[date].refund_amount += Number(r.paid_amount || 0)
   })
 
   const daily = Object.entries(dailyMap)
-    .map(([date, d]) => ({ date, ...d, net: d.revenue - d.refund_amount }))
+    .map(([date, d]) => ({ date, ...d, total: d.revenue + d.bump_rev, net: d.revenue + d.bump_rev - d.refund_amount }))
     .sort((a, b) => a.date.localeCompare(b.date))
 
-  // Top UTMs (de onde vieram as vendas)
-  const utmMap: Record<string, { count: number; revenue: number; source: string; campaign: string }> = {}
-  allSales.forEach(s => {
+  // UTM Sources (só principais)
+  const utmMap: Record<string, { count: number; revenue: number; source: string }> = {}
+  principais.forEach(s => {
     const key = s.utm_source || 'direto'
-    if (!utmMap[key]) utmMap[key] = { count: 0, revenue: 0, source: s.utm_source || 'direto', campaign: s.utm_campaign || '' }
+    if (!utmMap[key]) utmMap[key] = { count: 0, revenue: 0, source: key }
     utmMap[key].count++
     utmMap[key].revenue += Number(s.paid_amount || 0)
   })
   const topSources = Object.values(utmMap).sort((a, b) => b.revenue - a.revenue)
 
-  // Horários de pico (hora do dia com mais vendas)
+  // Horários de pico
   const hourMap: Record<number, number> = {}
-  allSales.forEach(s => {
+  principais.forEach(s => {
     if (!s.status_date) return
     const hour = new Date(s.status_date).getHours()
     hourMap[hour] = (hourMap[hour] || 0) + 1
@@ -111,7 +184,7 @@ export async function GET(req: NextRequest) {
 
   // Estados
   const stateMap: Record<string, number> = {}
-  allSales.forEach(s => {
+  principais.forEach(s => {
     const state = s.customer_state || 'N/A'
     stateMap[state] = (stateMap[state] || 0) + 1
   })
@@ -122,27 +195,38 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     totals: {
-      sales: allSales.length,
+      orders: uniqueOrders.size,
+      items_sold: all.length,
+      revenue_principal: revPrincipais,
+      revenue_bumps: revBumps,
+      revenue_upsells: revUpsells,
+      revenue_downsells: revDownsells,
       revenue: totalRevenue,
       refunds: allRefunds.length,
       refund_amount: totalRefundAmount,
-      refund_rate: allSales.length > 0 ? Number((allRefunds.length / allSales.length * 100).toFixed(1)) : 0,
+      refund_rate: uniqueOrders.size > 0 ? Number((allRefunds.length / uniqueOrders.size * 100).toFixed(1)) : 0,
       net_revenue: netRevenue,
-      ticket_medio: allSales.length > 0 ? Number((totalRevenue / allSales.length).toFixed(2)) : 0,
-      order_bump_count: withBump.length,
-      order_bump_rate: allSales.length > 0 ? Number((withBump.length / allSales.length * 100).toFixed(1)) : 0,
-      order_bump_revenue: bumpRevenue,
+      avg_order_value: Number(avgOrderValue.toFixed(2)),
+      bump_orders: ordersWithBump.size,
+      bump_rate: Number(bumpRate.toFixed(1)),
+      bump_revenue: revBumps,
+      upsell_count: upsells.length,
+      upsell_revenue: revUpsells,
+      downsell_count: downsells.length,
+      downsell_revenue: revDownsells,
       ad_spend: totalSpend,
       roas_real: totalSpend > 0 ? Number((netRevenue / totalSpend).toFixed(4)) : 0,
-      cpa: allSales.length > 0 ? Number((totalSpend / allSales.length).toFixed(2)) : 0,
+      cpa: uniqueOrders.size > 0 ? Number((totalSpend / uniqueOrders.size).toFixed(2)) : 0,
       profit: netRevenue - totalSpend,
     },
+    products,
+    top_bumps: topBumps,
     daily,
     payment_methods: paymentMethods,
     top_sources: topSources,
     peak_hours: peakHours.slice(0, 5),
     top_states: topStates,
-    transactions: view === 'transactions' ? allSales.concat(allRefunds).sort((a, b) =>
+    transactions: view === 'transactions' ? all.concat(allRefunds).sort((a, b) =>
       new Date(b.status_date || 0).getTime() - new Date(a.status_date || 0).getTime()
     ) : undefined,
   })

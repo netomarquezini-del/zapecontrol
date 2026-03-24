@@ -238,11 +238,13 @@ export default function MetaAdsPage() {
           <FinCard label="Receita" value={fmt.money(totals.revenue)} color="text-emerald-400" />
           <FinCard label="Gasto" value={fmt.money(totals.spend)} color="text-blue-400" />
           <FinCard label="Imposto (12%)" value={fmt.money(totals.imposto)} color="text-orange-400" />
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 relative overflow-hidden">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex flex-col justify-between min-h-[100px] relative overflow-hidden">
             <div className={`absolute inset-0 ${totals.margem >= 0 ? 'bg-emerald-400/[0.03]' : 'bg-red-400/[0.03]'} pointer-events-none`} />
-            <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-1">Margem</p>
-            <p className={`text-2xl font-black ${totals.margem >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{totals.margem >= 0 ? '+' : ''}{fmt.money(totals.margem)}</p>
-            <p className="text-[10px] text-zinc-600 mt-1">Receita - Gasto - Imposto</p>
+            <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold relative z-10">Margem</p>
+            <div className="relative z-10 mt-3">
+              <p className={`text-2xl font-black ${totals.margem >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{totals.margem >= 0 ? '+' : ''}{fmt.money(totals.margem)}</p>
+              <p className="text-[10px] text-zinc-600 mt-1">Receita - Gasto - Imposto</p>
+            </div>
           </div>
         </div>
       )}
@@ -362,13 +364,23 @@ export default function MetaAdsPage() {
 
 function KpiCard({ icon: Icon, label, value, color, sub }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string; color?: string; sub?: string }) {
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-      <div className="flex items-center gap-2 mb-2"><Icon className="w-3.5 h-3.5 text-zinc-600" /><span className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">{label}</span></div>
-      <p className={`text-lg font-bold ${color || 'text-zinc-100'}`}>{value}</p>
-      {sub && <p className="text-[11px] text-zinc-600 mt-1">{sub}</p>}
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex flex-col justify-between min-h-[110px]">
+      <div className="flex items-center gap-2">
+        <Icon className="w-4 h-4 text-zinc-600 flex-shrink-0" />
+        <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold leading-tight">{label}</span>
+      </div>
+      <div className="mt-3">
+        <p className={`text-xl font-extrabold leading-none ${color || 'text-zinc-100'}`}>{value}</p>
+        {sub && <p className="text-[11px] text-zinc-500 mt-1.5 leading-tight">{sub}</p>}
+      </div>
     </div>
   )
 }
 function FinCard({ label, value, color }: { label: string; value: string; color: string }) {
-  return <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5"><p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-1">{label}</p><p className={`text-2xl font-black ${color}`}>{value}</p></div>
+  return (
+    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 flex flex-col justify-between min-h-[100px]">
+      <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">{label}</p>
+      <p className={`text-2xl font-black mt-3 ${color}`}>{value}</p>
+    </div>
+  )
 }

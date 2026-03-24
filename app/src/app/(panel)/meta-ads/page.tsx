@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { TrendingUp, DollarSign, ShoppingCart, Target, Eye, MousePointerClick, RefreshCw, BarChart3, Layers, CreditCard, ChevronRight, ChevronUp, ChevronDown, X, Check } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import DatePicker from '@/components/date-picker'
 
 function todayISO() {
@@ -29,7 +28,7 @@ interface Totals {
   cost_per_landing_page_view: number; cost_per_add_payment_info: number
   roas: number; frequency: number; imposto: number; margem: number
 }
-interface DailyRow { date: string; spend: number; roas: number }
+
 interface EntityRow {
   campaign_id?: string; campaign_name?: string; adset_id?: string; adset_name?: string
   ad_id?: string; ad_name?: string; spend: number; impressions: number; purchases: number
@@ -47,7 +46,7 @@ export default function MetaAdsPage() {
   const [dates, setDates] = useState({ startDate: today, endDate: today })
   const [tab, setTab] = useState<Tab>('campaigns')
   const [totals, setTotals] = useState<Totals | null>(null)
-  const [daily, setDaily] = useState<DailyRow[]>([])
+  const [daily, setDaily] = useState<Record<string, unknown>[]>([])
   const [campaigns, setCampaigns] = useState<EntityRow[]>([])
   const [adsets, setAdsets] = useState<EntityRow[]>([])
   const [ads, setAds] = useState<EntityRow[]>([])
@@ -158,8 +157,6 @@ export default function MetaAdsPage() {
     else { setSortKey(key); setSortDir('desc') }
   }
 
-  const chartData = daily.map(d => ({ date: d.date.split('-').slice(1).reverse().join('/'), spend: Number(d.spend), color: roasBarColor(Number(d.roas)) }))
-
   // Active rows + sort
   const rawRows = tab === 'campaigns' ? campaigns : tab === 'adsets' ? adsets : filteredAds
   const activeRows = useMemo(() => {
@@ -245,21 +242,6 @@ export default function MetaAdsPage() {
         </div>
       )}
 
-      {/* Chart */}
-      {chartData.length > 1 && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-          <p className="text-sm font-bold text-zinc-300 mb-4">Gasto Diario <span className="text-zinc-600 font-medium">(cor = ROAS)</span></p>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#222" />
-              <XAxis dataKey="date" tick={{ fill: '#666', fontSize: 11 }} />
-              <YAxis tick={{ fill: '#666', fontSize: 11 }} tickFormatter={(v: number) => `R$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip contentStyle={{ background: '#111', border: '1px solid #333', borderRadius: '12px', fontSize: '12px' }} formatter={(value) => `R$ ${Number(value).toFixed(2)}`} />
-              <Bar dataKey="spend" radius={[4, 4, 0, 0]}>{chartData.map((e, i) => <Cell key={i} fill={e.color} />)}</Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
 
       {/* Tabs + Breadcrumb */}
       <div className="flex items-center gap-2 flex-wrap">

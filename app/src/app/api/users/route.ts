@@ -10,7 +10,7 @@ function getAdminClient() {
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, password, role, permissions } = await req.json()
+    const { name, email, password, role, permissions, role_template_id } = await req.json()
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: 'Nome, email e senha sao obrigatorios' }, { status: 400 })
@@ -41,7 +41,8 @@ export async function POST(req: NextRequest) {
       email,
       name,
       role: role || 'viewer',
-      permissions: permissions || ['dashboard'],
+      permissions: permissions || ['comercial.dashboard'],
+      role_template_id: role_template_id || null,
       active: true,
     })
 

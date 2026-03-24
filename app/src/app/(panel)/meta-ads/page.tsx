@@ -163,12 +163,14 @@ export default function MetaAdsPage() {
           <KpiCard icon={ShoppingCart} label="Compras" value={fmt.num(totals.purchases)}
             sub={`Custo: ${totals.cost_per_purchase > 0 ? fmt.money(totals.cost_per_purchase) : '—'}`}
             color={totals.cost_per_purchase <= 60 ? 'text-emerald-400' : totals.cost_per_purchase <= 80 ? 'text-yellow-400' : 'text-red-400'} />
-          <KpiCard icon={BarChart3} label="CTR" value={fmt.pct(totals.ctr)} sub={`CPC: ${fmt.money(totals.cpc)}`} />
+          <KpiCard icon={BarChart3} label="CTR (Link Click)" value={totals.impressions > 0 ? fmt.pct(totals.clicks / totals.impressions * 100) : '—'} sub={`CPC: ${fmt.money(totals.cpc)}`} />
           <KpiCard icon={Layers} label="Frequencia" value={totals.frequency.toFixed(2)}
             color={totals.frequency > 3 ? 'text-red-400' : totals.frequency > 2 ? 'text-yellow-400' : 'text-zinc-100'}
             sub={totals.frequency > 3 ? 'Saturacao!' : totals.frequency > 2 ? 'Atencao' : 'Saudavel'} />
-          <KpiCard icon={Target} label="Funil" value={`${fmt.num(totals.landing_page_views)} → ${fmt.num(totals.add_payment_info)} → ${fmt.num(totals.purchases)}`}
-            sub={totals.landing_page_views > 0 ? `CVR: ${(totals.purchases / totals.landing_page_views * 100).toFixed(1)}%` : undefined} />
+          <KpiCard icon={Target} label="Taxa Conv. LP"
+            value={totals.landing_page_views > 0 ? fmt.pct(totals.purchases / totals.landing_page_views * 100) : '—'}
+            sub={`${fmt.num(totals.purchases)} compras / ${fmt.num(totals.landing_page_views)} visitantes`}
+            color={totals.landing_page_views > 0 && (totals.purchases / totals.landing_page_views * 100) >= 1 ? 'text-emerald-400' : 'text-yellow-400'} />
         </div>
       )}
 

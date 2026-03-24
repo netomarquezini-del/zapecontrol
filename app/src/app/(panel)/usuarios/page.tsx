@@ -9,8 +9,9 @@ import type { RoleTemplate } from '@/lib/permissions'
 import PermissionGrid from '@/components/usuarios/permission-grid'
 import RoleTemplateSelector from '@/components/usuarios/role-template-selector'
 import ResetPasswordModal from '@/components/usuarios/reset-password-modal'
+import ManageTemplatesModal from '@/components/usuarios/manage-templates-modal'
 import {
-  Users, UserPlus, Loader2, Pencil, Trash2, Save, X, Check, AlertCircle, Shield, KeyRound, ChevronDown, ChevronUp,
+  Users, UserPlus, Loader2, Pencil, Trash2, Save, X, Check, AlertCircle, Shield, KeyRound, ChevronDown, ChevronUp, Search, SlidersHorizontal, Settings2,
 } from 'lucide-react'
 
 interface AppUser {
@@ -52,6 +53,13 @@ export default function UsuariosPage() {
 
   // Expand/collapse user cards
   const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  // Filters
+  const [searchName, setSearchName] = useState('')
+  const [filterRole, setFilterRole] = useState('')
+
+  // Manage templates modal
+  const [showTemplates, setShowTemplates] = useState(false)
 
   const showFb = (type: 'success' | 'error', msg: string) => {
     setFeedback({ type, msg })
@@ -173,7 +181,16 @@ export default function UsuariosPage() {
     setDeleting(null)
   }
 
+  // Filtered users
+  const uniqueRoles = [...new Set(users.map((u) => u.role))].sort()
+  const filteredUsers = users.filter((u) => {
+    const matchesName = !searchName || u.name.toLowerCase().includes(searchName.toLowerCase()) || u.email.toLowerCase().includes(searchName.toLowerCase())
+    const matchesRole = !filterRole || u.role === filterRole
+    return matchesName && matchesRole
+  })
+
   const inputCls = "w-full rounded-xl border border-[#222222] bg-[#111111] px-4 py-2.5 text-[13px] font-semibold text-white placeholder-zinc-700 outline-none focus:border-lime-400/30 transition-colors"
+  const selectCls = "rounded-xl border border-[#222222] bg-[#111111] px-4 py-2.5 text-[13px] font-bold text-white outline-none focus:border-lime-400/30 transition-colors cursor-pointer"
 
   return (
     <div className="space-y-8">
@@ -188,12 +205,20 @@ export default function UsuariosPage() {
             <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-600">Gerenciar acessos e permissoes</p>
           </div>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 rounded-xl bg-lime-400/10 border border-lime-400/20 px-5 py-2.5 text-[13px] font-bold text-lime-400 hover:bg-lime-400/15 transition-all cursor-pointer"
-        >
-          <UserPlus size={15} /> Novo Usuario
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowTemplates(true)}
+            className="flex items-center gap-2 rounded-xl bg-[#111111] border border-[#222222] px-4 py-2.5 text-[13px] font-bold text-zinc-400 hover:text-white hover:border-zinc-600 transition-all cursor-pointer"
+          >
+            <Settings2 size={15} /> Perfis
+          </button>
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 rounded-xl bg-lime-400/10 border border-lime-400/20 px-5 py-2.5 text-[13px] font-bold text-lime-400 hover:bg-lime-400/15 transition-all cursor-pointer"
+          >
+            <UserPlus size={15} /> Novo Usuario
+          </button>
+        </div>
       </div>
 
       {/* Feedback */}
@@ -265,6 +290,45 @@ export default function UsuariosPage() {
         </div>
       )}
 
+      {/* Manage templates modal */}
+      {showTemplates && <ManageTemplatesModal onClose={() => setShowTemplates(false)} />}
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600" />
+          <input
+            type="text"
+            value={searchName}
+            onChange={(e) => setSearchName(e.target.value)}
+            placeholder="Buscar por nome ou email..."
+            className={`${inputCls} pl-10`}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <SlidersHorizontal size={14} className="text-zinc-600 shrink-0" />
+          <select
+            value={filterRole}
+            onChange={(e) => setFilterRole(e.target.value)}
+            className={selectCls}
+          >
+            <option value="">Todas as funcoes</option>
+            {uniqueRoles.map((role) => (
+              <option key={role} value={role}>{role.charAt(0).toUpperCase() + role.slice(1)}</option>
+            ))}
+          </select>
+          {(searchName || filterRole) && (
+            <button
+              onClick={() => { setSearchName(''); setFilterRole('') }}
+              className="rounded-lg p-2 text-zinc-500 hover:text-white hover:bg-white/5 cursor-pointer"
+              title="Limpar filtros"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Password reset modal */}
       {resetUser && (
         <ResetPasswordModal
@@ -285,9 +349,17 @@ export default function UsuariosPage() {
         <div className="card p-12 text-center">
           <p className="text-[13px] font-semibold text-zinc-600">Nenhum usuario cadastrado</p>
         </div>
+      ) : filteredUsers.length === 0 ? (
+        <div className="card p-12 text-center">
+          <p className="text-[13px] font-semibold text-zinc-600">Nenhum usuario encontrado com esses filtros</p>
+        </div>
       ) : (
         <div className="space-y-4">
-          {users.map((u) => {
+          <p className="text-[11px] font-semibold text-zinc-600">
+            {filteredUsers.length} de {users.length} usuario{users.length !== 1 ? 's' : ''}
+            {(searchName || filterRole) ? ' (filtrado)' : ''}
+          </p>
+          {filteredUsers.map((u) => {
             const isEditing = editId === u.id
             const isExpanded = expandedId === u.id || isEditing
             const permSummary = getPermSummary(u.permissions || [])

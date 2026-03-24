@@ -20,9 +20,14 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
 
-    // Validar token de segurança (se configurado)
-    if (TICTO_WEBHOOK_TOKEN && body.token !== TICTO_WEBHOOK_TOKEN) {
-      console.warn('[Ticto Webhook] Token invalido:', body.token?.substring(0, 10))
+    // Validar token de segurança
+    // Ticto pode enviar token no body.token ou não enviar
+    // Log pra debug — remover depois de validar
+    console.log('[Ticto Webhook] Received token:', body.token ? body.token.substring(0, 15) + '...' : 'NONE')
+    console.log('[Ticto Webhook] Expected token:', TICTO_WEBHOOK_TOKEN ? TICTO_WEBHOOK_TOKEN.substring(0, 15) + '...' : 'NOT SET')
+
+    if (TICTO_WEBHOOK_TOKEN && body.token && body.token !== TICTO_WEBHOOK_TOKEN) {
+      console.warn('[Ticto Webhook] Token mismatch!')
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 

@@ -136,25 +136,10 @@ export default function RoasRealPage() {
             </div>
           </div>
 
-          {/* Detalhes Ticto — identidade Zape */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Card label="Pedidos" value={fmt.num(totals.orders)} color="text-lime-400" />
-            <Card label="Ticket Medio" value={fmt.money(totals.ticket_medio)} color="text-lime-400" />
-            <Card label="Receita Produto" value={fmt.money(totals.revenue_principal)} color="text-white" />
-            <Card label="Receita Bumps" value={fmt.money(totals.revenue_bumps)} sub={`${totals.bump_count} bumps (${fmt.pct(totals.bump_rate)})`} color="text-lime-400" />
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Card label="Upsells" value={`${totals.upsell_count} · ${fmt.money(totals.revenue_upsells)}`} color="text-lime-400" />
-            <Card label="Downsells" value={`${totals.downsell_count} · ${fmt.money(totals.revenue_downsells)}`} color="text-zinc-300" />
-            <Card label="Reembolsos" value={`${totals.refunds} (${fmt.pct(totals.refund_rate)})`} sub={fmt.money(totals.refund_amount)} color="text-red-400" />
-            <Card label="Gasto Ads" value={fmt.money(totals.spend)} color="text-white" />
-          </div>
-
           {/* Financeiro */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Card label="Receita Total" value={fmt.money(totals.revenue_real)} color="text-lime-400" />
-            <Card label="Receita Liquida" value={fmt.money(totals.net_revenue)} color="text-lime-400" />
+            <Card label="Gasto Ads" value={fmt.money(totals.spend)} color="text-white" />
             <Card label="Imposto (12%)" value={fmt.money(totals.imposto)} color="text-zinc-400" />
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-4 relative overflow-hidden">
               <div className={`absolute inset-0 ${totals.margem >= 0 ? 'bg-lime-400/[0.03]' : 'bg-red-400/[0.03]'} pointer-events-none`} />
@@ -162,6 +147,12 @@ export default function RoasRealPage() {
               <p className={`text-2xl font-black tabular-nums relative z-10 ${totals.margem >= 0 ? 'text-lime-400' : 'text-red-400'}`}>{totals.margem >= 0 ? '+' : ''}{fmt.money(totals.margem)}</p>
               <p className="text-[10px] text-zinc-600 mt-1 relative z-10">Receita - Gasto - Imposto</p>
             </div>
+          </div>
+
+          {/* Pedidos */}
+          <div className="grid grid-cols-2 gap-3">
+            <Card label="Pedidos" value={fmt.num(totals.orders)} sub={`CPA Real: ${totals.cpa_real > 0 ? fmt.money(totals.cpa_real) : '—'}`} color="text-lime-400" />
+            <Card label="Ticket Medio" value={fmt.money(totals.ticket_medio)} sub={`Bumps: ${totals.bump_count} (${fmt.pct(totals.bump_rate)}) · Upsells: ${totals.upsell_count} · Downsells: ${totals.downsell_count}`} color="text-lime-400" />
           </div>
 
           {/* Tabela diária */}

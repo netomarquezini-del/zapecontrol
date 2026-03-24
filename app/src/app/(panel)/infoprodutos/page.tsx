@@ -154,47 +154,89 @@ export default function InfoprodutosPage() {
             </div>
           </div>
 
-          {/* 4. Bumps separados + Upsell + Downsell */}
+          {/* 4. Bumps separados + Upsell + Downsell — com gráfico visual */}
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
-            <h3 className="text-sm font-bold text-zinc-300 mb-4">Bumps, Upsells & Downsells</h3>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-sm font-bold text-zinc-300">Bumps, Upsells & Downsells</h3>
+              <span className="text-xs text-zinc-600">{fmt.num(totals.orders)} pedidos no periodo</span>
+            </div>
 
+            {/* Bumps individuais com barra visual */}
             {topBumps.length > 0 && (
-              <div className="mb-5">
-                <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-3 flex items-center gap-2">
+              <div className="mb-6">
+                <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold mb-4 flex items-center gap-2">
                   <Package className="w-3.5 h-3.5 text-lime-400" /> Order Bumps
-                  <span className="text-lime-400 ml-1">{fmt.num(totals.bump_orders)} pedidos com bump ({fmt.pct(totals.bump_rate)})</span>
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {topBumps.map(b => (
-                    <div key={b.name} className="bg-zinc-800/40 border border-zinc-800 rounded-xl px-4 py-3">
-                      <p className="text-xs font-bold text-zinc-200 truncate" title={b.name}>{b.name}</p>
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="text-lg font-black text-lime-400 tabular-nums">{fmt.num(b.count)}</span>
-                        <span className="text-xs text-zinc-400 tabular-nums">{fmt.money(b.revenue)}</span>
+                <div className="space-y-3">
+                  {topBumps.map(b => {
+                    const rate = totals.orders > 0 ? (b.count / totals.orders) * 100 : 0
+                    return (
+                      <div key={b.name}>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-xs font-bold text-zinc-200 truncate max-w-[200px]" title={b.name}>{b.name}</span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-zinc-400 tabular-nums">{fmt.money(b.revenue)}</span>
+                            <span className="text-sm font-black text-lime-400 tabular-nums w-16 text-right">{fmt.num(b.count)}</span>
+                            <span className="text-sm font-black text-lime-400 tabular-nums w-16 text-right">{rate.toFixed(1)}%</span>
+                          </div>
+                        </div>
+                        <div className="w-full h-3 bg-zinc-800 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(rate, 100)}%`, background: 'linear-gradient(90deg, rgba(163,230,53,0.4), rgba(132,204,22,0.6))' }} />
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-zinc-800/40 border border-zinc-800 rounded-xl px-5 py-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <ArrowUpRight className="w-4 h-4 text-lime-400" />
-                  <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">Upsells</p>
-                </div>
-                <p className="text-2xl font-black text-lime-400 tabular-nums">{fmt.num(totals.upsell_count)}</p>
-                <p className="text-xs text-zinc-500 mt-1">{fmt.money(totals.upsell_revenue)}</p>
-              </div>
-              <div className="bg-zinc-800/40 border border-zinc-800 rounded-xl px-5 py-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <ArrowDownRight className="w-4 h-4 text-zinc-400" />
-                  <p className="text-[10px] uppercase tracking-wider text-zinc-500 font-semibold">Downsells</p>
-                </div>
-                <p className="text-2xl font-black text-zinc-300 tabular-nums">{fmt.num(totals.downsell_count)}</p>
-                <p className="text-xs text-zinc-500 mt-1">{fmt.money(totals.downsell_revenue)}</p>
-              </div>
+            {/* Upsell + Downsell com barra visual */}
+            <div className="space-y-3">
+              {/* Upsell */}
+              {(() => {
+                const upsellRate = totals.orders > 0 ? (totals.upsell_count / totals.orders) * 100 : 0
+                return (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <ArrowUpRight className="w-4 h-4 text-lime-400" />
+                        <span className="text-xs font-bold text-zinc-200">Upsells</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-zinc-400 tabular-nums">{fmt.money(totals.upsell_revenue)}</span>
+                        <span className="text-sm font-black text-lime-400 tabular-nums w-16 text-right">{fmt.num(totals.upsell_count)}</span>
+                        <span className="text-sm font-black text-lime-400 tabular-nums w-16 text-right">{upsellRate.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                    <div className="w-full h-3 bg-zinc-800 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(upsellRate, 100)}%`, background: 'linear-gradient(90deg, rgba(163,230,53,0.4), rgba(132,204,22,0.6))' }} />
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {/* Downsell */}
+              {(() => {
+                const downsellRate = totals.orders > 0 ? (totals.downsell_count / totals.orders) * 100 : 0
+                return (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <ArrowDownRight className="w-4 h-4 text-zinc-400" />
+                        <span className="text-xs font-bold text-zinc-200">Downsells</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-zinc-400 tabular-nums">{fmt.money(totals.downsell_revenue)}</span>
+                        <span className="text-sm font-black text-zinc-300 tabular-nums w-16 text-right">{fmt.num(totals.downsell_count)}</span>
+                        <span className="text-sm font-black text-zinc-300 tabular-nums w-16 text-right">{downsellRate.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                    <div className="w-full h-3 bg-zinc-800 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-700 bg-zinc-600" style={{ width: `${Math.min(downsellRate, 100)}%` }} />
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
           </div>
 

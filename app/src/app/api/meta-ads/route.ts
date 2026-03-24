@@ -7,9 +7,10 @@ export async function GET(req: NextRequest) {
 
   const supabase = getServiceSupabase()
 
-  // Accept explicit startDate/endDate or fallback to period
   let startStr = params.get('startDate') || ''
-  let endStr = params.get('endDate') || ''
+  const endStr = params.get('endDate') || ''
+  const filterCampaign = params.get('campaign_id') || ''
+  const filterAdset = params.get('adset_id') || ''
 
   if (!startStr) {
     const period = params.get('period') || '7d'
@@ -31,6 +32,7 @@ export async function GET(req: NextRequest) {
   const tableMap: Record<string, string> = {
     account: 'meta_ads_account_insights',
     campaigns: 'meta_ads_campaign_insights',
+    adsets: 'meta_ads_adset_insights',
     ads: 'meta_ads_ad_insights',
   }
 
@@ -38,6 +40,12 @@ export async function GET(req: NextRequest) {
 
   let query = supabase.from(table).select('*').gte('date', startStr)
   if (endStr) query = query.lte('date', endStr)
+  if (filterCampaign && (level === 'adsets' || level === 'ads')) {
+    query = query.eq('campaign_id', filterCampaign)
+  }
+  if (filterAdset && level === 'ads') {
+    query = query.eq('adset_id', filterAdset)
+  }
   const { data, error } = await query.order('date', { ascending: true })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -77,9 +85,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ totals: t, daily: data })
   }
 
-  if ((level === 'campaigns' || level === 'ads') && data) {
-    const idField = level === 'campaigns' ? 'campaign_id' : 'ad_id'
-    const nameField = level === 'campaigns' ? 'campaign_name' : 'ad_name'
+  // Campaigns, Adsets, Ads — aggregate by entity
+  if (['campaigns', 'adsets', 'ads'].includes(level) && data) {
+    const idField = level === 'campaigns' ? 'campaign_id' : level === 'adsets' ? 'adset_id' : 'ad_id'
+    const nameField = level === 'campaigns' ? 'campaign_name' : level === 'adsets' ? 'adset_name' : 'ad_name'
     const grouped: Record<string, Record<string, unknown>> = {}
 
     for (const row of data) {
@@ -88,9 +97,10 @@ export async function GET(req: NextRequest) {
         grouped[id] = {
           [idField]: id,
           [nameField]: row[nameField],
-          status: row.status,
-          ...(level === 'ads' ? { campaign_name: row.campaign_name, campaign_id: row.campaign_id } : {}),
+          ...(level === 'adsets' ? { campaign_id: row.campaign_id, campaign_name: row.campaign_name } : {}),
+          ...(level === 'ads' ? { campaign_id: row.campaign_id, campaign_name: row.campaign_name, adset_id: row.adset_id, adset_name: row.adset_name } : {}),
           spend: 0, impressions: 0, clicks: 0, purchases: 0, revenue: 0,
+          landing_page_views: 0, add_payment_info: 0,
         }
       }
       ;(grouped[id].spend as number) += Number(row.spend)
@@ -98,6 +108,8 @@ export async function GET(req: NextRequest) {
       ;(grouped[id].clicks as number) += Number(row.clicks)
       ;(grouped[id].purchases as number) += Number(row.purchases)
       ;(grouped[id].revenue as number) += Number(row.revenue)
+      ;(grouped[id].landing_page_views as number) += Number(row.landing_page_views || 0)
+      ;(grouped[id].add_payment_info as number) += Number(row.add_payment_info || 0)
     }
 
     const result = Object.values(grouped).map((g) => {
@@ -106,11 +118,16 @@ export async function GET(req: NextRequest) {
       const clicks = g.clicks as number
       const purchases = g.purchases as number
       const revenue = g.revenue as number
+      const lpv = g.landing_page_views as number
+      const api = g.add_payment_info as number
       return {
         ...g,
-        spend,
+        spend, impressions, clicks, purchases, revenue,
+        cpm: impressions > 0 ? (spend / impressions) * 1000 : 0,
         ctr: impressions > 0 ? (clicks / impressions) * 100 : 0,
         cost_per_purchase: purchases > 0 ? spend / purchases : 0,
+        cost_per_landing_page_view: lpv > 0 ? spend / lpv : 0,
+        cost_per_add_payment_info: api > 0 ? spend / api : 0,
         roas: spend > 0 ? revenue / spend : 0,
       }
     })

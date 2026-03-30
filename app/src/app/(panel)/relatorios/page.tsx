@@ -4,8 +4,11 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, useCallback } from 'react'
 import { getSupabase } from '@/lib/supabase'
-import { Loader2, Download, FileText, BarChart3 } from 'lucide-react'
+import { Loader2, Download, FileText, BarChart3, TrendingUp } from 'lucide-react'
 import { MonthPicker } from '@/components/date-picker'
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+} from 'recharts'
 
 interface GestaoDocument {
   id: number
@@ -182,6 +185,83 @@ export default function RelatoriosPage() {
               <p className="text-xl font-extrabold text-white">{avgNota > 0 ? avgNota.toFixed(1) : '—'}</p>
             </div>
           </div>
+
+          {/* Chart — Evolução da Nota por Closer */}
+          {(() => {
+            // Agrupar por data + closer (usando relatorio-calls pra nao duplicar com PDD)
+            const callDocs = documents.filter(d => d.tipo === 'relatorio-calls' && d.nota_media && d.nota_media > 0)
+            const dates = [...new Set(callDocs.map(d => d.data_call))].sort()
+            const closersInDocs = [...new Set(callDocs.map(d => d.closer_name))].sort()
+            const COLORS = ['#A3E635', '#60A5FA', '#F59E0B', '#EF4444', '#A78BFA']
+
+            if (dates.length < 2) return null
+
+            const chartData = dates.map(date => {
+              const row: Record<string, string | number> = { date: date.substring(8, 10) + '/' + date.substring(5, 7) }
+              closersInDocs.forEach(closer => {
+                const doc = callDocs.find(d => d.data_call === date && d.closer_name === closer)
+                if (doc) row[closer] = Number(doc.nota_media)
+              })
+              return row
+            })
+
+            return (
+              <div className="card p-6">
+                <div className="flex items-center gap-2.5 mb-6">
+                  <TrendingUp size={15} className="text-lime-400" />
+                  <h3 className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600">
+                    Evolução da Nota por Closer
+                  </h3>
+                </div>
+                <div className="h-[280px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fill: '#666', fontSize: 11, fontWeight: 600 }}
+                        axisLine={{ stroke: 'rgba(255,255,255,0.06)' }}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        domain={[0, 10]}
+                        tick={{ fill: '#666', fontSize: 11, fontWeight: 600 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          background: 'rgba(10,10,10,0.95)',
+                          border: '1px solid #222',
+                          borderRadius: '12px',
+                          padding: '10px 14px',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                        }}
+                        labelStyle={{ color: '#666', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}
+                        itemStyle={{ padding: '2px 0' }}
+                      />
+                      <Legend
+                        wrapperStyle={{ fontSize: '11px', fontWeight: 700, paddingTop: '12px' }}
+                      />
+                      {closersInDocs.map((closer, i) => (
+                        <Line
+                          key={closer}
+                          type="monotone"
+                          dataKey={closer}
+                          stroke={COLORS[i % COLORS.length]}
+                          strokeWidth={2.5}
+                          dot={{ r: 4, fill: COLORS[i % COLORS.length], strokeWidth: 0 }}
+                          activeDot={{ r: 6, strokeWidth: 0 }}
+                          connectNulls
+                        />
+                      ))}
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )
+          })()}
 
           {/* Table */}
           <div className="card overflow-hidden">

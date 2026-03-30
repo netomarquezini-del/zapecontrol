@@ -4,7 +4,8 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, useCallback } from 'react'
 import { getSupabase } from '@/lib/supabase'
-import { Loader2, Download, FileText, BarChart3, Filter } from 'lucide-react'
+import { Loader2, Download, FileText, BarChart3 } from 'lucide-react'
+import { MonthPicker } from '@/components/date-picker'
 
 interface GestaoDocument {
   id: number
@@ -20,14 +21,9 @@ interface GestaoDocument {
   created_at: string
 }
 
-interface Closer {
-  id: number
-  name: string
-}
-
 const TIPO_LABEL: Record<string, string> = {
   'pdd': 'PDD',
-  'relatorio-calls': 'Relatorio Calls',
+  'relatorio-calls': 'Relatório Calls',
 }
 
 function getCurrentMonth() {
@@ -43,11 +39,11 @@ function formatDate(dateStr: string) {
 
 export default function RelatoriosPage() {
   const [documents, setDocuments] = useState<GestaoDocument[]>([])
-  const [closers, setClosers] = useState<Closer[]>([])
+  const [closerNames, setCloserNames] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
 
   // Filters
-  const [selectedCloser, setSelectedCloser] = useState<number | 'todos'>('todos')
+  const [selectedCloser, setSelectedCloser] = useState<string>('todos')
   const [selectedTipo, setSelectedTipo] = useState<string>('todos')
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth())
 
@@ -72,18 +68,40 @@ export default function RelatoriosPage() {
     }
 
     if (selectedCloser !== 'todos') {
-      query = query.eq('closer_id', selectedCloser)
+      query = query.eq('closer_name', selectedCloser)
     }
 
-    const [docRes, closerRes] = await Promise.all([
-      query,
-      supabase.from('closers').select('*').order('name'),
-    ])
+    const { data } = await query
+    const docs = (data ?? []) as GestaoDocument[]
+    setDocuments(docs)
 
-    setDocuments((docRes.data ?? []) as GestaoDocument[])
-    setClosers((closerRes.data ?? []) as Closer[])
+    // Extrair nomes unicos de closers dos documentos carregados (sem filtro de closer)
+    // Para isso, busca sem filtro de closer para preencher o dropdown
+    if (selectedCloser === 'todos') {
+      const names = [...new Set(docs.map(d => d.closer_name))].sort()
+      setCloserNames(prev => {
+        const merged = [...new Set([...prev, ...names])].sort()
+        return merged
+      })
+    }
+
     setLoading(false)
   }, [selectedMonth, selectedTipo, selectedCloser])
+
+  // Carregar nomes de closers na primeira carga (sem filtro)
+  useEffect(() => {
+    async function loadCloserNames() {
+      const supabase = getSupabase()
+      const { data } = await supabase
+        .from('gestao_documents')
+        .select('closer_name')
+      if (data) {
+        const names = [...new Set(data.map((d: { closer_name: string }) => d.closer_name))].sort()
+        setCloserNames(names)
+      }
+    }
+    loadCloserNames()
+  }, [])
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
@@ -92,8 +110,9 @@ export default function RelatoriosPage() {
 
   const totalCalls = documents.reduce((acc, d) => acc + (d.total_calls || 0), 0)
   const totalFechamentos = documents.reduce((acc, d) => acc + (d.fechamentos || 0), 0)
-  const avgNota = documents.length > 0
-    ? documents.reduce((acc, d) => acc + (d.nota_media || 0), 0) / documents.filter(d => d.nota_media != null).length
+  const docsWithNota = documents.filter(d => d.nota_media != null && d.nota_media > 0)
+  const avgNota = docsWithNota.length > 0
+    ? docsWithNota.reduce((acc, d) => acc + (d.nota_media || 0), 0) / docsWithNota.length
     : 0
 
   return (
@@ -105,22 +124,15 @@ export default function RelatoriosPage() {
             <FileText size={18} className="text-lime-400" />
           </div>
           <div>
-            <h1 className="text-xl font-extrabold text-white tracking-tight">Relatorios</h1>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-600">PDDs e Relatorios de Calls</p>
+            <h1 className="text-xl font-extrabold text-white tracking-tight">Relatórios</h1>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-600">PDDs e Relatórios de Calls</p>
           </div>
         </div>
 
         {/* Filters */}
         <div className="flex items-center gap-3 flex-wrap">
-          {/* Month picker */}
-          <input
-            type="month"
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="rounded-xl border border-[#222222] bg-[#111111] px-4 py-2.5 text-[12px] font-bold text-white outline-none focus:border-lime-400/30 transition-colors cursor-pointer"
-          />
+          <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
 
-          {/* Tipo filter */}
           <select
             value={selectedTipo}
             onChange={(e) => setSelectedTipo(e.target.value)}
@@ -128,18 +140,17 @@ export default function RelatoriosPage() {
           >
             <option value="todos">Todos os tipos</option>
             <option value="pdd">PDD</option>
-            <option value="relatorio-calls">Relatorio Calls</option>
+            <option value="relatorio-calls">Relatório Calls</option>
           </select>
 
-          {/* Closer filter */}
           <select
             value={selectedCloser}
-            onChange={(e) => setSelectedCloser(e.target.value === 'todos' ? 'todos' : Number(e.target.value))}
+            onChange={(e) => setSelectedCloser(e.target.value)}
             className="rounded-xl border border-[#222222] bg-[#111111] px-4 py-2.5 text-[12px] font-bold text-white outline-none focus:border-lime-400/30 transition-colors cursor-pointer appearance-none"
           >
             <option value="todos">Todos os closers</option>
-            {closers.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+            {closerNames.map((name) => (
+              <option key={name} value={name}>{name}</option>
             ))}
           </select>
         </div>
@@ -167,7 +178,7 @@ export default function RelatoriosPage() {
               <p className="text-xl font-extrabold text-lime-400">{totalFechamentos}</p>
             </div>
             <div className="card p-5">
-              <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-600 mb-1">Nota Media</p>
+              <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-600 mb-1">Nota Média</p>
               <p className="text-xl font-extrabold text-white">{avgNota > 0 ? avgNota.toFixed(1) : '—'}</p>
             </div>
           </div>
@@ -177,15 +188,15 @@ export default function RelatoriosPage() {
             <div className="px-6 py-4 border-b border-[#222222] flex items-center gap-2.5">
               <BarChart3 size={15} className="text-lime-400" />
               <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600">
-                {documents.length} relatorio{documents.length !== 1 ? 's' : ''} encontrado{documents.length !== 1 ? 's' : ''}
+                {documents.length} relatório{documents.length !== 1 ? 's' : ''} encontrado{documents.length !== 1 ? 's' : ''}
               </p>
             </div>
 
             {documents.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 gap-3">
                 <FileText size={32} className="text-zinc-700" />
-                <p className="text-[13px] font-semibold text-zinc-600">Nenhum relatorio encontrado</p>
-                <p className="text-[11px] text-zinc-700">Ajuste os filtros ou selecione outro periodo</p>
+                <p className="text-[13px] font-semibold text-zinc-600">Nenhum relatório encontrado</p>
+                <p className="text-[11px] text-zinc-700">Ajuste os filtros ou selecione outro período</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -195,9 +206,9 @@ export default function RelatoriosPage() {
                       <th className={`text-left ${th}`}>Tipo</th>
                       <th className={`text-left ${th}`}>Closer</th>
                       <th className={`text-left ${th}`}>Data</th>
-                      <th className={`text-right ${th}`}>Nota Media</th>
+                      <th className={`text-right ${th}`}>Nota</th>
                       <th className={`text-right ${th}`}>Calls</th>
-                      <th className={`text-right ${th}`}>Fechamentos</th>
+                      <th className={`text-right ${th}`}>Fech.</th>
                       <th className={`text-center ${th}`}>Arquivo</th>
                     </tr>
                   </thead>
@@ -217,9 +228,9 @@ export default function RelatoriosPage() {
                         <td className={`${td} font-extrabold text-white`}>{doc.closer_name}</td>
                         <td className={`${td} font-semibold text-zinc-400`}>{formatDate(doc.data_call)}</td>
                         <td className={`${td} text-right font-semibold`}>
-                          {doc.nota_media != null ? (
+                          {doc.nota_media != null && doc.nota_media > 0 ? (
                             <span className={doc.nota_media >= 7 ? 'text-lime-400' : doc.nota_media >= 5 ? 'text-yellow-500' : 'text-red-400'}>
-                              {doc.nota_media.toFixed(1)}
+                              {Number(doc.nota_media).toFixed(1)}
                             </span>
                           ) : (
                             <span className="text-zinc-600">—</span>

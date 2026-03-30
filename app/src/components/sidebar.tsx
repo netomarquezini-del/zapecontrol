@@ -30,6 +30,7 @@ import {
   ShoppingBag,
   CreditCard,
   ArrowLeftRight,
+  Sparkles,
 } from "lucide-react";
 
 interface NavItem {
@@ -59,6 +60,8 @@ const navGroups: NavGroup[] = [
       { href: "/lancamentos-ext", label: "Lancamentos", icon: FileEdit, external: true, perm: "comercial.lancamentos" },
       { href: "/metas", label: "Metas", icon: Target, perm: "comercial.metas" },
       { href: "/cadastros", label: "Cadastros", icon: Users, perm: "comercial.cadastros" },
+      { href: "/comercial/sales-copilot", label: "Sales Copilot", icon: Sparkles, perm: "comercial.sales-copilot" },
+      { href: "/relatorios", label: "Relatorios", icon: FileText, perm: "comercial.relatorios" },
     ],
   },
   {

@@ -24,6 +24,8 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { id: 'comercial.lancamentos', label: 'Lancamentos', group: 'comercial' },
       { id: 'comercial.metas', label: 'Metas', group: 'comercial' },
       { id: 'comercial.cadastros', label: 'Cadastros', group: 'comercial' },
+      { id: 'comercial.sales-copilot', label: 'Sales Copilot', group: 'comercial' },
+      { id: 'comercial.relatorios', label: 'Relatorios', group: 'comercial' },
     ],
   },
   {
@@ -66,6 +68,8 @@ export const PERM_TO_ROUTE: Record<string, string> = {
   'comercial.lancamentos': '/lancamentos-ext',
   'comercial.metas': '/metas',
   'comercial.cadastros': '/cadastros',
+  'comercial.sales-copilot': '/comercial/sales-copilot',
+  'comercial.relatorios': '/relatorios',
   'cs.monitor': '/cs-monitor',
   'cs.analytics': '/cs-analytics',
   'cs.consultores': '/cs-consultores',

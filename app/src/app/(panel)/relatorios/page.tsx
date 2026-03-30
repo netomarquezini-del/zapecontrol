@@ -14,7 +14,7 @@ interface GestaoDocument {
   id: number
   closer_id: number | null
   closer_name: string
-  tipo: 'pdd' | 'relatorio-calls'
+  tipo: 'pdd' | 'relatorio-calls' | 'relatorio-semanal'
   data_call: string
   file_name: string
   file_url: string
@@ -27,6 +27,7 @@ interface GestaoDocument {
 const TIPO_LABEL: Record<string, string> = {
   'pdd': 'PDD',
   'relatorio-calls': 'Relatório Calls',
+  'relatorio-semanal': 'Semanal 1:1',
 }
 
 function getCurrentMonth() {
@@ -144,6 +145,7 @@ export default function RelatoriosPage() {
             <option value="todos">Todos os tipos</option>
             <option value="pdd">PDD</option>
             <option value="relatorio-calls">Relatório Calls</option>
+            <option value="relatorio-semanal">Semanal 1:1</option>
           </select>
 
           <select
@@ -299,6 +301,8 @@ export default function RelatoriosPage() {
                           <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold ${
                             doc.tipo === 'pdd'
                               ? 'bg-lime-400/8 text-lime-400 border border-lime-400/15'
+                              : doc.tipo === 'relatorio-semanal'
+                              ? 'bg-purple-400/8 text-purple-400 border border-purple-400/15'
                               : 'bg-blue-400/8 text-blue-400 border border-blue-400/15'
                           }`}>
                             {doc.tipo === 'pdd' ? <FileText size={11} /> : <BarChart3 size={11} />}

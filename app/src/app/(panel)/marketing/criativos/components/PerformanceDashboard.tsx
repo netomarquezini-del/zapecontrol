@@ -47,7 +47,7 @@ export function PerformanceDashboard() {
   const saturating = active.filter((c) => parseFloat(String(c.frequency_atual || 0)) > FREQUENCY_SATURATION);
   const killCandidates = active.filter((c) => {
     const cpa = parseFloat(String(c.cpa_atual || 0));
-    return cpa > CPA_TARGET * 2 && parseFloat(String(c.total_spend || 0)) > 90;
+    return cpa > CPA_TARGET * 2 && (c.total_purchases || 0) === 0 && (c.total_impressions || 0) >= 1000;
   });
   const winners = active.filter((c) => c.is_winner);
 
@@ -57,7 +57,7 @@ export function PerformanceDashboard() {
       <div className="grid grid-cols-5 gap-3">
         <KPICard label="Investido Total" value={`R$${totalSpend.toFixed(0)}`} />
         <KPICard label="CPA Medio" value={avgCpa > 0 ? `R$${avgCpa.toFixed(2)}` : '-'} highlight={avgCpa > 0 && avgCpa <= CPA_TARGET} />
-        <KPICard label="ROAS Medio" value={avgRoas > 0 ? avgRoas.toFixed(2) : '-'} highlight={avgRoas > 1.4} />
+        <KPICard label="ROAS Medio" value={avgRoas > 0 ? avgRoas.toFixed(2) : '-'} highlight={avgRoas > 1.0} />
         <KPICard label="Conversoes" value={String(totalPurchases)} />
         <KPICard label="Criativos Ativos" value={String(active.length)} />
       </div>
@@ -133,7 +133,7 @@ export function PerformanceDashboard() {
                   <td className="p-3 text-right" style={{ color: parseFloat(String(c.cpa_atual || 0)) <= CPA_TARGET ? '#A3E635' : '#EF4444' }}>
                     {c.cpa_atual ? `R$${parseFloat(String(c.cpa_atual)).toFixed(2)}` : '-'}
                   </td>
-                  <td className="p-3 text-right" style={{ color: parseFloat(String(c.roas_atual || 0)) >= 1.4 ? '#A3E635' : '#EF4444' }}>
+                  <td className="p-3 text-right" style={{ color: parseFloat(String(c.roas_atual || 0)) >= 1.0 ? '#A3E635' : '#EF4444' }}>
                     {c.roas_atual ? parseFloat(String(c.roas_atual)).toFixed(2) : '-'}
                   </td>
                   <td className="p-3 text-right">{c.total_purchases || 0}</td>

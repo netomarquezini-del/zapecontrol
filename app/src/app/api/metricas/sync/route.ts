@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase';
-import { CPA_TARGET, ROAS_KILL_THRESHOLD, WINNER_MIN_DAYS, WINNER_MIN_PURCHASES, FREQUENCY_SATURATION, MIN_IMPRESSIONS_FOR_KILL } from '@/lib/types-criativos';
+import { CPA_TARGET, WINNER_MIN_DAYS, WINNER_MIN_PURCHASES, FREQUENCY_SATURATION, MIN_IMPRESSIONS_FOR_KILL, CPA_KILL_MULTIPLIER, CPA_HIGH_DAYS, CTR_DROP_PCT, ESCALA_CPA_KILL_MULTIPLIER, ESCALA_MIN_KILL_IMPRESSIONS } from '@/lib/types-criativos';
 
 export const dynamic = 'force-dynamic';
 
@@ -159,11 +159,12 @@ export async function POST() {
         })
         .eq('id', criativo.id);
 
-      // 5. Winner detection
+      // 5. Winner detection — v2: 5+ compras + CPA ≤ target por 3+ dias + 1.000 imp
       if (
         criativo.status === 'em_teste' &&
         consecutiveDays >= WINNER_MIN_DAYS &&
-        totalPurchases >= WINNER_MIN_PURCHASES
+        totalPurchases >= WINNER_MIN_PURCHASES &&
+        totalImpressions >= MIN_IMPRESSIONS_FOR_KILL
       ) {
         await sb
           .from('criativos')
@@ -171,18 +172,19 @@ export async function POST() {
             status: 'winner',
             is_winner: true,
             winner_at: new Date().toISOString(),
-            updated_by: 'system',
+            updated_by: 'sync-v2',
           })
           .eq('id', criativo.id);
 
         winnersDetected++;
 
         await notifyTelegram(
-          `WINNER DETECTADO: ${criativo.nome}\n` +
+          `🏅 WINNER DETECTADO: ${criativo.nome}\n` +
           `CPA: R$${(totalSpend / totalPurchases).toFixed(2)}\n` +
           `ROAS: ${(totalRevenue / totalSpend).toFixed(2)}\n` +
-          `Conversoes: ${totalPurchases}\n` +
-          `Dias consecutivos bom: ${consecutiveDays}`,
+          `Compras: ${totalPurchases}\n` +
+          `Dias consecutivos bom: ${consecutiveDays}\n` +
+          `Duplicar pra escala com MESMO Post ID!`,
         );
 
         // Trigger variation generation
@@ -197,45 +199,74 @@ export async function POST() {
         }
       }
 
-      // 6. Kill rules
-      if (criativo.status === 'em_teste' && totalImpressions >= MIN_IMPRESSIONS_FOR_KILL) {
+      // 6. Kill rules v2 — separado por tipo (em_teste vs escala)
+      const isEscala = criativo.status === 'escala';
+      const isEmTeste = criativo.status === 'em_teste';
+
+      if ((isEmTeste || isEscala) && totalImpressions >= MIN_IMPRESSIONS_FOR_KILL) {
         const cpaAtual = totalPurchases > 0 ? totalSpend / totalPurchases : Infinity;
-        const roasAtual = totalSpend > 0 ? totalRevenue / totalSpend : 0;
+        const frequency = parseFloat(String(latest.frequency || 0));
 
-        // Kill Rule 1: High CPA
-        if (cpaAtual > CPA_TARGET * 2 && totalSpend > 90) {
-          await sb.from('criativos').update({ status: 'pausado', updated_by: 'system' }).eq('id', criativo.id);
-          await notifyTelegram(`KILL: ${criativo.nome} - CPA R$${cpaAtual.toFixed(2)} (2x target)`);
-          killsExecuted++;
-          continue;
+        // ── TESTE kill rules ──
+        if (isEmTeste) {
+          // Kill #1: 2x CPA target + ZERO conversão → morto
+          if (totalPurchases === 0 && totalSpend >= CPA_TARGET * CPA_KILL_MULTIPLIER) {
+            await sb.from('criativos').update({ status: 'morto', updated_by: 'sync-v2' }).eq('id', criativo.id);
+            await notifyTelegram(`🔴 KILL #1: ${criativo.nome} — R$${totalSpend.toFixed(0)} gasto, ZERO conversão`);
+            killsExecuted++;
+            continue;
+          }
+
+          // Kill #3: CPA 50%+ acima por 5 dias → pausa
+          if (metrics.length >= CPA_HIGH_DAYS && cpaAtual > CPA_TARGET * 1.5) {
+            await sb.from('criativos').update({ status: 'pausado', updated_by: 'sync-v2' }).eq('id', criativo.id);
+            await notifyTelegram(`🔴 KILL #3: ${criativo.nome} — CPA R$${cpaAtual.toFixed(0)} (50%+ acima) por ${metrics.length} dias`);
+            killsExecuted++;
+            continue;
+          }
         }
 
-        // Kill Rule 2: Zero conversions
-        if (totalPurchases === 0 && totalSpend >= 135) {
-          await sb.from('criativos').update({ status: 'morto', updated_by: 'system' }).eq('id', criativo.id);
-          await notifyTelegram(`KILL: ${criativo.nome} - Zero conversoes apos R$${totalSpend.toFixed(2)} gasto`);
-          killsExecuted++;
-          continue;
+        // ── ESCALA kill rules (mais tolerante) ──
+        if (isEscala) {
+          // Escala Kill #1: CPA 50%+ acima por 5 dias → pausa
+          if (metrics.length >= CPA_HIGH_DAYS && cpaAtual > CPA_TARGET * 1.5) {
+            await sb.from('criativos').update({ status: 'pausado', updated_by: 'sync-v2' }).eq('id', criativo.id);
+            await notifyTelegram(`🔴 KILL ESCALA: ${criativo.nome} — CPA R$${cpaAtual.toFixed(0)} (50%+ acima) por ${metrics.length} dias`);
+            killsExecuted++;
+            continue;
+          }
+
+          // Escala Kill #2: CPA 3x target com 2.000+ imp → arquiva
+          if (totalImpressions >= ESCALA_MIN_KILL_IMPRESSIONS && cpaAtual > CPA_TARGET * ESCALA_CPA_KILL_MULTIPLIER) {
+            await sb.from('criativos').update({ status: 'morto', updated_by: 'sync-v2' }).eq('id', criativo.id);
+            await notifyTelegram(`🔴 ARQUIVA ESCALA: ${criativo.nome} — CPA R$${cpaAtual.toFixed(0)} (3x target) com ${totalImpressions} imp`);
+            killsExecuted++;
+            continue;
+          }
         }
 
-        // Kill Rule 3: Low ROAS
-        if (metrics.length >= 3 && totalSpend >= 90 && roasAtual < ROAS_KILL_THRESHOLD) {
-          await sb.from('criativos').update({ status: 'pausado', updated_by: 'system' }).eq('id', criativo.id);
-          await notifyTelegram(`KILL: ${criativo.nome} - ROAS ${roasAtual.toFixed(2)} < ${ROAS_KILL_THRESHOLD} apos ${metrics.length} dias`);
-          killsExecuted++;
-          continue;
+        // ── Kill #4 (ambas): Frequência > 3.5 + CTR caindo → saturado ──
+        if (frequency > FREQUENCY_SATURATION && metrics.length >= 3) {
+          const ctrTrend = metrics.slice(0, 3).map((m) => parseFloat(String(m.ctr)));
+          const declining = ctrTrend[0] < ctrTrend[1] && ctrTrend[1] < ctrTrend[2];
+          if (declining) {
+            await sb.from('criativos').update({ status: 'saturado', updated_by: 'sync-v2' }).eq('id', criativo.id);
+            await notifyTelegram(`🟠 SATURAÇÃO: ${criativo.nome} — freq ${frequency.toFixed(1)}, CTR caindo há 3 dias`);
+            killsExecuted++;
+          }
         }
 
-        // Kill Rule 4: Saturation (alert only, no auto-kill)
-        if (parseFloat(String(latest.frequency)) > FREQUENCY_SATURATION) {
-          // Check CTR declining for 3+ days
-          if (metrics.length >= 3) {
-            const ctrTrend = metrics.slice(0, 3).map((m) => parseFloat(String(m.ctr)));
-            const declining = ctrTrend[0] < ctrTrend[1] && ctrTrend[1] < ctrTrend[2];
-            if (declining) {
-              await sb.from('criativos').update({ status: 'saturado', updated_by: 'system' }).eq('id', criativo.id);
-              await notifyTelegram(`SATURACAO: ${criativo.nome} - freq ${latest.frequency}, CTR caindo ha 3 dias`);
-            }
+        // ── Kill #5 (teste): CTR caiu 30%+ vs primeiros 3 dias ──
+        if (isEmTeste && metrics.length >= 4) {
+          const initialCtrs = metrics.slice(-3); // primeiros 3 dias (metrics ordenado desc)
+          const avgInitialCtr = initialCtrs.reduce((sum, m) => sum + parseFloat(String(m.ctr || 0)), 0) / 3;
+          const currentCtr = parseFloat(String(latest.ctr || 0));
+
+          if (avgInitialCtr > 0 && currentCtr < avgInitialCtr * (1 - CTR_DROP_PCT)) {
+            await sb.from('criativos').update({ status: 'pausado', updated_by: 'sync-v2' }).eq('id', criativo.id);
+            const dropPct = ((1 - currentCtr / avgInitialCtr) * 100).toFixed(0);
+            await notifyTelegram(`🔴 KILL #5: ${criativo.nome} — CTR caiu ${dropPct}% vs primeiros 3 dias`);
+            killsExecuted++;
           }
         }
       }

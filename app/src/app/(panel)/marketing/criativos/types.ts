@@ -426,17 +426,16 @@ export function isValidTransition(from: CreativeStatus, to: CreativeStatus): boo
 }
 
 // ────────────────────────────────────────────────────────────
-// CONSTANTS
+// CONSTANTS (v2 — Andromeda + CBO 31/03/2026)
+// Source of truth: /lib/types-criativos.ts
+// These are re-exported for convenience in component files
 // ────────────────────────────────────────────────────────────
 
-/** CPA target in BRL */
+/** CPA target in BRL (a recalibrar com dados novos) */
 export const CPA_TARGET = 60;
 
 /** Ticket price in BRL */
 export const TICKET_PRICE = 97;
-
-/** ROAS below this = kill */
-export const ROAS_KILL_THRESHOLD = 1.4;
 
 /** Frequency above this = saturated */
 export const FREQUENCY_SATURATION = 3.5;
@@ -444,11 +443,11 @@ export const FREQUENCY_SATURATION = 3.5;
 /** Consecutive good days to become winner */
 export const WINNER_DAYS_THRESHOLD = 3;
 
-/** Minimum conversions to become winner */
-export const WINNER_CONVERSIONS_THRESHOLD = 10;
+/** Minimum conversions to become winner (v2: 5 compras) */
+export const WINNER_CONVERSIONS_THRESHOLD = 5;
 
 /** Default Meta Ads link */
-export const DEFAULT_META_URL = 'https://zapeecomm.com.br/curso-ads/';
+export const DEFAULT_META_URL = 'https://netomarquezini.com.br/curso-ads/';
 
 // ────────────────────────────────────────────────────────────
 // HELPER TYPES

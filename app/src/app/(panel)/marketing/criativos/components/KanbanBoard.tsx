@@ -16,21 +16,45 @@ interface KanbanColumn {
   label: string;
   statuses: CreativeStatus[];
   color: string;
-  dropTarget: CreativeStatus; // which status to assign on drop
+  dropTarget: CreativeStatus;
+  tooltip: string;
+  modo: 'manual' | 'automatico' | 'sistema';
 }
 
 const COLUMNS: KanbanColumn[] = [
-  { id: 'ideia', label: 'Ideia', statuses: ['ideia'], color: STATUS_COLORS.ideia, dropTarget: 'ideia' },
-  { id: 'producao', label: 'Producao', statuses: ['em_producao'], color: STATUS_COLORS.em_producao, dropTarget: 'em_producao' },
-  { id: 'revisao', label: 'Revisao', statuses: ['revisao'], color: STATUS_COLORS.revisao, dropTarget: 'revisao' },
-  { id: 'aprovado', label: 'Aprovado', statuses: ['aprovado'], color: STATUS_COLORS.aprovado, dropTarget: 'aprovado' },
-  { id: 'pronto', label: 'Pronto', statuses: ['pronto'], color: STATUS_COLORS.pronto, dropTarget: 'pronto' },
-  { id: 'ao_vivo', label: 'Ao Vivo', statuses: ['em_teste'], color: STATUS_COLORS.em_teste, dropTarget: 'em_teste' },
-  { id: 'winner', label: 'Winner', statuses: ['winner'], color: '#FBBF24', dropTarget: 'winner' },
-  { id: 'escala', label: 'Escala', statuses: ['escala'], color: '#A3E635', dropTarget: 'escala' },
-  { id: 'saturado', label: 'Saturado', statuses: ['saturado'], color: '#F97316', dropTarget: 'saturado' },
-  { id: 'pausado', label: 'Pausado', statuses: ['pausado'], color: STATUS_COLORS.pausado, dropTarget: 'pausado' },
-  { id: 'morto', label: 'Morto', statuses: ['morto'], color: STATUS_COLORS.morto, dropTarget: 'morto' },
+  { id: 'ideia', label: 'Ideia', statuses: ['ideia'], color: STATUS_COLORS.ideia, dropTarget: 'ideia',
+    tooltip: 'Conceito criado com angulo, formato, persona e hook. Ponto de partida de todo criativo.',
+    modo: 'manual' },
+  { id: 'producao', label: 'Producao', statuses: ['em_producao'], color: STATUS_COLORS.em_producao, dropTarget: 'em_producao',
+    tooltip: 'Thomas (estatico) ou Maicon (video) estao produzindo o visual do criativo.',
+    modo: 'manual' },
+  { id: 'revisao', label: 'Revisao', statuses: ['revisao'], color: STATUS_COLORS.revisao, dropTarget: 'revisao',
+    tooltip: 'Criativo pronto para revisao. Neto valida visual, copy e alinhamento com a marca.',
+    modo: 'manual' },
+  { id: 'aprovado', label: 'Aprovado', statuses: ['aprovado'], color: STATUS_COLORS.aprovado, dropTarget: 'aprovado',
+    tooltip: 'Neto aprovou o criativo. Proximo passo: validar arquivo + copy para ficar Pronto.',
+    modo: 'manual' },
+  { id: 'pronto', label: 'Pronto', statuses: ['pronto'], color: STATUS_COLORS.pronto, dropTarget: 'pronto',
+    tooltip: 'Arquivo + copy validados. Leo vai pegar automaticamente e subir na campanha de teste da Meta.',
+    modo: 'sistema' },
+  { id: 'ao_vivo', label: 'Ao Vivo', statuses: ['em_teste'], color: STATUS_COLORS.em_teste, dropTarget: 'em_teste',
+    tooltip: 'Rodando na campanha de teste. Leo monitora CPA, ROAS, frequencia e aplica kill rules automaticamente.',
+    modo: 'automatico' },
+  { id: 'winner', label: 'Winner', statuses: ['winner'], color: '#FBBF24', dropTarget: 'winner',
+    tooltip: 'Graduou! CPA dentro do target por 3-5 dias com 5+ compras. Leo duplica para campanha de escala com prova social.',
+    modo: 'automatico' },
+  { id: 'escala', label: 'Escala', statuses: ['escala'], color: '#A3E635', dropTarget: 'escala',
+    tooltip: 'Rodando na campanha de escala com budget maior. Mesmo Post ID — curtidas e comentarios preservados.',
+    modo: 'automatico' },
+  { id: 'saturado', label: 'Saturado', statuses: ['saturado'], color: '#F97316', dropTarget: 'saturado',
+    tooltip: 'Frequencia acima de 3.5 + CTR caindo. Criativo precisa descansar. Pode voltar apos 2-3 semanas.',
+    modo: 'automatico' },
+  { id: 'pausado', label: 'Pausado', statuses: ['pausado'], color: STATUS_COLORS.pausado, dropTarget: 'pausado',
+    tooltip: 'Pausado temporariamente — CPA subiu, performance caiu. Se ficar 2+ semanas pausado sem reuso, vira Morto.',
+    modo: 'automatico' },
+  { id: 'morto', label: 'Morto', statuses: ['morto'], color: STATUS_COLORS.morto, dropTarget: 'morto',
+    tooltip: 'Arquivado definitivamente. CPA 3x acima do target ou pausado 2+ semanas. Conceito encerrado.',
+    modo: 'automatico' },
 ];
 
 export function KanbanBoard() {
@@ -244,11 +268,20 @@ export function KanbanBoard() {
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, col)}
             >
-              {/* Column Header */}
-              <div className="px-3 py-2.5 border-b flex items-center justify-between" style={{ borderColor: 'var(--border-color)' }}>
-                <div className="flex items-center gap-2">
+              {/* Column Header with Tooltip */}
+              <div className="px-3 py-2.5 border-b flex items-center justify-between relative group/header" style={{ borderColor: 'var(--border-color)' }}>
+                <div className="flex items-center gap-2 cursor-help">
                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: col.color }} />
                   <span className="text-sm font-semibold">{col.label}</span>
+                  <span
+                    className="text-[9px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider"
+                    style={{
+                      backgroundColor: col.modo === 'automatico' ? 'rgba(163, 230, 53, 0.15)' : col.modo === 'sistema' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255, 255, 255, 0.08)',
+                      color: col.modo === 'automatico' ? '#A3E635' : col.modo === 'sistema' ? '#3B82F6' : 'var(--text-muted)',
+                    }}
+                  >
+                    {col.modo === 'automatico' ? 'auto' : col.modo === 'sistema' ? 'sistema' : 'manual'}
+                  </span>
                 </div>
                 <span
                   className="text-xs px-2 py-0.5 rounded-full font-medium"
@@ -256,6 +289,27 @@ export function KanbanBoard() {
                 >
                   {cards.length}
                 </span>
+                {/* Tooltip on hover */}
+                <div
+                  className="absolute left-0 top-full mt-1 z-50 w-64 p-3 rounded-lg shadow-xl border opacity-0 invisible group-hover/header:opacity-100 group-hover/header:visible transition-all duration-200 pointer-events-none"
+                  style={{
+                    backgroundColor: '#1A1A1A',
+                    borderColor: col.color,
+                    borderWidth: '1px',
+                  }}
+                >
+                  <p className="text-xs leading-relaxed" style={{ color: '#D4D4D4' }}>{col.tooltip}</p>
+                  <div className="mt-2 pt-2 border-t" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
+                    <span
+                      className="text-[10px] font-semibold uppercase tracking-wider"
+                      style={{
+                        color: col.modo === 'automatico' ? '#A3E635' : col.modo === 'sistema' ? '#3B82F6' : '#888888',
+                      }}
+                    >
+                      {col.modo === 'automatico' ? '⚡ Automatico (Leo)' : col.modo === 'sistema' ? '⚙️ Sistema (validacao)' : '✋ Manual (equipe)'}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               {/* Cards */}

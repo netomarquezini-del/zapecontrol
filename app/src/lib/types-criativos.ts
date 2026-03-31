@@ -454,16 +454,36 @@ export const STATUS_TO_GERACAO_RESULTADO: Partial<Record<CreativeStatus, Geracao
   saturado: 'saturado',
 };
 
-// ── Business constants ───────────────────────────────────────
+// ── Business constants (v2 — Andromeda+CBO 31/03/2026) ──────
+// Ref: regras-operacionais-meta-ads.md + template-campanha-teste.md + template-campanha-escala.md
 
-export const CPA_TARGET = 60;
-export const ROAS_KILL_THRESHOLD = 1.4;
-export const WINNER_MIN_DAYS = 3;
-export const WINNER_MIN_PURCHASES = 10;
-export const DAILY_BUDGET = 4500; // centavos = R$45
+export const CPA_TARGET = 60; // A recalibrar com dados novos (placeholder)
 export const TICKET = 97;
 export const FREQUENCY_SATURATION = 3.5;
-export const MIN_IMPRESSIONS_FOR_KILL = 1000;
+export const MIN_IMPRESSIONS_FOR_KILL = 1000; // Nunca julgar antes de 1.000 impressões
+
+// Kill rules (teste)
+export const CPA_KILL_MULTIPLIER = 2.0; // 2x CPA target + ZERO conversão = pausa imediata
+export const CPA_MONITOR_MULTIPLIER = 1.5; // 1.5x CPA target + 1 conversão = monitora 48h
+export const CPA_HIGH_DAYS = 5; // CPA 50%+ acima por 5 dias = pausa
+export const CTR_DROP_PCT = 0.30; // CTR caiu 30% = pausa
+
+// Kill rules (escala — mais tolerante)
+export const ESCALA_CPA_KILL_MULTIPLIER = 3.0; // 3x CPA target com 2.000+ imp = arquiva
+export const ESCALA_MIN_KILL_IMPRESSIONS = 2000;
+
+// Graduação
+export const WINNER_MIN_DAYS = 3; // CPA ≤ target por 3-5 dias consecutivos
+export const WINNER_MIN_PURCHASES = 5; // Mínimo 5 compras (era 10)
+
+// Budget
+export const BUDGET_CHANGE_PCT = 0.15; // ±15% diário (era 20%)
+export const BUDGET_FREEZE_DAYS = 5; // Dias 1-5 intocável
+export const BUDGET_TEST_DAILY = 100000; // R$1.000/dia campanha teste (centavos)
+
+// Legacy (manter pra não quebrar imports existentes)
+export const ROAS_KILL_THRESHOLD = 1.4;
+export const DAILY_BUDGET = 100000; // centavos = R$1.000 CBO campanha teste
 export const CURSO_URL = 'https://netomarquezini.com.br/curso-ads/';
 
 // ── Copy validation ──────────────────────────────────────────

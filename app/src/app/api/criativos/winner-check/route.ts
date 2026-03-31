@@ -63,13 +63,15 @@ export async function POST() {
       }
     }
 
-    if (consecutiveDays >= WINNER_MIN_DAYS && totalPurchases >= WINNER_MIN_PURCHASES) {
+    // v2: 5+ compras + CPA ≤ target por 3-5 dias + 1.000 impressões + tendência estável
+    const totalImpressions = c.total_impressions || 0;
+    if (consecutiveDays >= WINNER_MIN_DAYS && totalPurchases >= WINNER_MIN_PURCHASES && totalImpressions >= 1000) {
       await sb.from('criativos').update({
         status: 'winner',
         is_winner: true,
         winner_at: new Date().toISOString(),
         dias_consecutivos_bom: consecutiveDays,
-        updated_by: 'winner-check',
+        updated_by: 'winner-check-v2',
       }).eq('id', c.id);
 
       winnersDetected++;
@@ -78,10 +80,10 @@ export async function POST() {
       const roas = totalSpend > 0 ? totalRevenue / totalSpend : 0;
 
       await notifyTelegram(
-        `WINNER DETECTADO: ${c.nome}\n` +
-        `CPA: R$${cpa.toFixed(2)} | ROAS: ${roas.toFixed(2)} | Conversoes: ${totalPurchases}\n` +
+        `🏅 WINNER DETECTADO: ${c.nome}\n` +
+        `CPA: R$${cpa.toFixed(2)} | ROAS: ${roas.toFixed(2)} | Compras: ${totalPurchases}\n` +
         `Dias consecutivos bom: ${consecutiveDays}\n` +
-        `Multiplicar em novos formatos!`,
+        `Duplicar pra escala com MESMO Post ID!`,
       );
 
       // Trigger variation generation

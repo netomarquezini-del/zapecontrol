@@ -68,20 +68,36 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   return NextResponse.json({ data });
 }
 
-// DELETE /api/criativos/[id] — soft delete (set status to morto)
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+// DELETE /api/criativos/[id] — hard delete
+// Query param ?soft=true for soft delete (status → morto)
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const sb = getServiceSupabase();
+  const soft = req.nextUrl.searchParams.get('soft') === 'true';
 
-  const { data, error } = await sb
+  if (soft) {
+    const { data, error } = await sb
+      .from('criativos')
+      .update({ status: 'morto', updated_by: 'manual' })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!data) return NextResponse.json({ error: 'Criativo not found' }, { status: 404 });
+    return NextResponse.json({ data });
+  }
+
+  // Hard delete: remove historico first (FK), then criativo
+  await sb.from('historico_status').delete().eq('criativo_id', id);
+  await sb.from('geracoes_ia_itens').delete().eq('criativo_id', id);
+
+  const { error } = await sb
     .from('criativos')
-    .update({ status: 'morto', updated_by: 'manual' })
-    .eq('id', id)
-    .select()
-    .single();
+    .delete()
+    .eq('id', id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  if (!data) return NextResponse.json({ error: 'Criativo not found' }, { status: 404 });
 
-  return NextResponse.json({ data });
+  return NextResponse.json({ success: true });
 }

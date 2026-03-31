@@ -39,6 +39,7 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetch(`/api/criativos/${criativo.id}`)
@@ -141,6 +142,23 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
       setSaving(false);
     }
   }, [editingField, editValue, criativo.id, onUpdate]);
+
+  const handleDelete = useCallback(async () => {
+    if (!confirm('Tem certeza que quer excluir este criativo? Essa ação não pode ser desfeita.')) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/criativos/${criativo.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        onUpdate();
+        onClose();
+      } else {
+        const json = await res.json();
+        alert(json.error || 'Falha ao excluir');
+      }
+    } finally {
+      setDeleting(false);
+    }
+  }, [criativo.id, onUpdate, onClose]);
 
   const validTransitions = STATUS_TRANSITIONS[detail.status] || [];
   const isLive = ['em_teste', 'winner', 'escala'].includes(detail.status);
@@ -440,6 +458,18 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
                 </div>
               </Section>
             )}
+
+            {/* Delete */}
+            <div className="pt-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="w-full px-4 py-2.5 rounded-lg text-xs font-medium border transition-all hover:opacity-80 disabled:opacity-50"
+                style={{ borderColor: '#EF4444', color: '#EF4444' }}
+              >
+                {deleting ? 'Excluindo...' : 'Excluir criativo'}
+              </button>
+            </div>
           </div>
         )}
       </div>

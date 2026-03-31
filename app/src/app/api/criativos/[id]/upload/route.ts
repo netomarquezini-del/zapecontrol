@@ -63,13 +63,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   // Get public URL
   const { data: urlData } = sb.storage.from('criativos').getPublicUrl(storagePath);
+  const publicUrl = urlData.publicUrl;
 
-  // Update criativo record
+  // Update criativo record — store public URL so frontend can display directly
   const { data: updated, error: updateError } = await sb
     .from('criativos')
     .update({
-      arquivo_principal: storagePath,
-      arquivo_thumbnail: storagePath, // Same for now; could generate thumbnail later
+      arquivo_principal: publicUrl,
+      arquivo_thumbnail: publicUrl,
       mime_type: file.type,
       tamanho_bytes: file.size,
       updated_by: 'upload',

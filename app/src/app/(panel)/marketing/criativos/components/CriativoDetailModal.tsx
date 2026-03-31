@@ -86,19 +86,68 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
     if (!uploadFile) return;
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append('file', uploadFile);
-      const res = await fetch(`/api/criativos/${criativo.id}/upload`, { method: 'POST', body: formData });
-      if (res.ok) {
-        onUpdate();
-        setUploadFile(null);
-        const r = await fetch(`/api/criativos/${criativo.id}`);
-        const json = await r.json();
-        if (json.data) setDetail(json.data);
+      const VERCEL_LIMIT = 4 * 1024 * 1024; // 4MB safe limit
+
+      if (uploadFile.size <= VERCEL_LIMIT) {
+        // Small file: direct upload through API
+        const formData = new FormData();
+        formData.append('file', uploadFile);
+        const res = await fetch(`/api/criativos/${criativo.id}/upload`, { method: 'POST', body: formData });
+        if (!res.ok) {
+          const json = await res.json();
+          alert(json.error || 'Upload falhou');
+          return;
+        }
       } else {
-        const json = await res.json();
-        alert(json.error || 'Upload falhou');
+        // Large file: signed URL upload directly to Supabase Storage
+        const signRes = await fetch(`/api/criativos/${criativo.id}/upload?signed=true`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileName: uploadFile.name,
+            fileType: uploadFile.type,
+            fileSize: uploadFile.size,
+          }),
+        });
+        if (!signRes.ok) {
+          const json = await signRes.json();
+          alert(json.error || 'Falha ao gerar URL de upload');
+          return;
+        }
+        const { signedUrl, token, path, fileType } = await signRes.json();
+
+        // Upload directly to Supabase Storage
+        const uploadRes = await fetch(signedUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': fileType,
+            ...(token ? { 'x-upsert': 'true' } : {}),
+          },
+          body: uploadFile,
+        });
+        if (!uploadRes.ok) {
+          alert('Upload direto falhou. Tente um arquivo menor.');
+          return;
+        }
+
+        // Confirm upload — update criativo record
+        const confirmRes = await fetch(`/api/criativos/${criativo.id}/upload`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path, fileType, fileSize: uploadFile.size }),
+        });
+        if (!confirmRes.ok) {
+          const json = await confirmRes.json();
+          alert(json.error || 'Falha ao confirmar upload');
+          return;
+        }
       }
+
+      onUpdate();
+      setUploadFile(null);
+      const r = await fetch(`/api/criativos/${criativo.id}`);
+      const json = await r.json();
+      if (json.data) setDetail(json.data);
     } finally {
       setUploading(false);
     }
@@ -223,7 +272,7 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
                 {detail.duracao_segundos && <InfoField label="Duracao" value={`${detail.duracao_segundos}s`} />}
               </div>
 
-              {/* File preview + upload */}
+              {/* File preview + download */}
               {detail.arquivo_principal && (
                 <div className="mt-3 rounded-lg overflow-hidden" style={{ backgroundColor: 'var(--bg-card)' }}>
                   {detail.mime_type?.startsWith('video/') ? (
@@ -244,6 +293,23 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
                       {detail.arquivo_principal} ({detail.mime_type})
                     </div>
                   )}
+                  <div className="p-2 flex justify-end" style={{ borderTop: '1px solid var(--border-color)' }}>
+                    <a
+                      href={detail.arquivo_principal}
+                      download={`${detail.nome}.${detail.mime_type?.split('/')[1] || 'mp4'}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80"
+                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                        <polyline points="7 10 12 15 17 10" />
+                        <line x1="12" y1="15" x2="12" y2="3" />
+                      </svg>
+                      Baixar
+                    </a>
+                  </div>
                 </div>
               )}
 

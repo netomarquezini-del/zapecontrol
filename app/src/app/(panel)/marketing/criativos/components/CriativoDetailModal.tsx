@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Criativo, HistoricoStatus } from '@/lib/types-criativos';
 import {
   STATUS_LABELS, STATUS_COLORS, STATUS_TRANSITIONS,
@@ -14,12 +14,31 @@ interface Props {
   onUpdate: () => void;
 }
 
+const COPY_LIMITS: Record<string, number | null> = {
+  hook: null,
+  copy_primario: 250,
+  copy_titulo: 40,
+  copy_descricao: 30,
+  roteiro: null,
+};
+
+const COPY_FIELD_LABELS: Record<string, string> = {
+  hook: 'Hook',
+  copy_primario: 'Texto Primario',
+  copy_titulo: 'Headline',
+  copy_descricao: 'Descricao',
+  roteiro: 'Roteiro',
+};
+
 export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
   const [detail, setDetail] = useState<Criativo & { historico?: HistoricoStatus[] }>(criativo);
   const [loading, setLoading] = useState(true);
   const [transitioning, setTransitioning] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetch(`/api/criativos/${criativo.id}`)
@@ -28,12 +47,19 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
       .finally(() => setLoading(false));
   }, [criativo.id]);
 
-  // Close on Escape
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (editingField) {
+          setEditingField(null);
+        } else {
+          onClose();
+        }
+      }
+    };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
+  }, [onClose, editingField]);
 
   const handleStatusChange = async (newStatus: string) => {
     setTransitioning(true);
@@ -77,10 +103,47 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
     }
   };
 
+  const startEdit = useCallback((field: string) => {
+    const value = (detail as unknown as Record<string, unknown>)[field];
+    setEditValue(typeof value === 'string' ? value : '');
+    setEditingField(field);
+  }, [detail]);
+
+  const cancelEdit = useCallback(() => {
+    setEditingField(null);
+    setEditValue('');
+  }, []);
+
+  const saveEdit = useCallback(async () => {
+    if (!editingField) return;
+    const limit = COPY_LIMITS[editingField];
+    if (limit && editValue.length > limit) {
+      alert(`Maximo ${limit} caracteres`);
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/criativos/${criativo.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [editingField]: editValue || null }),
+      });
+      if (res.ok) {
+        setDetail((prev) => ({ ...prev, [editingField]: editValue || null }));
+        setEditingField(null);
+        setEditValue('');
+        onUpdate();
+      } else {
+        const json = await res.json();
+        alert(json.error || 'Falha ao salvar');
+      }
+    } finally {
+      setSaving(false);
+    }
+  }, [editingField, editValue, criativo.id, onUpdate]);
+
   const validTransitions = STATUS_TRANSITIONS[detail.status] || [];
   const isLive = ['em_teste', 'winner', 'escala'].includes(detail.status);
-
-  // Parse PRSA from copy fields
   const prsa = parsePRSA(detail);
 
   return (
@@ -142,8 +205,8 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
                 {detail.duracao_segundos && <InfoField label="Duracao" value={`${detail.duracao_segundos}s`} />}
               </div>
 
-              {/* File preview */}
-              {detail.arquivo_principal ? (
+              {/* File preview + upload */}
+              {detail.arquivo_principal && (
                 <div className="mt-3 rounded-lg overflow-hidden" style={{ backgroundColor: 'var(--bg-card)' }}>
                   {detail.mime_type?.startsWith('video/') ? (
                     <video
@@ -164,49 +227,78 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
                     </div>
                   )}
                 </div>
-              ) : (
-                <div className="mt-3">
-                  <div className="flex gap-2 items-center">
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,video/mp4,video/quicktime"
-                      onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                      className="text-xs flex-1"
-                      style={{ color: 'var(--text-muted)' }}
-                    />
-                    {uploadFile && (
-                      <button
-                        onClick={handleUpload}
-                        disabled={uploading}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                        style={{ backgroundColor: 'var(--accent)', color: 'var(--bg-primary)' }}
-                      >
-                        {uploading ? 'Enviando...' : 'Upload'}
-                      </button>
-                    )}
-                  </div>
-                </div>
               )}
+
+              {/* Upload area — always visible */}
+              <div className="mt-3">
+                <UploadArea
+                  hasFile={!!detail.arquivo_principal}
+                  uploadFile={uploadFile}
+                  uploading={uploading}
+                  onFileChange={(f) => setUploadFile(f)}
+                  onUpload={handleUpload}
+                />
+              </div>
             </Section>
 
-            {/* Copy Section */}
-            {(detail.hook || detail.copy_primario || detail.copy_titulo || detail.copy_descricao) && (
-              <Section title="Copy">
-                {detail.hook && <CopyField label="Hook" value={detail.hook} />}
-                {detail.copy_primario && (
-                  <CopyField label={`Texto Primario (${detail.copy_primario.length}/250)`} value={detail.copy_primario} />
-                )}
-                {detail.copy_titulo && (
-                  <CopyField label={`Headline (${detail.copy_titulo.length}/40)`} value={detail.copy_titulo} />
-                )}
-                {detail.copy_descricao && (
-                  <CopyField label={`Descricao (${detail.copy_descricao.length}/30)`} value={detail.copy_descricao} />
-                )}
-                {detail.roteiro && (
-                  <CopyField label="Roteiro" value={detail.roteiro} />
-                )}
-              </Section>
-            )}
+            {/* Copy Section — Editable */}
+            <Section title="Copy">
+              <EditableCopyField
+                field="hook"
+                detail={detail}
+                editingField={editingField}
+                editValue={editValue}
+                saving={saving}
+                onStartEdit={startEdit}
+                onEditValueChange={setEditValue}
+                onSave={saveEdit}
+                onCancel={cancelEdit}
+              />
+              <EditableCopyField
+                field="copy_primario"
+                detail={detail}
+                editingField={editingField}
+                editValue={editValue}
+                saving={saving}
+                onStartEdit={startEdit}
+                onEditValueChange={setEditValue}
+                onSave={saveEdit}
+                onCancel={cancelEdit}
+              />
+              <EditableCopyField
+                field="copy_titulo"
+                detail={detail}
+                editingField={editingField}
+                editValue={editValue}
+                saving={saving}
+                onStartEdit={startEdit}
+                onEditValueChange={setEditValue}
+                onSave={saveEdit}
+                onCancel={cancelEdit}
+              />
+              <EditableCopyField
+                field="copy_descricao"
+                detail={detail}
+                editingField={editingField}
+                editValue={editValue}
+                saving={saving}
+                onStartEdit={startEdit}
+                onEditValueChange={setEditValue}
+                onSave={saveEdit}
+                onCancel={cancelEdit}
+              />
+              <EditableCopyField
+                field="roteiro"
+                detail={detail}
+                editingField={editingField}
+                editValue={editValue}
+                saving={saving}
+                onStartEdit={startEdit}
+                onEditValueChange={setEditValue}
+                onSave={saveEdit}
+                onCancel={cancelEdit}
+              />
+            </Section>
 
             {/* PRSA Section */}
             {(prsa.problema || prsa.resultado || prsa.solucao || prsa.acao) && (
@@ -277,16 +369,13 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
             {detail.historico && detail.historico.length > 0 && (
               <Section title="Historico">
                 <div className="relative pl-4">
-                  {/* Timeline line */}
                   <div
                     className="absolute left-[5px] top-2 bottom-2 w-px"
                     style={{ backgroundColor: 'var(--border-color)' }}
                   />
-
                   <div className="space-y-3">
                     {detail.historico.slice(0, 15).map((h: HistoricoStatus) => (
                       <div key={h.id} className="relative flex items-start gap-3">
-                        {/* Dot */}
                         <div
                           className="absolute -left-[11px] top-1.5 w-2.5 h-2.5 rounded-full border-2"
                           style={{
@@ -294,7 +383,6 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
                             borderColor: STATUS_COLORS[h.status_novo],
                           }}
                         />
-
                         <div
                           className="flex-1 text-xs p-2 rounded-lg"
                           style={{ backgroundColor: 'var(--bg-card)' }}
@@ -359,6 +447,210 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
   );
 }
 
+// ── Upload Area ─────────────────────────────────────────────
+
+function UploadArea({
+  hasFile,
+  uploadFile,
+  uploading,
+  onFileChange,
+  onUpload,
+}: {
+  hasFile: boolean;
+  uploadFile: File | null;
+  uploading: boolean;
+  onFileChange: (f: File | null) => void;
+  onUpload: () => void;
+}) {
+  const [dragOver, setDragOver] = useState(false);
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) onFileChange(file);
+  };
+
+  return (
+    <div
+      className={`relative rounded-lg border-2 border-dashed p-4 transition-colors ${dragOver ? 'border-solid' : ''}`}
+      style={{
+        borderColor: dragOver ? 'var(--accent)' : 'var(--border-color)',
+        backgroundColor: dragOver ? 'var(--accent)08' : 'transparent',
+      }}
+      onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={handleDrop}
+    >
+      {uploadFile ? (
+        <div className="flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+              {uploadFile.name}
+            </p>
+            <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+              {(uploadFile.size / 1024 / 1024).toFixed(1)} MB
+            </p>
+          </div>
+          <button
+            onClick={() => onFileChange(null)}
+            className="text-xs px-2 py-1 rounded"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onUpload}
+            disabled={uploading}
+            className="px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity disabled:opacity-50"
+            style={{ backgroundColor: 'var(--accent)', color: 'var(--bg-primary)' }}
+          >
+            {uploading ? 'Enviando...' : hasFile ? 'Substituir' : 'Enviar'}
+          </button>
+        </div>
+      ) : (
+        <label className="flex flex-col items-center gap-1.5 cursor-pointer">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ color: 'var(--text-muted)' }}>
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+            {hasFile ? 'Trocar arquivo' : 'Arraste ou clique para enviar'}
+          </span>
+          <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+            JPG, PNG, MP4, MOV (max 100MB)
+          </span>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
+            onChange={(e) => onFileChange(e.target.files?.[0] || null)}
+            className="hidden"
+          />
+        </label>
+      )}
+    </div>
+  );
+}
+
+// ── Editable Copy Field ─────────────────────────────────────
+
+function EditableCopyField({
+  field,
+  detail,
+  editingField,
+  editValue,
+  saving,
+  onStartEdit,
+  onEditValueChange,
+  onSave,
+  onCancel,
+}: {
+  field: string;
+  detail: Criativo;
+  editingField: string | null;
+  editValue: string;
+  saving: boolean;
+  onStartEdit: (field: string) => void;
+  onEditValueChange: (v: string) => void;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  const value = (detail as unknown as Record<string, unknown>)[field] as string | null;
+  const label = COPY_FIELD_LABELS[field] || field;
+  const limit = COPY_LIMITS[field];
+  const isEditing = editingField === field;
+  const isMultiline = field === 'roteiro' || field === 'copy_primario' || field === 'hook';
+
+  const charDisplay = limit
+    ? `${(isEditing ? editValue : value || '').length}/${limit}`
+    : null;
+
+  const isOverLimit = limit ? (isEditing ? editValue : value || '').length > limit : false;
+
+  return (
+    <div className="mb-3 group">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-[10px] font-medium uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
+          {label} {charDisplay && (
+            <span style={{ color: isOverLimit ? '#EF4444' : 'var(--text-muted)' }}>({charDisplay})</span>
+          )}
+        </span>
+        {!isEditing && (
+          <button
+            onClick={() => onStartEdit(field)}
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] px-1.5 py-0.5 rounded"
+            style={{ color: 'var(--accent)', backgroundColor: 'var(--accent)10' }}
+          >
+            Editar
+          </button>
+        )}
+      </div>
+
+      {isEditing ? (
+        <div>
+          {isMultiline ? (
+            <textarea
+              value={editValue}
+              onChange={(e) => onEditValueChange(e.target.value)}
+              rows={field === 'roteiro' ? 8 : 4}
+              autoFocus
+              className="w-full text-sm p-3 rounded-lg leading-relaxed resize-y outline-none"
+              style={{
+                backgroundColor: 'var(--bg-card)',
+                color: 'var(--text-primary)',
+                border: `2px solid var(--accent)`,
+              }}
+            />
+          ) : (
+            <input
+              type="text"
+              value={editValue}
+              onChange={(e) => onEditValueChange(e.target.value)}
+              autoFocus
+              className="w-full text-sm p-3 rounded-lg outline-none"
+              style={{
+                backgroundColor: 'var(--bg-card)',
+                color: 'var(--text-primary)',
+                border: `2px solid var(--accent)`,
+              }}
+            />
+          )}
+          <div className="flex items-center gap-2 mt-2">
+            <button
+              onClick={onSave}
+              disabled={saving || isOverLimit}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity disabled:opacity-50"
+              style={{ backgroundColor: 'var(--accent)', color: 'var(--bg-primary)' }}
+            >
+              {saving ? 'Salvando...' : 'Salvar'}
+            </button>
+            <button
+              onClick={onCancel}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium"
+              style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)' }}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div
+          onClick={() => onStartEdit(field)}
+          className="text-sm p-3 rounded-lg whitespace-pre-wrap leading-relaxed cursor-pointer transition-colors hover:border-opacity-60"
+          style={{
+            backgroundColor: 'var(--bg-card)',
+            color: value ? 'var(--text-secondary)' : 'var(--text-muted)',
+            border: '1px solid var(--border-color)',
+          }}
+        >
+          {value || `Clique para adicionar ${label.toLowerCase()}`}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Helper Components ────────────────────────────────────────
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -377,20 +669,6 @@ function InfoField({ label, value }: { label: string; value: string }) {
     <div>
       <span className="text-[10px] font-medium block mb-0.5 uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>{label}</span>
       <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{value}</span>
-    </div>
-  );
-}
-
-function CopyField({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="mb-3">
-      <span className="text-[10px] font-medium block mb-1 uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>{label}</span>
-      <div
-        className="text-sm p-3 rounded-lg whitespace-pre-wrap leading-relaxed"
-        style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}
-      >
-        {value}
-      </div>
     </div>
   );
 }
@@ -430,7 +708,6 @@ function parsePRSA(detail: Criativo): { problema: string | null; resultado: stri
   const text = detail.roteiro || detail.copy_primario || '';
   if (!text) return { problema: null, resultado: null, solucao: null, acao: null };
 
-  // Try to extract PRSA sections from roteiro
   const problema = extractSection(text, ['PROBLEMA', 'DOR', 'P:']) || extractFromHook(detail.hook);
   const resultado = extractSection(text, ['RESULTADO', 'BENEFICIO', 'R:']);
   const solucao = extractSection(text, ['SOLUCAO', 'MECANISMO', 'S:']);
@@ -450,7 +727,6 @@ function extractSection(text: string, markers: string[]): string | null {
 
 function extractFromHook(hook: string | null): string | null {
   if (!hook) return null;
-  // If hook is a question, treat it as the problem statement
   if (hook.includes('?')) return hook;
   return null;
 }

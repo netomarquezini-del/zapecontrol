@@ -1,0 +1,16 @@
+{
+  "crons": [
+    {
+      "path": "/api/sdr/cadences/execute",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/sdr/schedules/followup",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/sdr/transcriptions/batch",
+      "schedule": "*/10 * * * *"
+    }
+  ]
+}

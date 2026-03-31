@@ -1,20 +1,103 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createHash } from 'crypto'
 import { getServiceSupabase } from '@/lib/supabase'
 
 /**
- * Webhook receiver para Ticto (v2.0)
+ * Webhook receiver para Ticto (v2.0) + Meta CAPI
  *
- * Recebe eventos de venda do Shopee ADS 2.0 e salva no Supabase.
- * URL pra configurar na Ticto: https://zapecontrol.vercel.app/api/webhooks/ticto
+ * Recebe eventos de venda do Shopee ADS 2.0:
+ * 1. Salva no Supabase (ticto_sales)
+ * 2. Envia evento Purchase/Refund via Meta Conversions API (CAPI)
+ * 3. Notifica no Telegram
  *
- * Eventos tratados:
- * - authorized (venda aprovada)
- * - refunded (reembolso)
- * - chargeback (disputa)
+ * URL: https://zapecontrol.vercel.app/api/webhooks/ticto
  */
 
-// Token de segurança — validar que o request vem da Ticto
+// Config
 const TICTO_WEBHOOK_TOKEN = process.env.TICTO_WEBHOOK_TOKEN || ''
+const META_ACCESS_TOKEN = process.env.META_ACCESS_TOKEN || ''
+const META_PIXEL_ID = process.env.META_PIXEL_ID || '9457207547700143'
+const TELEGRAM_TOKEN = process.env.LEO_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN || ''
+const TELEGRAM_CHAT = process.env.LEO_TELEGRAM_CHAT_ID || process.env.TELEGRAM_CHAT_ID || ''
+const SALES_PAGE_URL = 'https://netomarquezini.com.br/curso-ads/'
+
+// ============================================================
+// Meta CAPI helpers
+// ============================================================
+
+function sha256(value: string | undefined | null): string | undefined {
+  if (!value) return undefined
+  const normalized = String(value).trim().toLowerCase()
+  if (!normalized) return undefined
+  return createHash('sha256').update(normalized).digest('hex')
+}
+
+function hashPhone(phone: string | undefined | null): string | undefined {
+  if (!phone) return undefined
+  let cleaned = String(phone).replace(/\D/g, '')
+  if (cleaned.startsWith('0')) cleaned = cleaned.slice(1)
+  if (!cleaned.startsWith('55')) cleaned = '55' + cleaned
+  return sha256(cleaned)
+}
+
+async function sendCAPIEvent(eventName: string, sale: Record<string, unknown>, ip: string, ua: string) {
+  if (!META_ACCESS_TOKEN) return { skipped: true, reason: 'no token' }
+
+  const userData: Record<string, unknown> = { country: [sha256('br')] }
+  if (sale.customer_email) userData.em = [sha256(String(sale.customer_email))]
+  if (sale.customer_phone) userData.ph = [hashPhone(String(sale.customer_phone))]
+  if (sale.customer_name) {
+    const parts = String(sale.customer_name).split(' ')
+    userData.fn = [sha256(parts[0])]
+    if (parts.length > 1) userData.ln = [sha256(parts.slice(1).join(' '))]
+  }
+  if (sale.customer_document || sale.customer_cpf) userData.external_id = [sha256(String(sale.customer_document || sale.customer_cpf))]
+  if (ip) userData.client_ip_address = ip
+  if (ua) userData.client_user_agent = ua
+
+  const event = {
+    event_name: eventName,
+    event_time: Math.floor(Date.now() / 1000),
+    event_id: `${eventName}_${sale.order_id}`,
+    action_source: 'website',
+    event_source_url: SALES_PAGE_URL,
+    user_data: userData,
+    custom_data: {
+      value: Number(sale.paid_amount) || 0,
+      currency: 'BRL',
+      content_name: sale.product_name,
+      content_ids: sale.product_id ? [String(sale.product_id)] : undefined,
+      content_type: 'product',
+      order_id: sale.order_id,
+    },
+  }
+
+  const params = new URLSearchParams({
+    data: JSON.stringify([event]),
+    access_token: META_ACCESS_TOKEN,
+  })
+
+  const res = await fetch(`https://graph.facebook.com/v21.0/${META_PIXEL_ID}/events`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString(),
+  })
+
+  const data = await res.json()
+  if (data.error) throw new Error(`CAPI: ${data.error.message}`)
+  return { events_received: data.events_received || 0 }
+}
+
+async function sendTelegram(message: string) {
+  if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT) return
+  try {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TELEGRAM_CHAT, text: message }),
+    })
+  } catch { /* silent */ }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -47,15 +130,15 @@ export async function POST(req: NextRequest) {
     // TODO: re-enable after confirming webhook works
     console.log('[Ticto Webhook] Token received:', body.token ? 'yes' : 'no')
 
-    const version = body.version || '1.0'
     const status = body.status
 
     if (!status) {
       return NextResponse.json({ error: 'Missing status' }, { status: 400 })
     }
 
-    // Extrair dados conforme versão
-    const sale = version === '2.0' ? parseV2(body) : parseV1(body)
+    // Detectar versão: se tem 'order' ou 'customer' como objeto, é V2
+    const isV2 = body.version === '2.0' || body.order || body.customer || body.item
+    const sale = isV2 ? parseV2(body) : parseV1(body)
 
     if (!sale.order_id) {
       return NextResponse.json({ error: 'Missing order_id' }, { status: 400 })
@@ -74,7 +157,26 @@ export async function POST(req: NextRequest) {
 
     console.log(`[Ticto Webhook] ${status} | ${sale.product_name} | R$${sale.paid_amount} | ${sale.customer_email} | utm_source=${sale.utm_source}`)
 
-    return NextResponse.json({ ok: true, status: sale.status, order_id: sale.order_id })
+    // 2. Meta CAPI — enviar evento server-side
+    let capiResult = 'skipped'
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || ''
+    const ua = req.headers.get('user-agent') || ''
+
+    try {
+      if (sale.status === 'authorized') {
+        const r = await sendCAPIEvent('Purchase', sale, ip, ua)
+        capiResult = 'events_received' in r ? `ok:${r.events_received}` : 'skipped'
+      } else if (sale.status === 'refunded' || sale.status === 'chargeback') {
+        const r = await sendCAPIEvent('Refund', sale, ip, ua)
+        capiResult = 'events_received' in r ? `ok:${r.events_received}` : 'skipped'
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      capiResult = `error:${msg}`
+      console.error(`[Ticto Webhook] CAPI error: ${msg}`)
+    }
+
+    return NextResponse.json({ ok: true, status: sale.status, order_id: sale.order_id, capi: capiResult })
   } catch (e) {
     console.error('[Ticto Webhook] Parse error:', e)
     return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })

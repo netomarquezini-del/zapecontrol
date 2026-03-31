@@ -31,6 +31,13 @@ import {
   CreditCard,
   ArrowLeftRight,
   Sparkles,
+  Megaphone,
+  ClipboardCheck,
+  Headphones,
+  Kanban,
+  RefreshCw,
+  Mic,
+  Phone,
 } from "lucide-react";
 
 interface NavItem {
@@ -38,15 +45,27 @@ interface NavItem {
   label: string;
   icon: typeof LayoutDashboard;
   external?: boolean;
-  perm?: string; // permission ID required
+  perm?: string;
+}
+
+interface NavSubGroup {
+  id: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  children: NavItem[];
+  perm?: string;
 }
 
 interface NavGroup {
   id: string;
   label: string;
   icon: typeof Briefcase;
-  children: NavItem[];
-  perm?: string; // if set, whole group requires this perm
+  children: (NavItem | NavSubGroup)[];
+  perm?: string;
+}
+
+function isSubGroup(item: NavItem | NavSubGroup): item is NavSubGroup {
+  return 'children' in item;
 }
 
 const navGroups: NavGroup[] = [
@@ -61,6 +80,8 @@ const navGroups: NavGroup[] = [
       { href: "/metas", label: "Metas", icon: Target, perm: "comercial.metas" },
       { href: "/cadastros", label: "Cadastros", icon: Users, perm: "comercial.cadastros" },
       { href: "/comercial/sales-copilot", label: "Sales Copilot", icon: Sparkles, perm: "comercial.sales-copilot" },
+      { href: "/comercial/documentos", label: "Documentos", icon: FileText, perm: "comercial.documentos" },
+      { href: "/comercial/analise-contas", label: "Analise de Contas", icon: ClipboardCheck, perm: "comercial.analise-contas" },
       { href: "/relatorios", label: "Relatorios", icon: FileText, perm: "comercial.relatorios" },
     ],
   },
@@ -91,6 +112,44 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
+    id: "marketing",
+    label: "Marketing",
+    icon: Megaphone,
+    children: [
+      {
+        id: "criativos",
+        label: "Criativos",
+        icon: Zap,
+        perm: "marketing.criativos",
+        children: [
+          { href: "/marketing/criativos", label: "Visao Geral", icon: LayoutDashboard, perm: "marketing.criativos" },
+          { href: "/marketing/criativos/pipeline", label: "Pipeline", icon: Zap, perm: "marketing.criativos" },
+          { href: "/marketing/criativos/briefing", label: "Briefing", icon: FileEdit, perm: "marketing.criativos" },
+          { href: "/marketing/criativos/matriz", label: "Matriz", icon: BarChart3, perm: "marketing.criativos" },
+          { href: "/marketing/criativos/biblioteca", label: "Biblioteca", icon: FileText, perm: "marketing.criativos" },
+          { href: "/marketing/criativos/performance", label: "Performance", icon: TrendingUp, perm: "marketing.criativos" },
+          { href: "/marketing/criativos/inteligencia", label: "Inteligencia", icon: Sparkles, perm: "marketing.criativos" },
+        ],
+      },
+      { href: "/marketing/documentos", label: "Documentos", icon: FileText, perm: "marketing.documentos" },
+    ],
+  },
+  {
+    id: "sdr-station",
+    label: "SDR Station",
+    icon: Headphones,
+    perm: "sdr-station",
+    children: [
+      { href: "/comercial/sdr-station", label: "Workspace", icon: Headphones, perm: "sdr-station" },
+      { href: "/comercial/sdr-station/leads", label: "Leads", icon: Users, perm: "sdr-station" },
+      { href: "/comercial/sdr-station/pipeline", label: "Pipeline", icon: Kanban, perm: "sdr-station" },
+      { href: "/comercial/sdr-station/cadencias", label: "Cadencias", icon: RefreshCw, perm: "sdr-station" },
+      { href: "/comercial/sdr-station/metricas", label: "Metricas", icon: BarChart3, perm: "sdr-station" },
+      { href: "/comercial/sdr-station/gravacoes", label: "Gravacoes", icon: Mic, perm: "sdr-station" },
+      { href: "/comercial/sdr-station/numeros", label: "Numeros", icon: Phone, perm: "sdr-station" },
+    ],
+  },
+  {
     id: "configuracoes",
     label: "Configuracoes",
     icon: Shield,
@@ -108,13 +167,21 @@ export default function Sidebar() {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ comercial: true });
 
   // Filter nav items by permission
-  // Filter nav items by permission. Items without perm are always visible.
   const filteredGroups = navGroups.map((group) => ({
     ...group,
     children: group.children.filter((item) => {
       if (isAdmin) return true;
       if (!item.perm) return true;
       return permissions.includes(item.perm);
+    }).map((item) => {
+      if (isSubGroup(item)) {
+        return { ...item, children: item.children.filter((child) => {
+          if (isAdmin) return true;
+          if (!child.perm) return true;
+          return permissions.includes(child.perm);
+        })};
+      }
+      return item;
     }),
   })).filter((group) => group.children.length > 0);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -195,13 +262,17 @@ export default function Sidebar() {
         <nav className={`flex-1 ${collapsed ? "px-2" : "px-4"} py-4 space-y-2 overflow-y-auto`}>
           {filteredGroups.map((group) => {
             const isOpen = openGroups[group.id] ?? false;
-            const hasActiveChild = group.children.some((c) => isActive(c.href));
+            const hasActiveChild = group.children.some((c) => {
+              if (isSubGroup(c)) return c.children.some((sc) => isActive(sc.href));
+              return isActive((c as NavItem).href);
+            });
 
             // Collapsed mode: show only icons
             if (collapsed) {
+              const flatItems = group.children.flatMap((item) => isSubGroup(item) ? item.children : [item]);
               return (
                 <div key={group.id} className="space-y-1">
-                  {group.children.map((item) => {
+                  {flatItems.map((item) => {
                     const active = !item.external && isActive(item.href);
                     const iconEl = <item.icon size={18} strokeWidth={active ? 2 : 1.5} />;
                     const cls = `flex items-center justify-center w-full rounded-xl p-2.5 transition-all duration-200 ${
@@ -246,12 +317,60 @@ export default function Sidebar() {
                 {/* Submenu items */}
                 <div
                   className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                    isOpen ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0"
+                    isOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"
                   }`}
                 >
                   <div className="ml-3 pl-3 border-l border-[#222222] space-y-0.5 mt-1 mb-2">
                     {group.children.map((item) => {
-                      const active = !item.external && isActive(item.href);
+                      if (isSubGroup(item)) {
+                        const subOpen = openGroups[item.id] ?? false;
+                        const subHasActive = item.children.some((c) => isActive(c.href));
+                        return (
+                          <div key={item.id}>
+                            <button
+                              onClick={() => toggleGroup(item.id)}
+                              className={`
+                                w-full flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-semibold
+                                transition-all duration-200 cursor-pointer
+                                ${subHasActive ? "text-lime-400" : "text-zinc-500 hover:text-zinc-200"}
+                              `}
+                            >
+                              <item.icon size={15} strokeWidth={1.5} />
+                              {item.label}
+                              <ChevronDown size={12} className={`ml-auto transition-transform duration-200 ${subOpen ? "rotate-0" : "-rotate-90"}`} />
+                            </button>
+                            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${subOpen ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0"}`}>
+                              <div className="ml-3 pl-3 border-l border-[#222222] space-y-0.5 mt-0.5 mb-1">
+                                {item.children.map((subItem) => {
+                                  const subActive = isActive(subItem.href);
+                                  return (
+                                    <Link
+                                      key={subItem.href}
+                                      href={subItem.href}
+                                      onClick={() => setMobileOpen(false)}
+                                      className={`
+                                        flex items-center gap-3 rounded-xl px-3 py-1.5 text-[12px] font-medium
+                                        transition-all duration-200
+                                        ${subActive
+                                          ? "bg-lime-400/8 text-lime-400 border border-lime-400/15 shadow-[0_0_20px_rgba(163,230,53,0.04)]"
+                                          : "text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.03] border border-transparent"
+                                        }
+                                      `}
+                                    >
+                                      <subItem.icon size={13} strokeWidth={subActive ? 2 : 1.5} />
+                                      {subItem.label}
+                                      {subActive && <div className="ml-auto h-1.5 w-1.5 rounded-full bg-lime-400 shadow-[0_0_6px_rgba(163,230,53,0.5)]" />}
+                                    </Link>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      const navItem = item as NavItem;
+                      const active = !navItem.external && isActive(navItem.href);
                       const cls = `
                         flex items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-semibold
                         transition-all duration-200
@@ -262,18 +381,18 @@ export default function Sidebar() {
                         }
                       `;
 
-                      if (item.external) {
+                      if (navItem.external) {
                         return (
                           <a
-                            key={item.href}
-                            href={item.href}
+                            key={navItem.href}
+                            href={navItem.href}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={() => setMobileOpen(false)}
                             className={cls}
                           >
-                            <item.icon size={15} strokeWidth={1.5} />
-                            {item.label}
+                            <navItem.icon size={15} strokeWidth={1.5} />
+                            {navItem.label}
                             <div className="ml-auto text-[9px] font-bold text-zinc-700 uppercase tracking-wider">nova aba</div>
                           </a>
                         );
@@ -281,13 +400,13 @@ export default function Sidebar() {
 
                       return (
                         <Link
-                          key={item.href}
-                          href={item.href}
+                          key={navItem.href}
+                          href={navItem.href}
                           onClick={() => setMobileOpen(false)}
                           className={cls}
                         >
-                          <item.icon size={15} strokeWidth={active ? 2 : 1.5} />
-                          {item.label}
+                          <navItem.icon size={15} strokeWidth={active ? 2 : 1.5} />
+                          {navItem.label}
                           {active && (
                             <div className="ml-auto h-1.5 w-1.5 rounded-full bg-lime-400 shadow-[0_0_6px_rgba(163,230,53,0.5)]" />
                           )}

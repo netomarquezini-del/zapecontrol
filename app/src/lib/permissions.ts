@@ -25,6 +25,8 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { id: 'comercial.metas', label: 'Metas', group: 'comercial' },
       { id: 'comercial.cadastros', label: 'Cadastros', group: 'comercial' },
       { id: 'comercial.sales-copilot', label: 'Sales Copilot', group: 'comercial' },
+      { id: 'comercial.documentos', label: 'Documentos', group: 'comercial' },
+      { id: 'comercial.analise-contas', label: 'Analise de Contas', group: 'comercial' },
       { id: 'comercial.relatorios', label: 'Relatorios', group: 'comercial' },
     ],
   },
@@ -53,6 +55,20 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     ],
   },
   {
+    id: 'marketing',
+    label: 'Marketing',
+    items: [
+      { id: 'marketing.documentos', label: 'Documentos', group: 'marketing' },
+    ],
+  },
+  {
+    id: 'sdr-station',
+    label: 'SDR Station',
+    items: [
+      { id: 'sdr-station', label: 'SDR Station', group: 'sdr-station' },
+    ],
+  },
+  {
     id: 'configuracoes',
     label: 'Configuracoes',
     items: [
@@ -69,6 +85,8 @@ export const PERM_TO_ROUTE: Record<string, string> = {
   'comercial.metas': '/metas',
   'comercial.cadastros': '/cadastros',
   'comercial.sales-copilot': '/comercial/sales-copilot',
+  'comercial.documentos': '/comercial/documentos',
+  'comercial.analise-contas': '/comercial/analise-contas',
   'comercial.relatorios': '/relatorios',
   'cs.monitor': '/cs-monitor',
   'cs.analytics': '/cs-analytics',
@@ -82,6 +100,8 @@ export const PERM_TO_ROUTE: Record<string, string> = {
   'trafego.roas-real': '/meta-ads/roas-real',
   'trafego.vendas-ticto': '/infoprodutos',
   'trafego.transacoes': '/infoprodutos/transacoes',
+  'marketing.documentos': '/marketing/documentos',
+  'sdr-station': '/comercial/sdr-station',
   'configuracoes.usuarios': '/usuarios',
 }
 

@@ -15,6 +15,7 @@ import {
   Phone,
   Headphones,
   Building,
+  UserCheck,
 } from "lucide-react";
 
 const supabase = getSupabase();
@@ -22,6 +23,7 @@ const supabase = getSupabase();
 const tabs = [
   { id: "closers", label: "Closers", icon: Phone },
   { id: "sdrs", label: "SDRs", icon: Headphones },
+  { id: "consultores", label: "Consultores", icon: UserCheck },
   { id: "origens", label: "Origens", icon: Building },
 ] as const;
 
@@ -555,6 +557,7 @@ export default function CadastrosPage() {
       <div>
         {activeTab === "closers" && <EntityManager table="closers" label="Closer" />}
         {activeTab === "sdrs" && <EntityManager table="sdrs" label="SDR" />}
+        {activeTab === "consultores" && <EntityManager table="consultores" label="Consultor" />}
         {activeTab === "origens" && <OrigemManager />}
       </div>
     </div>

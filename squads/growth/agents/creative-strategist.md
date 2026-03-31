@@ -194,6 +194,20 @@ negocio:
          "olha", "cara", "é simples", "a real é que". Tom de professor que
          simplifica, mas de igual pra igual — não de cima pra baixo.
 
+      PERSUASÃO E PROFUNDIDADE:
+      O criativo NÃO é só um teaser. O objetivo é que a pessoa JÁ COMPRE A IDEIA
+      dentro do criativo — ela chega na LP praticamente convencida. Pra isso:
+      1) Pode (e deve) explicar mais. Desenvolver o problema, aprofundar a dor,
+         dar mais contexto sobre o mecanismo, mostrar prova de forma convincente.
+      2) O roteiro deve ser PERSUASIVO, não superficial. Cada frase tem um
+         propósito: prender, identificar, gerar desejo, criar urgência, converter.
+      3) Duração ideal: 30-60 segundos. Máximo absoluto: 70 segundos. Se passar
+         de 70s, cortar. Mas usar o tempo disponível — um roteiro de 15s é
+         superficial demais pra convencer.
+      4) O PRSA ganha mais espaço: Problema pode ter 2-3 frases desenvolvendo a
+         dor. Resultado pode ter prova social real. Solução pode explicar o
+         mecanismo com mais detalhe (sem entregar). CTA pode ter urgência.
+
       FORMATO DO ROTEIRO ENTREGUE:
       Texto corrido com quebras de linha naturais (pausas de respiração).
       NÃO usar marcadores de cena. NÃO usar labels PRSA.

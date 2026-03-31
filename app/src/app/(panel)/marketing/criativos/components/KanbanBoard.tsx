@@ -25,8 +25,11 @@ const COLUMNS: KanbanColumn[] = [
   { id: 'revisao', label: 'Revisao', statuses: ['revisao'], color: STATUS_COLORS.revisao, dropTarget: 'revisao' },
   { id: 'aprovado', label: 'Aprovado', statuses: ['aprovado'], color: STATUS_COLORS.aprovado, dropTarget: 'aprovado' },
   { id: 'pronto', label: 'Pronto', statuses: ['pronto'], color: STATUS_COLORS.pronto, dropTarget: 'pronto' },
-  { id: 'ao_vivo', label: 'Ao Vivo', statuses: ['em_teste', 'winner', 'escala'], color: STATUS_COLORS.em_teste, dropTarget: 'em_teste' },
-  { id: 'pausado', label: 'Pausado', statuses: ['saturado', 'pausado'], color: STATUS_COLORS.pausado, dropTarget: 'pausado' },
+  { id: 'ao_vivo', label: 'Ao Vivo', statuses: ['em_teste'], color: STATUS_COLORS.em_teste, dropTarget: 'em_teste' },
+  { id: 'winner', label: 'Winner', statuses: ['winner'], color: '#FBBF24', dropTarget: 'winner' },
+  { id: 'escala', label: 'Escala', statuses: ['escala'], color: '#A3E635', dropTarget: 'escala' },
+  { id: 'saturado', label: 'Saturado', statuses: ['saturado'], color: '#F97316', dropTarget: 'saturado' },
+  { id: 'pausado', label: 'Pausado', statuses: ['pausado'], color: STATUS_COLORS.pausado, dropTarget: 'pausado' },
   { id: 'morto', label: 'Morto', statuses: ['morto'], color: STATUS_COLORS.morto, dropTarget: 'morto' },
 ];
 
@@ -232,7 +235,8 @@ export function KanbanBoard() {
               key={col.id}
               className="flex-shrink-0 rounded-xl border flex flex-col transition-colors"
               style={{
-                width: 280,
+                width: 240,
+                minWidth: 220,
                 backgroundColor: isOver ? 'rgba(163, 230, 53, 0.03)' : 'var(--bg-secondary)',
                 borderColor: isOver ? 'var(--accent)' : 'var(--border-color)',
               }}

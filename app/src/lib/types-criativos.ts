@@ -33,6 +33,7 @@ export type CreativeFormato =
   | 'video_depoimento'
   | 'video_screen_recording'
   | 'video_misto'
+  | 'video_caixinha_pergunta'
   | 'estatico_single'
   | 'estatico_carrossel'
   | 'estatico_antes_depois'
@@ -346,6 +347,7 @@ export const FORMATO_LABELS: Record<CreativeFormato, string> = {
   video_depoimento: 'Depoimento',
   video_screen_recording: 'Screen Recording',
   video_misto: 'Video Misto',
+  video_caixinha_pergunta: 'Caixinha Pergunta',
   estatico_single: 'Single',
   estatico_carrossel: 'Carrossel',
   estatico_antes_depois: 'Antes/Depois',
@@ -549,7 +551,7 @@ export const ALL_ANGULOS: CreativeAngulo[] = [
 // All formato values
 export const ALL_FORMATOS: CreativeFormato[] = [
   'video_talking_head', 'video_motion_graphics', 'video_depoimento',
-  'video_screen_recording', 'video_misto', 'estatico_single',
+  'video_screen_recording', 'video_misto', 'video_caixinha_pergunta', 'estatico_single',
   'estatico_carrossel', 'estatico_antes_depois', 'estatico_lista',
   'estatico_prova_social', 'estatico_quote', 'estatico_comparacao',
   'estatico_numero', 'estatico_headline_bold', 'story_vertical', 'reel_vertical',

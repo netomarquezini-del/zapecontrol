@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { Criativo, HistoricoStatus } from '@/lib/types-criativos';
+import type { CreativeFormato } from '@/lib/types-criativos';
 import {
   STATUS_LABELS, STATUS_COLORS, STATUS_TRANSITIONS,
   ANGULO_LABELS, ANGULO_COLORS, FORMATO_LABELS, PERSONA_LABELS, EMOCAO_LABELS,
-  CPA_TARGET,
+  CPA_TARGET, ALL_FORMATOS,
 } from '@/lib/types-criativos';
 
 interface Props {
@@ -263,8 +264,23 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
           <div className="p-6 space-y-6">
             {/* Info Grid */}
             <Section title="Producao">
-              <div className="grid grid-cols-2 gap-3">
-                <InfoField label="Formato" value={FORMATO_LABELS[detail.formato]} />
+              {/* Formato selector */}
+              <FormatoSelector
+                value={detail.formato}
+                onChange={async (newFormato) => {
+                  const res = await fetch(`/api/criativos/${criativo.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ formato: newFormato }),
+                  });
+                  if (res.ok) {
+                    setDetail((prev) => ({ ...prev, formato: newFormato }));
+                    onUpdate();
+                  }
+                }}
+              />
+
+              <div className="grid grid-cols-2 gap-3 mt-3">
                 <InfoField label="Persona" value={PERSONA_LABELS[detail.persona]} />
                 <InfoField label="Emocao" value={EMOCAO_LABELS[detail.emocao_primaria]} />
                 <InfoField label="Geracao" value={String(detail.geracao)} />
@@ -539,6 +555,80 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ── Formato Selector ────────────────────────────────────────
+
+const FORMATO_GROUPS: { label: string; formatos: CreativeFormato[] }[] = [
+  {
+    label: 'Video',
+    formatos: ['video_talking_head', 'video_caixinha_pergunta', 'video_motion_graphics', 'video_depoimento', 'video_screen_recording', 'video_misto'],
+  },
+  {
+    label: 'Estatico',
+    formatos: ['estatico_single', 'estatico_carrossel', 'estatico_antes_depois', 'estatico_lista', 'estatico_prova_social', 'estatico_quote', 'estatico_comparacao', 'estatico_numero', 'estatico_headline_bold'],
+  },
+  {
+    label: 'Vertical',
+    formatos: ['story_vertical', 'reel_vertical'],
+  },
+];
+
+function FormatoSelector({ value, onChange }: { value: CreativeFormato; onChange: (f: CreativeFormato) => void }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <span className="text-[10px] font-medium block mb-1 uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
+        Formato
+      </span>
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+        style={{
+          backgroundColor: 'var(--bg-card)',
+          color: 'var(--text-primary)',
+          border: open ? '2px solid var(--accent)' : '1px solid var(--border-color)',
+        }}
+      >
+        <span>{FORMATO_LABELS[value]}</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--text-muted)', transform: open ? 'rotate(180deg)' : '' }}>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {open && (
+        <div
+          className="absolute z-20 mt-1 w-full rounded-lg border shadow-xl overflow-hidden"
+          style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}
+        >
+          <div className="max-h-[300px] overflow-y-auto">
+            {FORMATO_GROUPS.map((group) => (
+              <div key={group.label}>
+                <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-card)' }}>
+                  {group.label}
+                </div>
+                {group.formatos.filter((f) => ALL_FORMATOS.includes(f)).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => { onChange(f); setOpen(false); }}
+                    className="w-full text-left px-3 py-2 text-xs transition-colors hover:bg-[var(--bg-card)]"
+                    style={{
+                      color: f === value ? 'var(--accent)' : 'var(--text-primary)',
+                      fontWeight: f === value ? 600 : 400,
+                    }}
+                  >
+                    {FORMATO_LABELS[f]}
+                    {f === value && ' ✓'}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

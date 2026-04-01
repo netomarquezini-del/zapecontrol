@@ -9,6 +9,7 @@ const FORMAT_ICONS: Partial<Record<CreativeFormato, string>> = {
   video_depoimento: '🗣️',
   video_screen_recording: '🖥️',
   video_misto: '🎞️',
+  video_caixinha_pergunta: '❓',
   estatico_single: '🖼️',
   estatico_carrossel: '📑',
   estatico_antes_depois: '↔️',

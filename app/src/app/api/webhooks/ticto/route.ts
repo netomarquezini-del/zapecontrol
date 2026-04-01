@@ -157,6 +157,60 @@ export async function POST(req: NextRequest) {
 
     console.log(`[Ticto Webhook] ${status} | ${sale.product_name} | R$${sale.paid_amount} | ${sale.customer_email} | utm_source=${sale.utm_source}`)
 
+    // 2b. Processar bumps do array (Ticto V2 envia bumps junto com o produto principal)
+    const bumpsArray = Array.isArray(body.bumps) ? body.bumps : []
+    let bumpsInserted = 0
+    for (const bump of bumpsArray) {
+      const bumpRecord = {
+        order_id: sale.order_id,
+        order_hash: sale.order_hash,
+        transaction_hash: sale.transaction_hash,
+        status: sale.status,
+        status_date: sale.status_date,
+        payment_method: sale.payment_method,
+        product_name: String((bump as Record<string, unknown>).product_name || ''),
+        product_id: String((bump as Record<string, unknown>).product_id || ''),
+        offer_name: String((bump as Record<string, unknown>).offer_name || ''),
+        offer_code: String((bump as Record<string, unknown>).offer_code || ''),
+        quantity: 1,
+        price: Number((bump as Record<string, unknown>).offer_price || 0),
+        paid_amount: Number((bump as Record<string, unknown>).offer_price || 0),
+        item_price: Number((bump as Record<string, unknown>).offer_price || 0),
+        commission: Number((bump as Record<string, unknown>).offer_price || 0),
+        net_amount: Number((bump as Record<string, unknown>).offer_price || 0),
+        installments: sale.installments,
+        customer_name: sale.customer_name,
+        customer_email: sale.customer_email,
+        customer_cpf: sale.customer_cpf,
+        customer_document: 'customer_document' in sale ? sale.customer_document : sale.customer_cpf,
+        customer_phone: 'customer_phone' in sale ? sale.customer_phone : '',
+        customer_city: sale.customer_city,
+        customer_state: sale.customer_state,
+        utm_source: sale.utm_source,
+        utm_medium: sale.utm_medium,
+        utm_campaign: sale.utm_campaign,
+        utm_content: sale.utm_content,
+        utm_term: sale.utm_term,
+        is_bump: true,
+        is_upsell: false,
+        is_downsell: false,
+        parent_product: sale.product_name,
+        raw_payload: bump,
+        updated_at: new Date().toISOString(),
+      }
+
+      const { error: bumpError } = await supabase
+        .from('ticto_sales')
+        .upsert(bumpRecord, { onConflict: 'order_id,status,product_name,is_bump' })
+
+      if (bumpError) {
+        console.error(`[Ticto Webhook] Bump save error: ${bumpError.message}`)
+      } else {
+        bumpsInserted++
+        console.log(`[Ticto Webhook] Bump saved: ${bumpRecord.product_name} | R$${bumpRecord.paid_amount}`)
+      }
+    }
+
     // 2. Meta CAPI — enviar evento server-side
     let capiResult = 'skipped'
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || ''
@@ -176,7 +230,7 @@ export async function POST(req: NextRequest) {
       console.error(`[Ticto Webhook] CAPI error: ${msg}`)
     }
 
-    return NextResponse.json({ ok: true, status: sale.status, order_id: sale.order_id, capi: capiResult })
+    return NextResponse.json({ ok: true, status: sale.status, order_id: sale.order_id, bumps: bumpsInserted, capi: capiResult })
   } catch (e) {
     console.error('[Ticto Webhook] Parse error:', e)
     return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
@@ -240,7 +294,7 @@ function parseV2(body: Record<string, unknown>) {
     is_bump: String(body.commission_type) === 'bump',
     is_upsell: String(item.offer_name || offer.name || '').toLowerCase().includes('upsell'),
     is_downsell: String(item.offer_name || offer.name || '').toLowerCase().includes('dowsell') || String(item.offer_name || offer.name || '').toLowerCase().includes('downsell'),
-    parent_product: null,
+    parent_product: String(body.commission_type) === 'bump' ? String(item.product_name || '') : null,
     card_brand: null,
     raw_payload: body,
     updated_at: new Date().toISOString(),

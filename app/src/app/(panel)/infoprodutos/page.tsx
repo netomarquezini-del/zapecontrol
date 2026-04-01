@@ -45,6 +45,7 @@ interface DailyRow { date: string; count: number; revenue: number; bumps: number
 export default function InfoprodutosPage() {
   const today = todayISO()
   const [dates, setDates] = useState({ startDate: today, endDate: today })
+  const [product, setProduct] = useState('all')
   const [totals, setTotals] = useState<Totals | null>(null)
   const [products, setProducts] = useState<ProductRow[]>([])
   const [topBumps, setTopBumps] = useState<{ name: string; count: number; revenue: number }[]>([])
@@ -59,7 +60,7 @@ export default function InfoprodutosPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/infoprodutos?startDate=${dates.startDate}&endDate=${dates.endDate}`)
+      const res = await fetch(`/api/infoprodutos?startDate=${dates.startDate}&endDate=${dates.endDate}&product=${product}`)
       const data = await res.json()
       if (data.totals) setTotals(data.totals)
       if (data.products) setProducts(data.products)
@@ -72,7 +73,7 @@ export default function InfoprodutosPage() {
       setLastUpdate(new Date().toLocaleTimeString('pt-BR'))
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
-  }, [dates])
+  }, [dates, product])
 
   useEffect(() => { fetchData() }, [fetchData])
   useEffect(() => { const iv = setInterval(fetchData, 5 * 60 * 1000); return () => clearInterval(iv) }, [fetchData])
@@ -107,7 +108,7 @@ export default function InfoprodutosPage() {
           <button onClick={fetchData} className="p-1.5 rounded-lg hover:bg-zinc-800 transition text-zinc-600">
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
-          <ProductSelector value="shopee-ads" onChange={() => {}} />
+          <ProductSelector value={product} onChange={setProduct} />
           <DatePicker startDate={dates.startDate} endDate={dates.endDate} onChange={(s, e) => setDates({ startDate: s, endDate: e })} />
         </div>
       </div>

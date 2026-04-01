@@ -23,6 +23,14 @@ export interface Product {
 
 export const PRODUCTS: Product[] = [
   {
+    id: 'all',
+    name: 'Todos os Produtos',
+    ticket: 0,
+    meta_ad_account_id: '',
+    ticto_product_names: [],
+    active: true,
+  },
+  {
     id: 'shopee-ads',
     name: 'Shopee ADS 2.0',
     ticket: 97,
@@ -30,15 +38,46 @@ export const PRODUCTS: Product[] = [
     ticto_product_names: ['Shopee ADS 2.0'],
     active: true,
   },
-  // Quando tiver outro produto, adicionar aqui:
-  // {
-  //   id: 'ranqueando',
-  //   name: 'Ranqueando em 15 Dias',
-  //   ticket: 87,
-  //   meta_ad_account_id: 'act_XXXXXXXXX',
-  //   ticto_product_names: ['Ranqueando em 15 Dias 2.0'],
-  //   active: true,
-  // },
+  {
+    id: 'ranqueando',
+    name: 'Ranqueando em 15 Dias',
+    ticket: 87,
+    meta_ad_account_id: '',
+    ticto_product_names: ['Ranqueando em 15 Dias 2.0'],
+    active: true,
+  },
+  {
+    id: 'aula-ao-vivo',
+    name: 'Aula Ao Vivo',
+    ticket: 37,
+    meta_ad_account_id: '',
+    ticto_product_names: ['Aula Ao Vivo | Neto Marquezini'],
+    active: true,
+  },
+  {
+    id: 'catalogo-fornecedores',
+    name: 'Catálogo de Fornecedores',
+    ticket: 27,
+    meta_ad_account_id: '',
+    ticto_product_names: ['Catálogo de Fornecedores'],
+    active: true,
+  },
+  {
+    id: 'analise-conta',
+    name: 'Análise de Conta',
+    ticket: 37,
+    meta_ad_account_id: '',
+    ticto_product_names: ['Análise de Conta'],
+    active: true,
+  },
+  {
+    id: 'planilha-precificacao',
+    name: 'Planilha de Precificação',
+    ticket: 19.90,
+    meta_ad_account_id: '',
+    ticto_product_names: ['Planilha de precificação Shopee'],
+    active: true,
+  },
 ]
 
 export const DEFAULT_PRODUCT = PRODUCTS[0]

@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceSupabase } from '@/lib/supabase'
+import { getProductById } from '@/lib/products'
 
 export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams
   const view = params.get('view') || 'dashboard'
+  const productId = params.get('product') || 'all'
+  const productConfig = getProductById(productId)
+  const productNames = productConfig?.ticto_product_names || []
 
   const supabase = getServiceSupabase()
 
@@ -37,6 +41,8 @@ export async function GET(req: NextRequest) {
   while (true) {
     let q = supabase.from('ticto_sales').select('*').eq('status', 'authorized').gte('status_date', startDate.toISOString())
     if (endStr) q = q.lte('status_date', endDate.toISOString())
+    if (productNames.length === 1) q = q.eq('product_name', productNames[0])
+    else if (productNames.length > 1) q = q.in('product_name', productNames)
     const { data, error } = await q.order('status_date', { ascending: false }).range(offset, offset + PAGE - 1)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     if (!data || data.length === 0) break
@@ -49,6 +55,8 @@ export async function GET(req: NextRequest) {
   // Reembolsos
   let refundQ = supabase.from('ticto_sales').select('*').in('status', ['refunded', 'chargeback']).gte('status_date', startDate.toISOString())
   if (endStr) refundQ = refundQ.lte('status_date', endDate.toISOString())
+  if (productNames.length === 1) refundQ = refundQ.eq('product_name', productNames[0])
+  else if (productNames.length > 1) refundQ = refundQ.in('product_name', productNames)
   const { data: refunds } = await refundQ
 
   // Gasto Meta Ads

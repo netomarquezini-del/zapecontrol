@@ -45,7 +45,7 @@ export default function ProductSelector({ value, onChange }: {
             >
               <div className="flex items-center justify-between">
                 <span>{p.name}</span>
-                <span className="text-[10px] text-zinc-600">R${p.ticket}</span>
+                {p.ticket > 0 && <span className="text-[10px] text-zinc-600">R${p.ticket}</span>}
               </div>
             </button>
           ))}

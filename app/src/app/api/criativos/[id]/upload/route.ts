@@ -26,7 +26,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const isSigned = req.nextUrl.searchParams.get('signed') === 'true';
 
-  // ── Mode 2: Return signed URL for client-side upload ──
+  // ── Mode 2: Return upload config for TUS resumable upload ──
   if (isSigned) {
     const body = await req.json();
     const { fileName, fileType, fileSize } = body;
@@ -44,17 +44,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const ext = fileName.split('.').pop() || 'bin';
     const storagePath = `criativos/${id}/original.${ext}`;
 
-    const { data: signedData, error: signError } = await sb.storage
-      .from('criativos')
-      .createSignedUploadUrl(storagePath, { upsert: true });
-
-    if (signError || !signedData) {
-      return NextResponse.json({ error: `Signed URL failed: ${signError?.message}` }, { status: 500 });
-    }
+    // Return service role key for TUS upload (server-side auth)
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
     return NextResponse.json({
-      signedUrl: signedData.signedUrl,
-      token: signedData.token,
+      tusEndpoint: `${supabaseUrl}/storage/v1/upload/resumable`,
+      token: serviceRoleKey,
       path: storagePath,
       fileType,
     });

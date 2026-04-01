@@ -104,19 +104,31 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
           return;
         }
       } else {
-        // Large file: TUS resumable upload (bypasses proxy size limits)
-        const ext = uploadFile.name.split('.').pop() || 'bin';
-        const storagePath = `criativos/${criativo.id}/original.${ext}`;
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+        // Large file: get TUS config from server, then resumable upload
+        const signRes = await fetch(`/api/criativos/${criativo.id}/upload?signed=true`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileName: uploadFile.name,
+            fileType: uploadFile.type,
+            fileSize: uploadFile.size,
+          }),
+        });
+        if (!signRes.ok) {
+          const json = await signRes.json();
+          alert(json.error || 'Falha ao preparar upload');
+          return;
+        }
+        const { tusEndpoint, token, path: storagePath, fileType } = await signRes.json();
 
+        // TUS resumable upload in 6MB chunks (bypasses proxy size limits)
         await new Promise<void>((resolve, reject) => {
           const upload = new tus.Upload(uploadFile, {
-            endpoint: `${supabaseUrl}/storage/v1/upload/resumable`,
+            endpoint: tusEndpoint,
             retryDelays: [0, 3000, 5000, 10000],
             chunkSize: 6 * 1024 * 1024, // 6MB chunks
             headers: {
-              authorization: `Bearer ${supabaseAnonKey}`,
+              authorization: `Bearer ${token}`,
               'x-upsert': 'true',
             },
             uploadDataDuringCreation: true,
@@ -124,7 +136,7 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
             metadata: {
               bucketName: 'criativos',
               objectName: storagePath,
-              contentType: uploadFile.type,
+              contentType: fileType,
               cacheControl: '3600',
             },
             onError(error) {
@@ -144,7 +156,7 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
         const confirmRes = await fetch(`/api/criativos/${criativo.id}/upload`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path: storagePath, fileType: uploadFile.type, fileSize: uploadFile.size }),
+          body: JSON.stringify({ path: storagePath, fileType, fileSize: uploadFile.size }),
         });
         if (!confirmRes.ok) {
           const json = await confirmRes.json();
@@ -158,6 +170,9 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
       const r = await fetch(`/api/criativos/${criativo.id}`);
       const json = await r.json();
       if (json.data) setDetail(json.data);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      alert(`Upload falhou: ${msg}`);
     } finally {
       setUploading(false);
     }

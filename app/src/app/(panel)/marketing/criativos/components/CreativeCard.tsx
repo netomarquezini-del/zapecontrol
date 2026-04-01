@@ -1,7 +1,32 @@
 'use client';
 
-import type { Criativo } from '@/lib/types-criativos';
+import type { Criativo, CreativeFormato } from '@/lib/types-criativos';
 import { ANGULO_LABELS, ANGULO_COLORS, FORMATO_LABELS, CPA_TARGET } from '@/lib/types-criativos';
+
+const FORMAT_ICONS: Partial<Record<CreativeFormato, string>> = {
+  video_talking_head: '🎙️',
+  video_motion_graphics: '🎬',
+  video_depoimento: '🗣️',
+  video_screen_recording: '🖥️',
+  video_misto: '🎞️',
+  estatico_single: '🖼️',
+  estatico_carrossel: '📑',
+  estatico_antes_depois: '↔️',
+  estatico_lista: '📋',
+  estatico_prova_social: '⭐',
+  estatico_quote: '💬',
+  estatico_comparacao: '⚖️',
+  estatico_numero: '🔢',
+  estatico_headline_bold: '🔤',
+  story_vertical: '📱',
+  reel_vertical: '📱',
+};
+
+function FormatIcon({ formato }: { formato: CreativeFormato }) {
+  return (
+    <span className="text-xl">{FORMAT_ICONS[formato] || '📄'}</span>
+  );
+}
 
 interface Props {
   criativo: Criativo;
@@ -29,28 +54,34 @@ export function CreativeCard({ criativo, isDragging, onDragStart, onClick }: Pro
     >
       <div className="flex gap-2.5">
         {/* Thumbnail */}
-        {criativo.arquivo_thumbnail && (
-          <div
-            className="w-[60px] h-[60px] rounded-md overflow-hidden flex-shrink-0 flex items-center justify-center"
-            style={{ backgroundColor: 'var(--bg-secondary)' }}
-          >
-            {criativo.mime_type?.startsWith('video/') ? (
-              <div className="w-full h-full flex items-center justify-center">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--text-muted)' }}>
+        <div
+          className="w-[60px] h-[60px] rounded-md overflow-hidden flex-shrink-0 flex items-center justify-center relative"
+          style={{ backgroundColor: 'var(--bg-secondary)' }}
+        >
+          {criativo.arquivo_principal && criativo.mime_type?.startsWith('image/') ? (
+            <img
+              src={criativo.arquivo_principal}
+              alt=""
+              className="w-full h-full object-cover"
+            />
+          ) : criativo.arquivo_principal && criativo.mime_type?.startsWith('video/') ? (
+            <>
+              <video
+                src={criativo.arquivo_principal}
+                muted
+                preload="metadata"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="none">
                   <polygon points="5 3 19 12 5 21 5 3" />
                 </svg>
               </div>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--text-muted)' }}>
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                  <circle cx="8.5" cy="8.5" r="1.5" />
-                  <polyline points="21 15 16 10 5 21" />
-                </svg>
-              </div>
-            )}
-          </div>
-        )}
+            </>
+          ) : (
+            <FormatIcon formato={criativo.formato} />
+          )}
+        </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">

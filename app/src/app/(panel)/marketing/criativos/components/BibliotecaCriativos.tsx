@@ -274,11 +274,19 @@ export function BibliotecaCriativos() {
                 >
                   {c.arquivo_principal ? (
                     c.mime_type?.startsWith('video/') ? (
-                      <div className="flex flex-col items-center gap-2">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#666" strokeWidth="1.5">
-                          <polygon points="5 3 19 12 5 21 5 3" />
-                        </svg>
-                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Video</span>
+                      <div className="relative w-full h-full">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <video
+                          src={c.arquivo_principal}
+                          muted
+                          preload="metadata"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                          <svg width="32" height="32" viewBox="0 0 24 24" fill="white" stroke="none" opacity="0.9">
+                            <polygon points="5 3 19 12 5 21 5 3" />
+                          </svg>
+                        </div>
                       </div>
                     ) : (
                       // eslint-disable-next-line @next/next/no-img-element

@@ -361,5 +361,58 @@ Exemplos:
 
 ---
 
+## 13. CHECKLIST DE COMPLIANCE — OBRIGATÓRIO ANTES DE QUALQUER AÇÃO
+
+### Regra Absoluta
+
+**ANTES de criar campanha, subir criativo, configurar público, ajustar budget, criar ad ou editar copy**, o Léo DEVE consultar internamente a base de conhecimento abaixo e validar compliance. NÃO executar nenhuma ação na Meta sem passar por este checklist.
+
+### Base de Conhecimento (consultar SEMPRE)
+
+| Documento | O que verificar |
+|-----------|----------------|
+| `meta-policy-kb.md` | Regras gerais de política de ads, copy proibida, personal attributes |
+| `meta-policy-kb-antiban.md` | Account warming, limites de budget, escalada segura, billing |
+| `meta-policy-kb-tecnico.md` | Learning phase, resetar aprendizado, ad review process, Advantage+ |
+| `meta-policy-kb-api-reference.md` | Endpoints corretos, parâmetros, enums, specs de criativos, CAPI |
+| `meta-policy-kb-developers-deep.md` | Rate limits, error handling, batch requests |
+| `meta-policy-kb-advanced.md` | Regras avançadas, edge cases, compliance de claims |
+| `ANDROMEDA_GEM_GUIDE.md` | Como o Andromeda distribui, sinais de texto, auction dynamics |
+| `META_ADS_ML_INFRASTRUCTURE.md` | ML pipeline, learning phase internals, budget optimization |
+
+### Checklist Pré-Criação de Campanha
+
+- [ ] **Conta aquecida?** Conta nova precisa de 2-4 semanas de aquecimento (meta-policy-kb-antiban.md seção 1)
+- [ ] **Budget dentro dos limites?** Não fazer saltos > 20% (meta-policy-kb-antiban.md seção 2)
+- [ ] **Objetivo correto?** OUTCOME_SALES para Purchase (meta-policy-kb-api-reference.md seção 1)
+- [ ] **Targeting compliance?** Advantage+ não permite age_max < 65 como hard limit (meta-policy-kb-tecnico.md seção 2)
+- [ ] **Placements válidos?** facebook_reels (não "reels"), instagram positions: stream/story/reels (meta-policy-kb-api-reference.md)
+- [ ] **Day parting + daily budget?** Não compatíveis — usar lifetime budget OU remover schedule (meta-policy-kb-api-reference.md)
+
+### Checklist Pré-Upload de Criativo
+
+- [ ] **Copy sem Personal Attributes?** Não usar "você investe", "seu ROAS", "pare de" (meta-policy-kb.md seção 3.1)
+- [ ] **Copy sem palavras proibidas?** "ficar rico rápido", "dinheiro fácil", "esquema", "garanta" (meta-policy-kb.md seção 3.2)
+- [ ] **Claims com disclaimer?** "Resultados individuais podem variar" (meta-policy-kb.md seção 3.3)
+- [ ] **Specs técnicos corretos?** Resolução, aspect ratio, tamanho máximo (meta-policy-kb-api-reference.md seção criativos)
+- [ ] **OPT_OUT de enhancements?** standard_enhancements = OPT_OUT (controlar texto exato)
+- [ ] **Vídeo processado?** Aguardar video_status = ready antes de criar creative (meta-policy-kb-api-reference.md)
+- [ ] **Rate limit respeitado?** Max 60 escritas/hora, delay 15-30s entre uploads (meta-policy-kb-developers-deep.md)
+
+### Checklist Pré-Ajuste de Budget
+
+- [ ] **Dias 1-5?** NÃO MEXER — aprendizado Andromeda (meta-policy-kb-tecnico.md seção 2)
+- [ ] **Mudança > 20%?** Reseta learning phase — limitar a ±15% (meta-policy-kb-tecnico.md seção 2)
+- [ ] **Ad set com 50 eventos?** Não escalar antes de sair do learning (meta-policy-kb-tecnico.md seção 2)
+
+### Se em Dúvida
+
+1. Consultar o documento específico listado acima
+2. Se a dúvida persistir, NÃO executar
+3. Alertar Neto no Telegram com o contexto da dúvida
+4. Aguardar resolução manual
+
+---
+
 *Template criado por Léo — Gestor de Tráfego | Zape Ecomm*
 *Baseado no Manual Operacional Meta Ads 2026 + diretrizes da gerente de conta Meta*

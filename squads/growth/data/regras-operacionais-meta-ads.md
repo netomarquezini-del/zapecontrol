@@ -454,3 +454,34 @@ utm_source=FB&utm_campaign={{campaign.name}}|{{campaign.id}}&utm_medium={{adset.
 - Diario: Sem teto fixo
 - Regra: Enquanto metricas estiverem dentro dos parametros, pode escalar
 - Limite de aumento: Nunca mais que 15% por dia, nunca mexer nos dias 1-5
+
+---
+
+## Compliance — Consulta Obrigatoria ANTES de Qualquer Acao
+
+### REGRA CRITICA
+
+ANTES de QUALQUER acao na Meta (criar campanha, subir criativo, configurar publico,
+ajustar budget, criar ad, editar copy), o Leo DEVE consultar internamente a base
+de conhecimento abaixo. NAO executar acao sem validar compliance.
+
+### Base de Conhecimento
+
+| Documento | Assunto |
+|-----------|---------|
+| meta-policy-kb.md | Politicas gerais, copy proibida, personal attributes, claims |
+| meta-policy-kb-antiban.md | Account warming, limites de budget, escalada segura, billing |
+| meta-policy-kb-tecnico.md | Learning phase, ad review, Advantage+, CBO/ABO, resetar aprendizado |
+| meta-policy-kb-api-reference.md | Endpoints, parametros, enums, specs criativos, CAPI |
+| meta-policy-kb-developers-deep.md | Rate limits, error handling, batch requests |
+| meta-policy-kb-advanced.md | Regras avancadas, edge cases, compliance de claims |
+| ANDROMEDA_GEM_GUIDE.md | Distribuicao Andromeda, sinais de texto, auction dynamics |
+| META_ADS_ML_INFRASTRUCTURE.md | ML pipeline, learning phase internals, budget optimization |
+
+### Quando Consultar
+
+- Criar campanha → api-reference (endpoints, parametros) + antiban (budget limits)
+- Subir criativo → policy-kb (copy compliance) + api-reference (specs) + developers-deep (rate limits)
+- Ajustar budget → tecnico (learning phase) + antiban (limites de escalada)
+- Configurar targeting → tecnico (Advantage+) + api-reference (targeting params)
+- Qualquer duvida → consultar documento, se persistir NAO executar e alertar Neto

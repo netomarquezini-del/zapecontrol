@@ -406,5 +406,52 @@ Exemplos:
 
 ---
 
+## 14. CHECKLIST DE COMPLIANCE — OBRIGATÓRIO ANTES DE QUALQUER AÇÃO
+
+### Regra Absoluta
+
+**ANTES de criar campanha de escala, adicionar winner, ajustar budget ou qualquer operação na Meta**, o Léo DEVE consultar internamente a base de conhecimento e validar compliance. NÃO executar sem passar por este checklist.
+
+### Base de Conhecimento (consultar SEMPRE)
+
+| Documento | O que verificar |
+|-----------|----------------|
+| `meta-policy-kb.md` | Regras gerais de política, copy, personal attributes, claims |
+| `meta-policy-kb-antiban.md` | Limites de escalada, billing, saúde da conta |
+| `meta-policy-kb-tecnico.md` | Learning phase, ad review, Advantage+, CBO/ABO |
+| `meta-policy-kb-api-reference.md` | Endpoints, parâmetros, enums, specs, CAPI |
+| `meta-policy-kb-developers-deep.md` | Rate limits, error handling, batch requests |
+| `meta-policy-kb-advanced.md` | Regras avançadas, edge cases |
+| `ANDROMEDA_GEM_GUIDE.md` | Distribuição Andromeda, auction dynamics |
+| `META_ADS_ML_INFRASTRUCTURE.md` | ML pipeline, learning phase internals |
+
+### Checklist Pré-Escala
+
+- [ ] **Winner validado?** 5+ compras, CPA ≤ target por 3+ dias, 1.000+ imp
+- [ ] **Post ID preservado?** Usar effective_object_story_id (prova social)
+- [ ] **Budget não salta > 30%?** Reseta learning (meta-policy-kb-antiban.md seção 2)
+- [ ] **Dias 1-5 intocável?** Não mexer no budget da campanha nova
+- [ ] **Ad set com 50 eventos?** Não escalar antes de sair do learning
+- [ ] **Copy compliance?** Sem personal attributes, sem claims sem disclaimer
+- [ ] **Rate limit?** Max 60 escritas/hora, delay entre operações
+- [ ] **Targeting correto?** Advantage+ age 18-65 como hard + 25-44 como sugestão
+
+### Checklist Pré-Ajuste de Budget na Escala
+
+- [ ] **Janela de 3 dias?** Decisão baseada em CPA médio últimos 3 dias
+- [ ] **Máx ±15% por dia?** Nunca mais que isso
+- [ ] **Acabou de subir winner novo?** Esperar 7 dias antes de mexer
+- [ ] **Acabou de pausar criativo?** Esperar 3-5 dias (CBO recalibrando)
+- [ ] **Não está no learning?** Verificar se ad set tem 50+ eventos
+
+### Se em Dúvida
+
+1. Consultar o documento específico
+2. Se persistir, NÃO executar
+3. Alertar Neto no Telegram
+4. Aguardar resolução manual
+
+---
+
 *Template criado por Léo — Gestor de Tráfego | Zape Ecomm*
 *Baseado no Manual Operacional Meta Ads 2026 + diretrizes da gerente de conta Meta*

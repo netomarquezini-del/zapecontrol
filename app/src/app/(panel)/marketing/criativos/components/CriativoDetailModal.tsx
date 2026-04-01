@@ -71,11 +71,14 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       });
+      const json = await res.json();
       if (res.ok) {
+        if (json.warnings?.length) {
+          alert('Aviso:\n• ' + json.warnings.join('\n• '));
+        }
         onUpdate();
         onClose();
       } else {
-        const json = await res.json();
         alert(json.error || 'Falha ao alterar status');
       }
     } finally {

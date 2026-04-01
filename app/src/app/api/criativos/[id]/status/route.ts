@@ -43,7 +43,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     );
   }
 
-  // If transitioning to "pronto", validate copy contains required terms
+  // If transitioning to "pronto", collect warnings (non-blocking)
+  let warnings: string[] = [];
   if (newStatus === 'pronto') {
     const fullCopy = [criativo.copy_primario, criativo.copy_titulo, criativo.copy_descricao]
       .filter(Boolean)
@@ -51,21 +52,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const copyValidation = validateCopy(fullCopy);
     if (!copyValidation.valid) {
-      return NextResponse.json(
-        {
-          error: 'Copy validation failed — cannot mark as pronto',
-          details: copyValidation.errors,
-        },
-        { status: 400 },
-      );
+      warnings = copyValidation.errors;
     }
 
-    // Check arquivo exists
     if (!criativo.arquivo_principal) {
-      return NextResponse.json(
-        { error: 'Arquivo principal is required before marking as pronto' },
-        { status: 400 },
-      );
+      warnings.push('Arquivo principal não foi enviado');
     }
   }
 
@@ -97,5 +88,5 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }).eq('criativo_id', id);
   }
 
-  return NextResponse.json({ data: updated });
+  return NextResponse.json({ data: updated, ...(warnings.length > 0 ? { warnings } : {}) });
 }

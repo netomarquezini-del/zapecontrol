@@ -291,57 +291,16 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
                 {detail.duracao_segundos && <InfoField label="Duracao" value={`${detail.duracao_segundos}s`} />}
               </div>
 
-              {/* File preview + download */}
-              {detail.arquivo_principal && (
-                <div className="mt-3 rounded-lg overflow-hidden" style={{ backgroundColor: 'var(--bg-card)' }}>
-                  {detail.mime_type?.startsWith('video/') ? (
-                    <video
-                      src={detail.arquivo_principal}
-                      controls
-                      className="w-full max-h-[300px] object-contain"
-                      style={{ backgroundColor: '#000' }}
-                    />
-                  ) : detail.mime_type?.startsWith('image/') ? (
-                    <img
-                      src={detail.arquivo_principal}
-                      alt={detail.nome}
-                      className="w-full max-h-[300px] object-contain"
-                    />
-                  ) : (
-                    <div className="p-3 text-xs" style={{ color: 'var(--text-muted)' }}>
-                      {detail.arquivo_principal} ({detail.mime_type})
-                    </div>
-                  )}
-                  <div className="p-2 flex justify-end" style={{ borderTop: '1px solid var(--border-color)' }}>
-                    <a
-                      href={detail.arquivo_principal}
-                      download={`${detail.nome}.${detail.mime_type?.split('/')[1] || 'mp4'}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80"
-                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <polyline points="7 10 12 15 17 10" />
-                        <line x1="12" y1="15" x2="12" y2="3" />
-                      </svg>
-                      Baixar
-                    </a>
-                  </div>
-                </div>
-              )}
-
-              {/* Upload area — always visible */}
-              <div className="mt-3">
-                <UploadArea
-                  hasFile={!!detail.arquivo_principal}
-                  uploadFile={uploadFile}
-                  uploading={uploading}
-                  onFileChange={(f) => setUploadFile(f)}
-                  onUpload={handleUpload}
-                />
-              </div>
+              {/* Media Section */}
+              <MediaSection
+                detail={detail}
+                criativoId={criativo.id}
+                uploadFile={uploadFile}
+                uploading={uploading}
+                onFileChange={(f) => setUploadFile(f)}
+                onUpload={handleUpload}
+                onDetailUpdate={(d) => { setDetail(d); onUpdate(); }}
+              />
             </Section>
 
             {/* Copy Section — Editable */}
@@ -558,6 +517,271 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ── Media Section ───────────────────────────────────────────
+
+type MediaType = 'estatico' | 'video' | 'carrossel';
+
+function getMediaType(detail: Criativo): MediaType {
+  if (detail.formato === 'estatico_carrossel' || (detail.carousel_items?.length > 0)) return 'carrossel';
+  if (detail.mime_type?.startsWith('video/') || detail.formato?.startsWith('video_') || detail.formato === 'story_vertical' || detail.formato === 'reel_vertical') return 'video';
+  return 'estatico';
+}
+
+function MediaSection({
+  detail, criativoId, uploadFile, uploading, onFileChange, onUpload, onDetailUpdate,
+}: {
+  detail: Criativo & { historico?: HistoricoStatus[] };
+  criativoId: string;
+  uploadFile: File | null;
+  uploading: boolean;
+  onFileChange: (f: File | null) => void;
+  onUpload: () => void;
+  onDetailUpdate: (d: Criativo & { historico?: HistoricoStatus[] }) => void;
+}) {
+  const [mediaType, setMediaType] = useState<MediaType>(getMediaType(detail));
+  const [carouselUploading, setCarouselUploading] = useState(false);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+
+  const carouselItems: string[] = detail.carousel_items || [];
+
+  const handleMediaTypeChange = (type: MediaType) => {
+    setMediaType(type);
+  };
+
+  const handleCarouselUpload = async (files: FileList) => {
+    setCarouselUploading(true);
+    try {
+      const newItems = [...carouselItems];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        // Get signed URL
+        const signRes = await fetch(`/api/criativos/${criativoId}/upload?signed=true`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName: `card_${newItems.length + 1}.${file.name.split('.').pop()}`, fileType: file.type, fileSize: file.size }),
+        });
+        if (!signRes.ok) continue;
+        const { signedUrl, path, fileType } = await signRes.json();
+
+        // Upload to storage
+        await fetch(signedUrl, { method: 'PUT', headers: { 'Content-Type': fileType }, body: file });
+
+        // Get public URL
+        const confirmRes = await fetch(`/api/criativos/${criativoId}/upload`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path, fileType, fileSize: file.size }),
+        });
+        if (confirmRes.ok) {
+          const { url } = await confirmRes.json();
+          newItems.push(url);
+        }
+      }
+      // Save carousel items
+      await saveCarouselItems(newItems);
+    } finally {
+      setCarouselUploading(false);
+    }
+  };
+
+  const saveCarouselItems = async (items: string[]) => {
+    const res = await fetch(`/api/criativos/${criativoId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        carousel_items: items,
+        arquivo_principal: items[0] || null,
+        arquivo_thumbnail: items[0] || null,
+        mime_type: 'image/jpeg',
+      }),
+    });
+    if (res.ok) {
+      const json = await res.json();
+      onDetailUpdate({ ...detail, ...json.data });
+    }
+  };
+
+  const moveCarouselItem = (from: number, to: number) => {
+    if (to < 0 || to >= carouselItems.length) return;
+    const items = [...carouselItems];
+    const [moved] = items.splice(from, 1);
+    items.splice(to, 0, moved);
+    saveCarouselItems(items);
+  };
+
+  const removeCarouselItem = (idx: number) => {
+    const items = carouselItems.filter((_, i) => i !== idx);
+    saveCarouselItems(items);
+  };
+
+  const handleCarouselDrop = (targetIdx: number) => {
+    if (dragIdx === null || dragIdx === targetIdx) return;
+    moveCarouselItem(dragIdx, targetIdx);
+    setDragIdx(null);
+  };
+
+  return (
+    <div className="mt-3 space-y-3">
+      {/* Media type toggle */}
+      <div className="flex rounded-lg overflow-hidden border" style={{ borderColor: 'var(--border-color)' }}>
+        {(['estatico', 'video', 'carrossel'] as MediaType[]).map((type) => (
+          <button
+            key={type}
+            onClick={() => handleMediaTypeChange(type)}
+            className="flex-1 px-3 py-2 text-xs font-medium transition-colors"
+            style={{
+              backgroundColor: mediaType === type ? 'var(--accent)' : 'var(--bg-card)',
+              color: mediaType === type ? 'var(--bg-primary)' : 'var(--text-secondary)',
+            }}
+          >
+            {type === 'estatico' ? '🖼️ Estático' : type === 'video' ? '🎬 Vídeo' : '📑 Carrossel'}
+          </button>
+        ))}
+      </div>
+
+      {/* Single file (Estático / Vídeo) */}
+      {mediaType !== 'carrossel' && (
+        <>
+          {detail.arquivo_principal && (
+            <div className="rounded-lg overflow-hidden" style={{ backgroundColor: 'var(--bg-card)' }}>
+              {mediaType === 'video' || detail.mime_type?.startsWith('video/') ? (
+                <video src={detail.arquivo_principal} controls className="w-full max-h-[300px] object-contain" style={{ backgroundColor: '#000' }} />
+              ) : (
+                <img src={detail.arquivo_principal} alt={detail.nome} className="w-full max-h-[300px] object-contain" />
+              )}
+              <div className="p-2 flex justify-end" style={{ borderTop: '1px solid var(--border-color)' }}>
+                <a
+                  href={detail.arquivo_principal}
+                  download={`${detail.nome}.${detail.mime_type?.split('/')[1] || 'mp4'}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-opacity hover:opacity-80"
+                  style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  Baixar
+                </a>
+              </div>
+            </div>
+          )}
+          <UploadArea
+            hasFile={!!detail.arquivo_principal}
+            uploadFile={uploadFile}
+            uploading={uploading}
+            onFileChange={onFileChange}
+            onUpload={onUpload}
+          />
+        </>
+      )}
+
+      {/* Carrossel */}
+      {mediaType === 'carrossel' && (
+        <div className="space-y-2">
+          {/* Carousel items grid */}
+          {carouselItems.length > 0 && (
+            <div className="grid grid-cols-3 gap-2">
+              {carouselItems.map((url, idx) => (
+                <div
+                  key={idx}
+                  draggable
+                  onDragStart={() => setDragIdx(idx)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => handleCarouselDrop(idx)}
+                  className="relative rounded-lg overflow-hidden border-2 cursor-grab active:cursor-grabbing group"
+                  style={{
+                    borderColor: dragIdx === idx ? 'var(--accent)' : 'var(--border-color)',
+                    aspectRatio: '1',
+                  }}
+                >
+                  <img src={url} alt={`Card ${idx + 1}`} className="w-full h-full object-cover" />
+
+                  {/* Position badge */}
+                  <div
+                    className="absolute top-1 left-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
+                    style={{ backgroundColor: 'var(--accent)', color: 'var(--bg-primary)' }}
+                  >
+                    {idx + 1}
+                  </div>
+
+                  {/* Controls overlay */}
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                    <button
+                      onClick={() => moveCarouselItem(idx, idx - 1)}
+                      disabled={idx === 0}
+                      className="w-6 h-6 rounded flex items-center justify-center text-white disabled:opacity-30"
+                      style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+                    >
+                      ←
+                    </button>
+                    <button
+                      onClick={() => moveCarouselItem(idx, idx + 1)}
+                      disabled={idx === carouselItems.length - 1}
+                      className="w-6 h-6 rounded flex items-center justify-center text-white disabled:opacity-30"
+                      style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+                    >
+                      →
+                    </button>
+                    <button
+                      onClick={() => removeCarouselItem(idx)}
+                      className="w-6 h-6 rounded flex items-center justify-center text-white"
+                      style={{ backgroundColor: 'rgba(239,68,68,0.7)' }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add more cards */}
+          <label
+            className="flex flex-col items-center gap-1.5 cursor-pointer rounded-lg border-2 border-dashed p-4 transition-colors hover:border-[var(--accent)]"
+            style={{ borderColor: 'var(--border-color)' }}
+          >
+            {carouselUploading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Enviando...</span>
+              </div>
+            ) : (
+              <>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ color: 'var(--text-muted)' }}>
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                  {carouselItems.length === 0 ? 'Adicionar imagens do carrossel' : 'Adicionar mais cards'}
+                </span>
+                <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+                  JPG, PNG (selecione vários)
+                </span>
+              </>
+            )}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              onChange={(e) => e.target.files && handleCarouselUpload(e.target.files)}
+              className="hidden"
+            />
+          </label>
+
+          {carouselItems.length > 0 && (
+            <p className="text-[10px] text-center" style={{ color: 'var(--text-muted)' }}>
+              Arraste os cards para reordenar
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

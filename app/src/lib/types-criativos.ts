@@ -111,6 +111,7 @@ export interface Criativo {
   arquivo_principal: string | null;
   arquivo_thumbnail: string | null;
   arquivo_preview: string | null;
+  carousel_items: string[]; // ordered array of public URLs for carousel
   mime_type: string | null;
   duracao_segundos: number | null;
   resolucao: string | null;

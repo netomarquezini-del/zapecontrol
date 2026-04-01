@@ -4,7 +4,7 @@ import { getServiceSupabase } from '@/lib/supabase';
 export const dynamic = 'force-dynamic';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/quicktime'];
-const MAX_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_SIZE = 500 * 1024 * 1024; // 500MB (matches Supabase bucket limit)
 
 // POST /api/criativos/[id]/upload — two modes:
 // 1) With file in body (small files < 4.5MB) — direct upload
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: `Invalid file type: ${fileType}` }, { status: 400 });
     }
     if (fileSize && fileSize > MAX_SIZE) {
-      return NextResponse.json({ error: 'File too large. Max: 100MB' }, { status: 400 });
+      return NextResponse.json({ error: 'File too large. Max: 500MB' }, { status: 400 });
     }
 
     const ext = fileName.split('.').pop() || 'bin';
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   if (file.size > MAX_SIZE) {
     return NextResponse.json(
-      { error: `File too large: ${(file.size / 1024 / 1024).toFixed(1)}MB. Max: 100MB` },
+      { error: `File too large: ${(file.size / 1024 / 1024).toFixed(1)}MB. Max: 500MB` },
       { status: 400 },
     );
   }

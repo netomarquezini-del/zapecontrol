@@ -932,7 +932,7 @@ function UploadArea({
             {hasFile ? 'Trocar arquivo' : 'Arraste ou clique para enviar'}
           </span>
           <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
-            JPG, PNG, MP4, MOV (max 100MB)
+            JPG, PNG, MP4, MOV (max 500MB)
           </span>
           <input
             type="file"

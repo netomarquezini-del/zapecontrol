@@ -130,7 +130,8 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
           body: uploadFile,
         });
         if (!uploadRes.ok) {
-          alert('Upload direto falhou. Tente um arquivo menor.');
+          const errText = await uploadRes.text().catch(() => '');
+          alert(`Upload falhou: ${errText || uploadRes.statusText || 'Erro desconhecido'}`);
           return;
         }
 

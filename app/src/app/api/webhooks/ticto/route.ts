@@ -252,7 +252,12 @@ function parseV2(body: Record<string, unknown>) {
   const item = (body.item || ((body.items as any)?.[0]) || {}) as Record<string, unknown>
 
   // Valores em centavos → converter pra reais
-  const paidAmountCents = Number(order.paid_amount || item.amount || offer.price || 0)
+  // Se tem bumps no payload, order.paid_amount inclui tudo (produto + bumps)
+  // Usar item.amount pro produto principal pra não contar bump duas vezes
+  const hasBumps = Array.isArray(body.bumps) && body.bumps.length > 0
+  const paidAmountCents = hasBumps
+    ? Number(item.amount || offer.price || order.paid_amount || 0)
+    : Number(order.paid_amount || item.amount || offer.price || 0)
   const paidAmount = paidAmountCents > 1000 ? paidAmountCents / 100 : paidAmountCents // auto-detect centavos
   const producerAmount = Number(producer.amount || 0)
   const commission = producerAmount > 1000 ? producerAmount / 100 : producerAmount
@@ -274,7 +279,7 @@ function parseV2(body: Record<string, unknown>) {
     price,
     paid_amount: paidAmount,
     item_price: price,
-    order_total: paidAmount,
+    order_total: Number(order.paid_amount || 0) > 1000 ? Number(order.paid_amount) / 100 : Number(order.paid_amount || 0),
     commission,
     net_amount: commission,
     installments: Number(order.installments || 1),

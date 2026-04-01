@@ -58,6 +58,7 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     id: 'marketing',
     label: 'Marketing',
     items: [
+      { id: 'marketing.criativos', label: 'Criativos', group: 'marketing' },
       { id: 'marketing.documentos', label: 'Documentos', group: 'marketing' },
     ],
   },
@@ -100,6 +101,7 @@ export const PERM_TO_ROUTE: Record<string, string> = {
   'trafego.roas-real': '/meta-ads/roas-real',
   'trafego.vendas-ticto': '/infoprodutos',
   'trafego.transacoes': '/infoprodutos/transacoes',
+  'marketing.criativos': '/marketing/criativos',
   'marketing.documentos': '/marketing/documentos',
   'sdr-station': '/comercial/sdr-station',
   'configuracoes.usuarios': '/usuarios',

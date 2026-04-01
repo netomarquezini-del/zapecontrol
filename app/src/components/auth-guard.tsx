@@ -60,8 +60,9 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
           return
         }
 
-        // Check if this route is restricted
+        // Check if this route is restricted (exact match or parent path match)
         const requiredPerm = ROUTE_TO_PERM[pathname]
+          || Object.entries(ROUTE_TO_PERM).find(([route]) => pathname.startsWith(route + '/'))?.[1]
 
         if (!requiredPerm) {
           // Route is not restricted — everyone can access (dashboard, home, etc)

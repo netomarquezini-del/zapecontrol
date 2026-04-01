@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import * as tus from 'tus-js-client';
 import type { Criativo, HistoricoStatus } from '@/lib/types-criativos';
 import type { CreativeFormato } from '@/lib/types-criativos';
 import {
@@ -103,43 +104,47 @@ export function CriativoDetailModal({ criativo, onClose, onUpdate }: Props) {
           return;
         }
       } else {
-        // Large file: signed URL upload directly to Supabase Storage
-        const signRes = await fetch(`/api/criativos/${criativo.id}/upload?signed=true`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fileName: uploadFile.name,
-            fileType: uploadFile.type,
-            fileSize: uploadFile.size,
-          }),
-        });
-        if (!signRes.ok) {
-          const json = await signRes.json();
-          alert(json.error || 'Falha ao gerar URL de upload');
-          return;
-        }
-        const { signedUrl, token, path, fileType } = await signRes.json();
+        // Large file: TUS resumable upload (bypasses proxy size limits)
+        const ext = uploadFile.name.split('.').pop() || 'bin';
+        const storagePath = `criativos/${criativo.id}/original.${ext}`;
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-        // Upload directly to Supabase Storage
-        const uploadRes = await fetch(signedUrl, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': fileType,
-            ...(token ? { 'x-upsert': 'true' } : {}),
-          },
-          body: uploadFile,
+        await new Promise<void>((resolve, reject) => {
+          const upload = new tus.Upload(uploadFile, {
+            endpoint: `${supabaseUrl}/storage/v1/upload/resumable`,
+            retryDelays: [0, 3000, 5000, 10000],
+            chunkSize: 6 * 1024 * 1024, // 6MB chunks
+            headers: {
+              authorization: `Bearer ${supabaseAnonKey}`,
+              'x-upsert': 'true',
+            },
+            uploadDataDuringCreation: true,
+            removeFingerprintOnSuccess: true,
+            metadata: {
+              bucketName: 'criativos',
+              objectName: storagePath,
+              contentType: uploadFile.type,
+              cacheControl: '3600',
+            },
+            onError(error) {
+              reject(error);
+            },
+            onSuccess() {
+              resolve();
+            },
+          });
+          upload.findPreviousUploads().then((prev) => {
+            if (prev.length) upload.resumeFromPreviousUpload(prev[0]);
+            upload.start();
+          });
         });
-        if (!uploadRes.ok) {
-          const errText = await uploadRes.text().catch(() => '');
-          alert(`Upload falhou: ${errText || uploadRes.statusText || 'Erro desconhecido'}`);
-          return;
-        }
 
         // Confirm upload — update criativo record
         const confirmRes = await fetch(`/api/criativos/${criativo.id}/upload`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path, fileType, fileSize: uploadFile.size }),
+          body: JSON.stringify({ path: storagePath, fileType: uploadFile.type, fileSize: uploadFile.size }),
         });
         if (!confirmRes.ok) {
           const json = await confirmRes.json();

@@ -170,51 +170,70 @@ export default function EcosystemPage() {
     'leo-telegram': 'gestor-trafego',
   }
 
-  const fetchPm2Status = useCallback(async () => {
-    try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/pm2_status?select=*`, {
-        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-        signal: AbortSignal.timeout(5000),
-      })
-      if (!res.ok) return
-      const rows: Array<{ name: string; status: string; memory: number; uptime: number; restarts: number }> = await res.json()
+  // Static skills mapping (fallback when scanner doesn't find them)
+  const STATIC_SKILLS: Record<string, string[]> = {
+    'head-comercial': ['squads/gestao/agents/skills/head-comercial-skills.md'],
+    'gestor-trafego': ['squads/growth/agents/skills/gestor-trafego-skills.md', 'squads/growth/agents/skills/mapa-completo-skills-meta-ads.md', 'squads/growth/agents/skills/contingencia-meta-ads.md'],
+    'creative-strategist': ['squads/growth/agents/skills/creative-strategist-skills.md', 'squads/growth/agents/skills/brazilian-market-creative-kb.md', 'squads/growth/agents/skills/ad-lp-alignment-kb.md'],
+    'thomas-design': ['squads/growth/agents/skills/thomas-design-skills.md', 'squads/growth/agents/skills/thomas-copy-to-briefing.md'],
+    'video-creator': ['squads/growth/agents/skills/video-creator-skills.md'],
+    'copywriter-estatico': ['squads/criativoset/agents/skills/copywriter-estatico-skills.md'],
+    'qa-estatico': ['squads/criativoset/agents/skills/qa-estatico-skills.md'],
+    'copywriter-video': ['squads/criativovid/agents/skills/copywriter-video-skills.md'],
+    'qa-video': ['squads/criativovid/agents/skills/qa-video-skills.md'],
+  }
 
-      // Attach services to agents when data loads
-      setData(prev => {
-        if (!prev) return prev
-        const updated = { ...prev, squads: prev.squads.map(squad => ({
-          ...squad,
-          agents: squad.agents.map(agent => {
-            const agentServices = rows.filter(p => PM2_TO_AGENT[p.name] === agent.id)
-            return agentServices.length > 0 ? { ...agent, services: agentServices } : agent
-          })
-        }))}
-        return updated
-      })
-    } catch {
-      // Supabase indisponivel
+  const enrichAgentData = useCallback((ecosystemData: EcosystemData, pm2Rows: Array<{ name: string; status: string; memory: number; uptime: number; restarts: number }>) => {
+    return {
+      ...ecosystemData,
+      squads: ecosystemData.squads.map(squad => ({
+        ...squad,
+        agents: squad.agents.map(agent => {
+          // Inject pm2 services
+          const agentServices = pm2Rows.filter(p => PM2_TO_AGENT[p.name] === agent.id)
+          // Inject skills fallback if empty
+          const skills = (agent.skills && agent.skills.length > 0) ? agent.skills
+            : (STATIC_SKILLS[agent.id] ?? []).map(path => ({ name: path.split('/').pop() || path, description: '' }))
+          return {
+            ...agent,
+            services: agentServices.length > 0 ? agentServices : agent.services,
+            skills: skills.length > 0 ? skills : agent.skills,
+          }
+        })
+      }))
     }
-  }, [SUPABASE_URL, SUPABASE_ANON_KEY]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       setError(false)
-      const res = await fetch('/api/ecosystem')
-      if (!res.ok) throw new Error('Failed to fetch')
-      const d = await res.json()
-      setData(d)
+
+      // Fetch ecosystem + pm2 in parallel
+      const [ecoRes, pm2Res] = await Promise.all([
+        fetch('/api/ecosystem'),
+        fetch(`${SUPABASE_URL}/rest/v1/pm2_status?select=*`, {
+          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+          signal: AbortSignal.timeout(5000),
+        }).catch(() => null),
+      ])
+
+      if (!ecoRes.ok) throw new Error('Failed to fetch')
+      const ecoData = await ecoRes.json()
+      const pm2Rows = pm2Res?.ok ? await pm2Res.json() : []
+
+      setData(enrichAgentData(ecoData, pm2Rows))
     } catch {
       setError(true)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [SUPABASE_URL, SUPABASE_ANON_KEY, enrichAgentData])
 
   useEffect(() => {
-    fetchData().then(() => fetchPm2Status())
+    fetchData()
     fetchCronStatus()
-  }, [fetchData, fetchCronStatus, fetchPm2Status])
+  }, [fetchData, fetchCronStatus])
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {

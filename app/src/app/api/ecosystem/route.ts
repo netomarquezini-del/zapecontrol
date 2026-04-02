@@ -639,17 +639,27 @@ export async function GET() {
   // 4. Assign root-level crons
   assignRootCrons(squads)
 
-  // 4b. Fallback: if no crons found (serverless env), use static registry
-  const totalCronsFound = squads.reduce((sum, s) => sum + s.crons.length, 0)
-  if (totalCronsFound === 0) {
-    for (const [squadId, crons] of Object.entries(STATIC_CRONS)) {
-      const squad = squads.find((s) => s.id === squadId || s.id.toLowerCase() === squadId)
-      if (squad) {
-        for (const cron of crons) {
-          if (!squad.crons.some((c) => c.name === cron.name)) {
-            squad.crons.push(cron)
-          }
-        }
+  // 4b. Enrich crons with descriptions from static registry + add missing ones as fallback
+  const staticDescriptions = new Map<string, string>()
+  for (const crons of Object.values(STATIC_CRONS)) {
+    for (const c of crons) {
+      if (c.description) staticDescriptions.set(c.name, c.description)
+    }
+  }
+
+  for (const [squadId, staticCrons] of Object.entries(STATIC_CRONS)) {
+    const squad = squads.find((s) => s.id === squadId || s.id.toLowerCase() === squadId)
+    if (!squad) continue
+    // Add descriptions to existing crons
+    for (const cron of squad.crons) {
+      if (!cron.description) {
+        cron.description = staticDescriptions.get(cron.name)
+      }
+    }
+    // Add missing crons from static registry
+    for (const sc of staticCrons) {
+      if (!squad.crons.some((c) => c.name === sc.name)) {
+        squad.crons.push(sc)
       }
     }
   }

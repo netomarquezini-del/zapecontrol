@@ -299,6 +299,30 @@ validacao:
           - "Usa linguagem de guru/coach = REPROVADO"
           - "Promete resultado sem identificacao com a dor = REPROVADO"
           - "O seller nao falaria isso num grupo de WhatsApp = REPROVADO"
+      - id: L8
+        nome: "SHOPEE obrigatorio no hook"
+        regra: >
+          O hook DEVE conter a palavra 'Shopee' nos primeiros 3 segundos.
+          Isso filtra o publico imediatamente — quem nao vende na Shopee pula,
+          quem vende pensa 'opa, e pra mim'. Sem 'Shopee' no hook, o criativo
+          atrai gente que nao e o publico-alvo e desperica investimento.
+        fail_action: "REPROVAR. Inserir 'Shopee' no hook de forma natural, conectando com a dor/desejo do seller"
+        exemplos_bons:
+          - "Voce vende na Shopee todo dia mas no fim do mes sobra nada"
+          - "Ja gastei mais de R$500 no Shopee ADS e nao vendi nada"
+          - "Coloca o Shopee ADS no automatico e o dinheiro some"
+        exemplos_ruins:
+          - "Voce vende todo dia mas no fim do mes sobra nada"
+          - "Ja gastei dinheiro com ADS e nao deu retorno"
+      - id: L9
+        nome: "ADS nunca anuncio"
+        regra: >
+          NUNCA usar a palavra 'anuncio' ou 'anuncios'. SEMPRE usar 'ADS'.
+          Na Shopee, 'anuncio' se refere ao anuncio do produto (a listagem/listing).
+          'ADS' e a ferramenta de trafego pago (Shopee Ads). Sao coisas completamente
+          diferentes. Usar 'anuncio' quando quer dizer 'ADS' confunde o seller.
+          Excecao: quando realmente estiver falando do anuncio do produto (listing).
+        fail_action: "Substituir TODA ocorrencia de 'anuncio/anuncios' por 'ADS' quando se referir a trafego pago"
       - id: L7
         nome: "Hook gera reacao imediata"
         regra: >

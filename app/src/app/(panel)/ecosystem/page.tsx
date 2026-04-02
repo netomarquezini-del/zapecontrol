@@ -101,11 +101,11 @@ type TabKey = 'agents' | 'templates' | 'tasks' | 'workflows' | 'checklists' | 'c
 
 const TAB_CONFIG: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: 'agents', label: 'Agentes', icon: <Bot className="w-3.5 h-3.5" /> },
-  { key: 'templates', label: 'Modelos', icon: <FileText className="w-3.5 h-3.5" /> },
-  { key: 'tasks', label: 'Tarefas', icon: <CheckSquare className="w-3.5 h-3.5" /> },
-  { key: 'workflows', label: 'Fluxos', icon: <Workflow className="w-3.5 h-3.5" /> },
+  { key: 'templates', label: 'Templates', icon: <FileText className="w-3.5 h-3.5" /> },
+  { key: 'tasks', label: 'Tasks', icon: <CheckSquare className="w-3.5 h-3.5" /> },
+  { key: 'workflows', label: 'Workflows', icon: <Workflow className="w-3.5 h-3.5" /> },
   { key: 'checklists', label: 'Checklists', icon: <CheckSquare className="w-3.5 h-3.5" /> },
-  { key: 'crons', label: 'Automacoes', icon: <Clock className="w-3.5 h-3.5" /> },
+  { key: 'crons', label: 'Crons', icon: <Clock className="w-3.5 h-3.5" /> },
 ]
 
 function getSquadResourceCount(squad: EcosystemSquad, key: TabKey): number {
@@ -259,11 +259,11 @@ export default function EcosystemPage() {
   const statItems = [
     { label: 'Squads', value: stats.squads },
     { label: 'Agentes', value: stats.agents },
-    { label: 'Modelos', value: stats.templates },
-    { label: 'Tarefas', value: stats.tasks },
-    { label: 'Fluxos', value: stats.workflows },
+    { label: 'Templates', value: stats.templates },
+    { label: 'Tasks', value: stats.tasks },
+    { label: 'Workflows', value: stats.workflows },
     { label: 'Checklists', value: stats.checklists },
-    { label: 'Automacoes', value: stats.crons },
+    { label: 'Crons', value: stats.crons },
   ]
 
   return (
@@ -639,6 +639,8 @@ function SquadDetailView({
 
 /* ─── Agent Detail Modal ─── */
 
+type AgentTab = 'resumo' | 'arquivo' | 'yaml' | 'commands' | 'templates' | 'tasks' | 'workflows' | 'checklists' | 'crons' | 'kbs' | 'dna'
+
 function AgentDetailModal({
   agent,
   visible,
@@ -654,7 +656,7 @@ function AgentDetailModal({
 }) {
   const [fileContent, setFileContent] = useState<string | null>(null)
   const [fileLoading, setFileLoading] = useState(false)
-  const [activeView, setActiveView] = useState<'resumo' | 'arquivo'>('resumo')
+  const [activeTab, setActiveTab] = useState<AgentTab>('resumo')
 
   // Prevent body scroll
   useEffect(() => {
@@ -675,23 +677,25 @@ function AgentDetailModal({
       .finally(() => setFileLoading(false))
   }, [agent.filePath])
 
-  const sections: {
-    key: string
-    label: string
-    icon: React.ReactNode
-    items: { name: string; description?: string; file?: string }[]
-  }[] = [
-    { key: 'commands', label: 'Comandos', icon: <Terminal className="w-4 h-4" />, items: agent.commands ?? [] },
-    { key: 'templates', label: 'Templates', icon: <FileText className="w-4 h-4" />, items: agent.templates ?? [] },
-    { key: 'tasks', label: 'Tarefas', icon: <CheckSquare className="w-4 h-4" />, items: agent.tasks ?? [] },
-    { key: 'workflows', label: 'Fluxos de Trabalho', icon: <Workflow className="w-4 h-4" />, items: agent.workflows ?? [] },
-    { key: 'checklists', label: 'Checklists', icon: <CheckSquare className="w-4 h-4" />, items: agent.checklists ?? [] },
-    { key: 'crons', label: 'Automacoes (Crons)', icon: <Clock className="w-4 h-4" />, items: agent.crons ?? [] },
-    { key: 'kbs', label: 'Base de Conhecimento', icon: <BookOpen className="w-4 h-4" />, items: agent.kbs ?? [] },
-    { key: 'dna', label: 'DNA', icon: <Dna className="w-4 h-4" />, items: agent.dna ?? [] },
+  const resourceTabs: { key: AgentTab; label: string; icon: React.ReactNode; items: { name: string; description?: string; file?: string }[] }[] = [
+    { key: 'commands', label: 'Commands', icon: <Terminal className="w-3.5 h-3.5" />, items: agent.commands ?? [] },
+    { key: 'templates', label: 'Templates', icon: <FileText className="w-3.5 h-3.5" />, items: agent.templates ?? [] },
+    { key: 'tasks', label: 'Tasks', icon: <CheckSquare className="w-3.5 h-3.5" />, items: agent.tasks ?? [] },
+    { key: 'workflows', label: 'Workflows', icon: <Workflow className="w-3.5 h-3.5" />, items: agent.workflows ?? [] },
+    { key: 'checklists', label: 'Checklists', icon: <CheckSquare className="w-3.5 h-3.5" />, items: agent.checklists ?? [] },
+    { key: 'crons', label: 'Crons', icon: <Clock className="w-3.5 h-3.5" />, items: agent.crons ?? [] },
+    { key: 'kbs', label: 'KBs', icon: <BookOpen className="w-3.5 h-3.5" />, items: agent.kbs ?? [] },
+    { key: 'dna', label: 'DNA', icon: <Dna className="w-3.5 h-3.5" />, items: agent.dna ?? [] },
   ]
 
-  const totalResources = sections.reduce((sum, s) => sum + s.items.length, 0)
+  const allTabs: { key: AgentTab; label: string; icon?: React.ReactNode; count?: number }[] = [
+    { key: 'resumo', label: 'Resumo' },
+    { key: 'arquivo', label: 'Arquivo Completo' },
+    ...resourceTabs.filter(t => t.items.length > 0).map(t => ({ key: t.key, label: t.label, icon: t.icon, count: t.items.length })),
+  ]
+
+  const activeResource = resourceTabs.find(t => t.key === activeTab)
+  const totalResources = resourceTabs.reduce((sum, t) => sum + t.items.length, 0)
 
   return (
     <>
@@ -702,174 +706,113 @@ function AgentDetailModal({
         }`}
         onClick={onClose}
       />
-      {/* Panel */}
+      {/* Modal */}
       <div
-        className={`fixed right-0 top-0 h-full w-full max-w-2xl bg-[#0a0a0a] border-l border-[#222] overflow-y-auto z-50 transform transition-transform duration-300 ${
-          visible ? 'translate-x-0' : 'translate-x-full'
+        className={`fixed inset-4 md:inset-8 lg:inset-12 bg-[#0a0a0a] border border-[#222] rounded-2xl z-50 flex flex-col overflow-hidden transition-all duration-300 ${
+          visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
         }`}
       >
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-[var(--text-muted)] hover:text-white transition-colors cursor-pointer z-10"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        <div className="p-6 pt-8">
-          {/* Agent Header */}
-          <div className="flex items-start gap-4 mb-4">
-            <Avatar name={agent.name} size="xl" />
-            <div>
-              <h2 className="text-xl font-bold text-white">{agent.name}</h2>
-              {agent.title && <p className="text-zinc-400 text-sm mt-0.5">{agent.title}</p>}
-              <div className="flex items-center gap-2 mt-2">
-                {agent.squad && (
-                  <span className="text-[10px] text-lime-400 bg-lime-400/10 font-bold px-2 py-0.5 rounded-full">
-                    {agent.squad}
-                  </span>
-                )}
-                {agent.filePath && (
-                  <span className="text-[10px] text-[var(--text-muted)] font-mono">
+        {/* Header */}
+        <div className="flex items-start gap-4 px-6 py-5 border-b border-[#222] shrink-0">
+          <Avatar name={agent.name} size="xl" />
+          <div className="min-w-0 flex-1">
+            <h2 className="text-xl font-bold text-white">{agent.name}</h2>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              {agent.title && <span className="text-zinc-400 text-sm">{agent.title}</span>}
+              {agent.title && agent.squad && <span className="text-zinc-600 text-sm">·</span>}
+              {agent.squad && (
+                <span className="text-[10px] text-lime-400 bg-lime-400/10 font-bold px-2 py-0.5 rounded-full">
+                  {agent.squad}
+                </span>
+              )}
+              {agent.filePath && (
+                <>
+                  <span className="text-zinc-600 text-sm">·</span>
+                  <span className="text-[10px] text-[var(--text-muted)] font-mono truncate">
                     {agent.filePath}
                   </span>
+                </>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-[var(--text-muted)] hover:text-white transition-colors cursor-pointer shrink-0 mt-1"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Tab Bar */}
+        <div className="flex gap-1 px-6 border-b border-[var(--border-color)] overflow-x-auto shrink-0">
+          {allTabs.map((t) => {
+            const isActive = activeTab === t.key
+            return (
+              <button
+                key={t.key}
+                onClick={() => setActiveTab(t.key)}
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                  isActive
+                    ? 'text-lime-400 border-b-2 border-lime-400'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                }`}
+              >
+                {t.icon}
+                {t.label}
+                {t.count !== undefined && (
+                  <span className={`text-[10px] font-bold ml-1 px-1.5 py-0.5 rounded-full ${
+                    isActive ? 'bg-lime-400/10 text-lime-400' : 'bg-[var(--bg-secondary)] text-[var(--text-muted)]'
+                  }`}>
+                    {t.count}
+                  </span>
                 )}
-              </div>
-            </div>
-          </div>
+              </button>
+            )
+          })}
+        </div>
 
-          {/* Funcao / Role */}
-          {agent.role && (
-            <div className="mb-5">
-              <h3 className="text-label mb-2">Funcao</h3>
-              <p className="text-zinc-400 text-sm leading-relaxed">{agent.role}</p>
-            </div>
-          )}
-
-          {/* Stats rápidos */}
-          <div className="grid grid-cols-4 gap-2 mb-5">
-            {[
-              { label: 'Comandos', value: (agent.commands ?? []).length },
-              { label: 'Templates', value: (agent.templates ?? []).length },
-              { label: 'Tarefas', value: (agent.tasks ?? []).length },
-              { label: 'Recursos', value: totalResources },
-            ].map((s) => (
-              <div key={s.label} className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-3 text-center">
-                <div className="text-lg font-bold text-lime-400">{s.value}</div>
-                <div className="text-[10px] text-[var(--text-muted)] font-semibold uppercase tracking-wider">{s.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* View toggle: Resumo / Arquivo Completo */}
-          <div className="flex gap-1 mb-5 border-b border-[var(--border-color)]">
-            <button
-              onClick={() => setActiveView('resumo')}
-              className={`px-4 py-2.5 text-sm font-semibold transition-colors cursor-pointer ${
-                activeView === 'resumo'
-                  ? 'text-lime-400 border-b-2 border-lime-400'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-              }`}
-            >
-              Resumo
-            </button>
-            <button
-              onClick={() => setActiveView('arquivo')}
-              className={`px-4 py-2.5 text-sm font-semibold transition-colors cursor-pointer ${
-                activeView === 'arquivo'
-                  ? 'text-lime-400 border-b-2 border-lime-400'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-              }`}
-            >
-              Arquivo Completo
-            </button>
-          </div>
-
-          {activeView === 'resumo' ? (
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {/* Resumo Tab */}
+          {activeTab === 'resumo' && (
             <>
-              {/* Sections */}
-              {sections.map((section) => {
-                if (section.items.length === 0) return null
-                return (
-                  <div key={section.key} className="mb-6">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-[var(--text-muted)]">{section.icon}</span>
-                      <h3 className="text-label">{section.label}</h3>
-                      <span className="text-[10px] text-[var(--text-muted)] bg-[var(--bg-secondary)] px-1.5 py-0.5 rounded-full">
-                        {section.items.length}
-                      </span>
-                    </div>
+              {agent.role && (
+                <div className="mb-6">
+                  <h3 className="text-label mb-2">Funcao</h3>
+                  <p className="text-zinc-400 text-sm leading-relaxed">{agent.role}</p>
+                </div>
+              )}
 
-                    {section.key === 'commands' ? (
-                      <div className="border border-[var(--border-color)] rounded-xl overflow-hidden">
-                        {section.items.map((item, i) => (
-                          <div
-                            key={i}
-                            className={`flex items-start gap-4 px-4 py-3 ${
-                              i > 0 ? 'border-t border-[var(--border-color)]' : ''
-                            }`}
-                          >
-                            <span className="text-lime-400 font-mono text-sm whitespace-nowrap">
-                              {item.name}
-                            </span>
-                            <span className="text-zinc-500 text-sm">
-                              {item.description || ''}
-                            </span>
-                          </div>
-                        ))}
+              {/* Resource count cards grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {resourceTabs.map((rt) => {
+                  if (rt.items.length === 0) return null
+                  return (
+                    <button
+                      key={rt.key}
+                      onClick={() => setActiveTab(rt.key)}
+                      className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-4 text-center hover:border-lime-400/20 transition-all cursor-pointer group"
+                    >
+                      <div className="flex items-center justify-center gap-1.5 text-[var(--text-muted)] group-hover:text-lime-400 mb-2">
+                        {rt.icon}
                       </div>
-                    ) : (
-                      <div className="flex flex-col gap-2">
-                        {section.items.map((item, i) => (
-                          <button
-                            key={i}
-                            onClick={() => {
-                              const filePath = section.key === 'crons' && item.file
-                                ? item.file
-                                : `squads/${agent.squad}/${section.key}/${item.name}`
-                              onResourceClick(item.name, filePath, section.key, item.description)
-                            }}
-                            className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-left hover:border-lime-400/20 transition-all cursor-pointer w-full"
-                          >
-                            <span className="text-[var(--text-muted)] mt-0.5">{section.icon}</span>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-sm text-white">{item.name}</span>
-                                {section.key === 'crons' && cronStatus[item.name] && (
-                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                    cronStatus[item.name].status === 'ativo'
-                                      ? 'bg-lime-400/10 text-lime-400 border border-lime-400/20'
-                                      : 'bg-zinc-400/10 text-zinc-500 border border-zinc-500/20'
-                                  }`}>
-                                    {cronStatus[item.name].status === 'ativo' ? 'Ativo' : 'Pausado'}
-                                  </span>
-                                )}
-                              </div>
-                              {item.description && (
-                                <p className="text-zinc-500 text-xs mt-0.5">{item.description}</p>
-                              )}
-                              {section.key === 'crons' && cronStatus[item.name]?.scheduleLabel && cronStatus[item.name].status === 'ativo' && (
-                                <p className="text-lime-400/70 text-xs mt-0.5">{cronStatus[item.name].scheduleLabel}</p>
-                              )}
-                              {item.file && (
-                                <p className="text-zinc-600 text-xs font-mono mt-0.5">{item.file}</p>
-                              )}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
+                      <div className="text-2xl font-bold text-lime-400">{rt.items.length}</div>
+                      <div className="text-[10px] text-[var(--text-muted)] font-semibold uppercase tracking-wider mt-1">{rt.label}</div>
+                    </button>
+                  )
+                })}
+              </div>
+
               {totalResources === 0 && (
                 <p className="text-[var(--text-muted)] text-sm text-center py-8">
                   Nenhum recurso vinculado a este agente
                 </p>
               )}
             </>
-          ) : (
-            /* Arquivo Completo */
+          )}
+
+          {/* Arquivo Completo Tab */}
+          {activeTab === 'arquivo' && (
             <div>
               {fileLoading ? (
                 <div className="flex items-center gap-2 text-[var(--text-muted)] py-8">
@@ -886,6 +829,73 @@ function AgentDetailModal({
                 <p className="text-[var(--text-muted)] text-sm text-center py-8">
                   Arquivo do agente nao disponivel
                 </p>
+              )}
+            </div>
+          )}
+
+          {/* Commands Tab */}
+          {activeTab === 'commands' && activeResource && (
+            <div className="border border-[var(--border-color)] rounded-xl overflow-hidden">
+              {activeResource.items.map((item, i) => (
+                <div
+                  key={i}
+                  className={`flex items-start gap-4 px-4 py-3 ${
+                    i > 0 ? 'border-t border-[var(--border-color)]' : ''
+                  }`}
+                >
+                  <span className="text-lime-400 font-mono text-sm whitespace-nowrap">
+                    {item.name}
+                  </span>
+                  <span className="text-zinc-500 text-sm">
+                    {item.description || ''}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Other resource tabs */}
+          {activeResource && activeTab !== 'commands' && (
+            <div className="flex flex-col gap-2">
+              {activeResource.items.map((item, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    const filePath = activeTab === 'crons' && item.file
+                      ? item.file
+                      : `squads/${agent.squad}/${activeTab}/${item.name}`
+                    onResourceClick(item.name, filePath, activeTab, item.description)
+                  }}
+                  className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-left hover:border-lime-400/20 transition-all cursor-pointer w-full"
+                >
+                  <span className="text-[var(--text-muted)] mt-0.5">{activeResource.icon}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm text-white">{item.name}</span>
+                      {activeTab === 'crons' && cronStatus[item.name] && (
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          cronStatus[item.name].status === 'ativo'
+                            ? 'bg-lime-400/10 text-lime-400 border border-lime-400/20'
+                            : 'bg-zinc-400/10 text-zinc-500 border border-zinc-500/20'
+                        }`}>
+                          {cronStatus[item.name].status === 'ativo' ? 'Ativo' : 'Pausado'}
+                        </span>
+                      )}
+                    </div>
+                    {item.description && (
+                      <p className="text-zinc-500 text-xs mt-0.5">{item.description}</p>
+                    )}
+                    {activeTab === 'crons' && cronStatus[item.name]?.scheduleLabel && cronStatus[item.name].status === 'ativo' && (
+                      <p className="text-lime-400/70 text-xs mt-0.5">{cronStatus[item.name].scheduleLabel}</p>
+                    )}
+                    {item.file && (
+                      <p className="text-zinc-600 text-xs font-mono mt-0.5">{item.file}</p>
+                    )}
+                  </div>
+                </button>
+              ))}
+              {activeResource.items.length === 0 && (
+                <p className="text-[var(--text-muted)] text-sm text-center py-8">Nenhum item nesta aba</p>
               )}
             </div>
           )}
@@ -1020,12 +1030,12 @@ function getSearchResults(data: EcosystemData | null, query: string): SearchResu
 
 const TYPE_LABELS: Record<string, string> = {
   squad: 'Squad',
-  agent: 'Agente',
-  template: 'Modelo',
-  task: 'Tarefa',
-  workflow: 'Fluxo',
+  agent: 'Agent',
+  template: 'Template',
+  task: 'Task',
+  workflow: 'Workflow',
   checklist: 'Checklist',
-  cron: 'Automacao',
+  cron: 'Cron',
 }
 
 const TYPE_COLORS: Record<string, string> = {

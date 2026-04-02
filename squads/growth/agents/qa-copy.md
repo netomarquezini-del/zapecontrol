@@ -323,6 +323,15 @@ validacao:
           diferentes. Usar 'anuncio' quando quer dizer 'ADS' confunde o seller.
           Excecao: quando realmente estiver falando do anuncio do produto (listing).
         fail_action: "Substituir TODA ocorrencia de 'anuncio/anuncios' por 'ADS' quando se referir a trafego pago"
+      - id: L10
+        nome: "Vendedor nunca seller"
+        regra: >
+          NUNCA usar 'seller' na copy ou roteiro que o publico ve.
+          SEMPRE usar 'vendedor'. 'Seller' e termo interno/jargao.
+          O publico (classe C-B, 25-40 anos) fala 'vendedor', nao 'seller'.
+          Excecao: nomes de persona internos (seller_frustrado, etc) que nao
+          aparecem na copy final.
+        fail_action: "Substituir TODA ocorrencia de 'seller/sellers' por 'vendedor/vendedores' na copy e roteiro"
       - id: L7
         nome: "Hook gera reacao imediata"
         regra: >

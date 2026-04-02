@@ -137,6 +137,7 @@ negocio:
       - "NUNCA usar CTA com preço ou oferta direta. CTA do criativo é gerar curiosidade/desejo pra clicar, não fechar venda"
       - "OBRIGATÓRIO: a palavra 'Shopee' DEVE aparecer no hook (primeiros 3 segundos). Isso filtra o público — quem não vende na Shopee pula, quem vende se identifica"
       - "NUNCA usar 'anúncio' quando se referir a tráfego pago. SEMPRE usar 'ADS'. Na Shopee, 'anúncio' é a listagem do produto. 'ADS' é a ferramenta de tráfego pago. São coisas diferentes"
+      - "NUNCA usar 'seller' na copy/roteiro. SEMPRE usar 'vendedor'. 'Seller' é termo interno, o público fala 'vendedor'. Exceção: nomes de persona internos (seller_frustrado, etc) que o público não vê"
     tom: Simples e direto, como um amigo que vende na Shopee explicando pro outro. Sem palavras difíceis, sem inglês (exceto ROAS/ADS), sem tom de professor — tom de conversa de WhatsApp entre sellers
 
   knowledge_bases:

@@ -594,6 +594,7 @@ function scanCommandOnlySquads(existingSquadIds: Set<string>): SquadInfo[] {
         crons: [],
         kbs: [],
         dna: [],
+        skills: [],
       }
     })
 

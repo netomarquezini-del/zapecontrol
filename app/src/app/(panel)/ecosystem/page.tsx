@@ -530,6 +530,8 @@ function SquadDetailView({
   onAgentClick,
   onResourceClick,
   cronStatus,
+  cronFilter,
+  onCronFilterChange,
 }: {
   squad: EcosystemSquad
   activeTab: TabKey

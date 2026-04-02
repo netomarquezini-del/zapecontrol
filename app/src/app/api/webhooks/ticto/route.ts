@@ -52,8 +52,14 @@ async function sendCAPIEvent(eventName: string, sale: Record<string, unknown>, i
     if (parts.length > 1) userData.ln = [sha256(parts.slice(1).join(' '))]
   }
   if (sale.customer_document || sale.customer_cpf) userData.external_id = [sha256(String(sale.customer_document || sale.customer_cpf))]
+  if (sale.customer_city) userData.ct = [sha256(String(sale.customer_city))]
+  if (sale.customer_state) userData.st = [sha256(String(sale.customer_state))]
   if (ip) userData.client_ip_address = ip
   if (ua) userData.client_user_agent = ua
+
+  // fbc/fbp — cookies do Facebook capturados via query_params da Ticto
+  if (sale._fbc) userData.fbc = String(sale._fbc)
+  if (sale._fbp) userData.fbp = String(sale._fbp)
 
   const event = {
     event_name: eventName,
@@ -264,6 +270,23 @@ function parseV2(body: Record<string, unknown>) {
   const itemPrice = Number(item.amount || offer.price || 0)
   const price = itemPrice > 1000 ? itemPrice / 100 : itemPrice
 
+  // Extrair fbc/fbp/fbclid dos query_params da Ticto
+  const queryParams = (body.query_params || {}) as Record<string, unknown>
+  let fbc = String(queryParams.fbc || '')
+  const fbp = String(queryParams.fbp || '')
+  const fbclid = String(queryParams.fbclid || '')
+
+  // Se não tem fbc mas tem fbclid, construir o fbc no formato da Meta
+  // Formato: fb.1.{timestamp_ms}.{fbclid}
+  if (!fbc && fbclid) {
+    fbc = `fb.1.${Date.now()}.${fbclid}`
+  }
+
+  // Extrair endereço do customer (Ticto pode enviar em customer.address)
+  const customerAddress = (customer.address || {}) as Record<string, unknown>
+  const city = String(customerAddress.city || '')
+  const state = String(customerAddress.state || '')
+
   return {
     order_id: String(order.hash || order.id || ''),
     order_hash: String(order.hash || ''),
@@ -289,8 +312,8 @@ function parseV2(body: Record<string, unknown>) {
     customer_cpf: String(customer.cpf || ''),
     customer_document: String(customer.cpf || customer.cnpj || ''),
     customer_phone: String(body.phone_number_customer || customerPhone.number || ''),
-    customer_city: '',
-    customer_state: '',
+    customer_city: city,
+    customer_state: state,
     utm_source: String(tracking.utm_source || ''),
     utm_medium: String(tracking.utm_medium || ''),
     utm_campaign: String(tracking.utm_campaign || ''),
@@ -301,6 +324,9 @@ function parseV2(body: Record<string, unknown>) {
     is_downsell: String(item.offer_name || offer.name || '').toLowerCase().includes('dowsell') || String(item.offer_name || offer.name || '').toLowerCase().includes('downsell'),
     parent_product: String(body.commission_type) === 'bump' ? String(item.product_name || '') : null,
     card_brand: null,
+    // Campos extras pra Meta CAPI (não vão pro Supabase, usados só no sendCAPIEvent)
+    _fbc: fbc || null,
+    _fbp: fbp || null,
     raw_payload: body,
     updated_at: new Date().toISOString(),
   }

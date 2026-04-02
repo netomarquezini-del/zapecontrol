@@ -266,17 +266,52 @@ validacao:
         regra: "Como um professor explicando algo dificil de um jeito facil. Nunca agressivo, nunca apelativo"
         fail_action: "Ajustar tom para educativo"
       - id: L4
-        nome: "Hook espelha ruminacao"
-        regra: "O hook deve soar como algo que o seller JA PENSA ou JA FALA pra si mesmo. Nao como copy de marketing"
-        fail_action: "Reformular hook como pensamento real do seller"
+        nome: "Hook espelha ruminacao mental"
+        regra: >
+          REGRA CRITICA — O hook DEVE ser uma ruminacao mental real do seller.
+          Aquele pensamento que ele tem no chuveiro, deitado na cama as 23h,
+          quando abre o painel de ADS e ve que gastou de novo sem retorno,
+          quando ve o concorrente vendendo mais. O viewer tem que ouvir e pensar:
+          "caramba, parece que tao falando de mim" ou "oxi, falou comigo" ou
+          "opa, quero ver isso". Se o hook parece anuncio, propaganda ou frase
+          de marketing, REPROVAR AUTOMATICAMENTE.
+        fail_action: "REPROVAR. Reescrever como pensamento real do seller — como ele falaria num grupo de WhatsApp desabafando"
+        teste_de_aprovacao: >
+          Ler o hook em voz alta. Se parece desabafo de grupo de WhatsApp de sellers = APROVADO.
+          Se parece titulo de anuncio ou frase de guru de marketing = REPROVADO.
         exemplos_bons:
           - "Coloca no automatico e o dinheiro some"
           - "Ja gastei mais de R$500 em ads e nao vendi nada"
           - "Todo mundo fala de Shopee Ads mas ninguem ensina as configs"
+          - "Voce vende todo dia mas no fim do mes sobra nada"
+          - "Faz a conta: quanto voce ja gastou em anuncio sem ver resultado?"
+          - "O cara do grupo comecou depois de voce e ja ta vendendo mais"
         exemplos_ruins:
           - "Descubra o segredo dos top sellers"
           - "Transforme seu negocio agora"
           - "A revolucao do e-commerce chegou"
+          - "Imagina abrir o painel e ver que cada real voltou 25 vezes"
+          - "E se voce conseguisse o dobro de vendas?"
+          - "O organico da Shopee ta caindo"
+        criterios_reprovacao_automatica:
+          - "Comeca com 'Imagina', 'E se', 'Descubra', 'Conheca', 'Aprenda' = REPROVADO (parece anuncio)"
+          - "Fala de tendencia de mercado sem conectar com dor pessoal = REPROVADO"
+          - "Usa linguagem de guru/coach = REPROVADO"
+          - "Promete resultado sem identificacao com a dor = REPROVADO"
+          - "O seller nao falaria isso num grupo de WhatsApp = REPROVADO"
+      - id: L7
+        nome: "Hook gera reacao imediata"
+        regra: >
+          O hook deve provocar uma de duas reacoes nos primeiros 3 segundos:
+          1) IDENTIFICACAO: "oxi, falou comigo" — o seller se ve na situacao
+          2) CURIOSIDADE: "opa, quero ver isso" — o seller precisa saber mais
+          Se o hook nao gera nenhuma dessas reacoes, esta fraco demais.
+        fail_action: "Reformular usando gatilho mais forte: gancho numerico, pergunta direta sobre a dor, ou afirmacao choque que o seller vive"
+        gatilhos_fortes:
+          gancho_numerico: "Numero concreto que choca (R$3.000 perdidos, ROAS de 3, 90% dos sellers)"
+          pergunta_espelho: "Pergunta que o seller ja se faz (Sera que ADS funciona? Por que meu concorrente vende mais?)"
+          afirmacao_choque: "Fato que incomoda (Voce ta pagando pra Shopee mostrar seu anuncio pro publico errado)"
+          confissao: "Admissao de algo que o seller sente vergonha (Ja comprou curso e nao terminou?)"
       - id: L5
         nome: "Termos obrigatorios"
         regra: "Copy primario DEVE conter '4 configuracoes' e 'ROAS de 25'"

@@ -70,6 +70,13 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     ],
   },
   {
+    id: 'ecosystem',
+    label: 'Ecosystem',
+    items: [
+      { id: 'ecosystem.dashboard', label: 'Ecosystem Dashboard', group: 'ecosystem' },
+    ],
+  },
+  {
     id: 'configuracoes',
     label: 'Configuracoes',
     items: [
@@ -104,6 +111,7 @@ export const PERM_TO_ROUTE: Record<string, string> = {
   'marketing.criativos': '/marketing/criativos',
   'marketing.documentos': '/marketing/documentos',
   'sdr-station': '/comercial/sdr-station',
+  'ecosystem.dashboard': '/ecosystem',
   'configuracoes.usuarios': '/usuarios',
 }
 

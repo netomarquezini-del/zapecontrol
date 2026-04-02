@@ -38,6 +38,7 @@ import {
   RefreshCw,
   Mic,
   Phone,
+  Dna,
 } from "lucide-react";
 
 interface NavItem {
@@ -147,6 +148,14 @@ const navGroups: NavGroup[] = [
       { href: "/comercial/sdr-station/metricas", label: "Metricas", icon: BarChart3, perm: "sdr-station" },
       { href: "/comercial/sdr-station/gravacoes", label: "Gravacoes", icon: Mic, perm: "sdr-station" },
       { href: "/comercial/sdr-station/numeros", label: "Numeros", icon: Phone, perm: "sdr-station" },
+    ],
+  },
+  {
+    id: "ecosystem",
+    label: "Ecosystem",
+    icon: Dna,
+    children: [
+      { href: "/ecosystem", label: "Visao Geral", icon: Dna, perm: "ecosystem.dashboard" },
     ],
   },
   {

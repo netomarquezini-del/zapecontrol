@@ -130,11 +130,10 @@ export async function POST(req: NextRequest) {
     console.log('[Ticto Webhook] Body keys:', Object.keys(body).join(', '))
 
     // Validar token de segurança
-    // Ticto pode enviar token no body.token ou não enviar
-    // Log pra debug — remover depois de validar
-    // Token validation temporarily disabled for debugging
-    // TODO: re-enable after confirming webhook works
-    console.log('[Ticto Webhook] Token received:', body.token ? 'yes' : 'no')
+    if (TICTO_WEBHOOK_TOKEN && body.token !== TICTO_WEBHOOK_TOKEN) {
+      console.warn('[Ticto Webhook] Invalid token received')
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     const status = body.status
 

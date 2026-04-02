@@ -1,0 +1,280 @@
+<!--
+  ==========================================================
+  Meta Pixel + Eventos de Funil — Zapeecomm v2.0
+  ==========================================================
+
+  INSTALACAO NO WORDPRESS (Hostinger):
+
+  Opcao 1 (Recomendada): Plugin "Insert Headers and Footers"
+    1. Instalar plugin WPCode (antigo Insert Headers and Footers)
+    2. Ir em Code Snippets → Header & Footer
+    3. Colar TODO este codigo no campo "Header"
+    4. Salvar
+
+  Opcao 2: Direto no tema
+    1. Aparencia → Editor de Tema → header.php
+    2. Colar antes do </head>
+    3. Salvar (cuidado: atualizacao do tema pode apagar)
+
+  PAGINAS ONDE INSTALAR:
+  - Todas as paginas do site (PageView automatico)
+  - Pagina de vendas: /curso-ads/ (dispara ViewContent)
+
+  DEDUPLICACAO:
+  - Os event_id gerados aqui seguem o padrao do CAPI server-side
+  - Meta deduplica automaticamente quando Pixel + CAPI enviam o mesmo event_id
+
+  COOKIE FORWARDING:
+  - Captura _fbp e _fbc do navegador
+  - Extrai fbclid da URL (vem do click no ad)
+  - Injeta tudo nos links de checkout Ticto automaticamente
+  - O webhook server-side (route.ts) extrai esses valores do query_params da Ticto
+
+  CHANGELOG:
+  - v1.0: PageView, ViewContent, InitiateCheckout, ScrollDepth
+  - v2.0: Cookie forwarding (_fbp/_fbc), evento Lead, Advanced Matching
+  ==========================================================
+-->
+
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+
+fbq('init', '9457207547700143', {}, {
+  agent: 'zapeecomm-pixel-v2'
+});
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=9457207547700143&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+
+<!-- Eventos de Funil + Cookie Forwarding — Zapeecomm v2.0 -->
+<script>
+(function() {
+  'use strict';
+
+  // ============================================================
+  // Config
+  // ============================================================
+  var PIXEL_ID = '9457207547700143';
+  var PRODUCT_NAME = 'Shopee ADS 2.0';
+  var PRODUCT_VALUE = 97.00;
+  var CURRENCY = 'BRL';
+
+  // Paginas do funil
+  var SALES_PAGES = ['/curso-ads/', '/curso-ads', '/shopee-ads-2', '/shopee-adss', '/shopee-adss/'];
+
+  // Dominios de checkout Ticto
+  var CHECKOUT_DOMAINS = ['checkout.ticto', 'pay.ticto'];
+
+  // Seletores de links de WhatsApp (ajustar conforme a LP)
+  var WHATSAPP_PATTERNS = ['wa.me', 'api.whatsapp.com', 'whatsapp'];
+
+  // ============================================================
+  // Helpers
+  // ============================================================
+
+  function isPage(paths) {
+    var path = window.location.pathname.toLowerCase();
+    for (var i = 0; i < paths.length; i++) {
+      if (path === paths[i] || path === paths[i] + '/') return true;
+    }
+    return false;
+  }
+
+  function generateEventId(eventName) {
+    return eventName + '_' + Date.now() + '_' + Math.random().toString(36).substr(2, 7);
+  }
+
+  // ============================================================
+  // Cookie Capture — _fbp, _fbc, fbclid
+  // ============================================================
+
+  function getCookie(name) {
+    var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    return match ? decodeURIComponent(match[2]) : '';
+  }
+
+  function getUrlParam(name) {
+    var params = new URLSearchParams(window.location.search);
+    return params.get(name) || '';
+  }
+
+  // Capturar valores do Facebook
+  var fbp = getCookie('_fbp');
+  var fbc = getCookie('_fbc');
+  var fbclid = getUrlParam('fbclid');
+
+  // Se tem fbclid na URL mas nao tem _fbc cookie, construir o fbc
+  // Formato oficial: fb.1.{timestamp_ms}.{fbclid}
+  if (!fbc && fbclid) {
+    fbc = 'fb.1.' + Date.now() + '.' + fbclid;
+  }
+
+  // ============================================================
+  // Injetar _fbp, _fbc nos links de checkout Ticto
+  // ============================================================
+  // A Ticto repassa query params pro webhook via query_params
+  // Nosso webhook (route.ts) extrai fbc/fbp de la
+
+  function enrichCheckoutLinks() {
+    var links = document.querySelectorAll('a[href]');
+    for (var i = 0; i < links.length; i++) {
+      var href = links[i].href || '';
+      var isCheckout = false;
+      for (var j = 0; j < CHECKOUT_DOMAINS.length; j++) {
+        if (href.indexOf(CHECKOUT_DOMAINS[j]) > -1) { isCheckout = true; break; }
+      }
+      if (!isCheckout) continue;
+
+      try {
+        var url = new URL(href);
+        if (fbp) url.searchParams.set('fbp', fbp);
+        if (fbc) url.searchParams.set('fbc', fbc);
+        if (fbclid && !fbc) url.searchParams.set('fbclid', fbclid);
+        links[i].href = url.toString();
+      } catch (e) { /* URL invalida, ignora */ }
+    }
+  }
+
+  // Executar ao carregar e observar mudancas no DOM (SPAs, conteudo dinamico)
+  enrichCheckoutLinks();
+  if (window.MutationObserver) {
+    var observer = new MutationObserver(function() { enrichCheckoutLinks(); });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+  // Fallback: re-executar apos 2s e 5s pra pegar conteudo lazy-loaded
+  setTimeout(enrichCheckoutLinks, 2000);
+  setTimeout(enrichCheckoutLinks, 5000);
+
+  // ============================================================
+  // ViewContent — Visitou pagina de vendas
+  // ============================================================
+
+  if (isPage(SALES_PAGES)) {
+    var vcId = generateEventId('ViewContent');
+    fbq('track', 'ViewContent', {
+      content_name: PRODUCT_NAME,
+      content_type: 'product',
+      value: PRODUCT_VALUE,
+      currency: CURRENCY
+    }, { eventID: vcId });
+  }
+
+  // ============================================================
+  // InitiateCheckout — Clique no botao de compra
+  // ============================================================
+  // Detecta cliques em links de checkout Ticto
+  // Envia o evento e redireciona com cookies injetados
+
+  var icFired = false;
+  document.addEventListener('click', function(e) {
+    var target = e.target;
+
+    // Sobe ate 5 niveis pra achar o <a> com href
+    for (var i = 0; i < 5 && target; i++) {
+      var href = (target.tagName === 'A' && target.href) ? target.href : '';
+
+      // --- InitiateCheckout: link de checkout Ticto ---
+      if (!icFired) {
+        var isCheckout = false;
+        for (var j = 0; j < CHECKOUT_DOMAINS.length; j++) {
+          if (href.indexOf(CHECKOUT_DOMAINS[j]) > -1) { isCheckout = true; break; }
+        }
+        if (isCheckout) {
+          e.preventDefault();
+          icFired = true;
+
+          // Garantir que cookies estao no link (mesmo se enrichCheckoutLinks nao pegou)
+          var destino = href;
+          try {
+            var url = new URL(href);
+            if (fbp && !url.searchParams.get('fbp')) url.searchParams.set('fbp', fbp);
+            if (fbc && !url.searchParams.get('fbc')) url.searchParams.set('fbc', fbc);
+            destino = url.toString();
+          } catch (err) { /* usa href original */ }
+
+          var icId = generateEventId('InitiateCheckout');
+          fbq('track', 'InitiateCheckout', {
+            content_name: PRODUCT_NAME,
+            content_type: 'product',
+            value: PRODUCT_VALUE,
+            currency: CURRENCY
+          }, { eventID: icId });
+
+          // Usar sendBeacon como fallback pra garantir envio antes de sair
+          setTimeout(function() { window.location.href = destino; }, 350);
+          return;
+        }
+      }
+
+      // --- Lead: link de WhatsApp ---
+      var isWhatsApp = false;
+      for (var k = 0; k < WHATSAPP_PATTERNS.length; k++) {
+        if (href.indexOf(WHATSAPP_PATTERNS[k]) > -1) { isWhatsApp = true; break; }
+      }
+      if (isWhatsApp) {
+        var leadId = generateEventId('Lead');
+        fbq('track', 'Lead', {
+          content_name: PRODUCT_NAME + ' - WhatsApp',
+          content_category: 'whatsapp_click'
+        }, { eventID: leadId });
+        // Nao bloqueia a navegacao — WhatsApp abre em nova aba
+        return;
+      }
+
+      target = target.parentElement;
+    }
+  });
+
+  // ============================================================
+  // Lead — Submit de formulario (forms de contato, email, etc)
+  // ============================================================
+
+  document.addEventListener('submit', function(e) {
+    var form = e.target;
+    if (!form || form.tagName !== 'FORM') return;
+
+    var leadId = generateEventId('Lead');
+    fbq('track', 'Lead', {
+      content_name: PRODUCT_NAME + ' - Form',
+      content_category: 'form_submit'
+    }, { eventID: leadId });
+  });
+
+  // ============================================================
+  // Scroll Depth — mede engajamento na pagina de vendas
+  // ============================================================
+
+  if (isPage(SALES_PAGES)) {
+    var scrollFired = {};
+    window.addEventListener('scroll', function() {
+      var docHeight = document.body.scrollHeight - window.innerHeight;
+      if (docHeight <= 0) return;
+      var scrollPercent = Math.round((window.scrollY / docHeight) * 100);
+
+      var thresholds = [25, 50, 75, 90];
+      for (var i = 0; i < thresholds.length; i++) {
+        var t = thresholds[i];
+        if (scrollPercent >= t && !scrollFired[t]) {
+          scrollFired[t] = true;
+          fbq('trackCustom', 'ScrollDepth', {
+            percent: t,
+            page: window.location.pathname
+          });
+        }
+      }
+    });
+  }
+
+})();
+</script>

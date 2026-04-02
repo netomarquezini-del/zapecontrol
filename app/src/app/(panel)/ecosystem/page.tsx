@@ -32,7 +32,7 @@ interface EcosystemAgent {
   tasks?: { name: string; description: string }[]
   workflows?: { name: string; description: string }[]
   checklists?: { name: string; description: string }[]
-  crons?: { name: string; file: string }[]
+  crons?: { name: string; file: string; description?: string }[]
   kbs?: { name: string; description: string }[]
   dna?: { name: string; description: string }[]
 }
@@ -48,7 +48,7 @@ interface EcosystemSquad {
   tasks?: { name: string; description: string }[]
   workflows?: { name: string; description: string }[]
   checklists?: { name: string; description: string }[]
-  crons?: { name: string; file: string }[]
+  crons?: { name: string; file: string; description?: string }[]
 }
 
 interface EcosystemData {
@@ -126,7 +126,7 @@ export default function EcosystemPage() {
   const [selectedAgent, setSelectedAgent] = useState<EcosystemAgent | null>(null)
   const [modalVisible, setModalVisible] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
-  const [selectedResource, setSelectedResource] = useState<{ name: string; path: string; type: string } | null>(null)
+  const [selectedResource, setSelectedResource] = useState<{ name: string; path: string; type: string; description?: string } | null>(null)
   const [resourceContent, setResourceContent] = useState<string | null>(null)
   const [resourceLoading, setResourceLoading] = useState(false)
 
@@ -200,8 +200,8 @@ export default function EcosystemPage() {
     setTimeout(() => setSelectedAgent(null), 300)
   }
 
-  const openResource = async (name: string, filePath: string, type: string) => {
-    setSelectedResource({ name, path: filePath, type })
+  const openResource = async (name: string, filePath: string, type: string, description?: string) => {
+    setSelectedResource({ name, path: filePath, type, description })
     setResourceContent(null)
     setResourceLoading(true)
     try {
@@ -442,7 +442,7 @@ function SquadDetailView({
   onTabChange: (tab: TabKey) => void
   onBack: () => void
   onAgentClick: (agent: EcosystemAgent) => void
-  onResourceClick: (name: string, filePath: string, type: string) => void
+  onResourceClick: (name: string, filePath: string, type: string, description?: string) => void
 }) {
   const availableTabs = TAB_CONFIG.filter((t) => getSquadResourceCount(squad, t.key) > 0)
 
@@ -557,7 +557,7 @@ function SquadDetailView({
                 const filePath = activeTab === 'crons' && item.file
                   ? item.file
                   : `${squad.path}${activeTab}/${item.name}`
-                onResourceClick(item.name, filePath, activeTab)
+                onResourceClick(item.name, filePath, activeTab, item.description)
               }}
               className="card p-4 flex items-start gap-3 text-left hover:border-lime-400/20 transition-all cursor-pointer w-full"
             >
@@ -606,7 +606,7 @@ function AgentDetailModal({
   agent: EcosystemAgent
   visible: boolean
   onClose: () => void
-  onResourceClick: (name: string, filePath: string, type: string) => void
+  onResourceClick: (name: string, filePath: string, type: string, description?: string) => void
 }) {
   const [fileContent, setFileContent] = useState<string | null>(null)
   const [fileLoading, setFileLoading] = useState(false)
@@ -783,7 +783,7 @@ function AgentDetailModal({
                               const filePath = section.key === 'crons' && item.file
                                 ? item.file
                                 : `squads/${agent.squad}/${section.key}/${item.name}`
-                              onResourceClick(item.name, filePath, section.key)
+                              onResourceClick(item.name, filePath, section.key, item.description)
                             }}
                             className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-left hover:border-lime-400/20 transition-all cursor-pointer w-full"
                           >
@@ -845,7 +845,7 @@ function ResourceDetailModal({
   loading,
   onClose,
 }: {
-  resource: { name: string; path: string; type: string }
+  resource: { name: string; path: string; type: string; description?: string }
   content: string | null
   loading: boolean
   onClose: () => void
@@ -865,12 +865,18 @@ function ResourceDetailModal({
       {/* Panel */}
       <div className="fixed right-0 top-0 h-full w-full max-w-2xl bg-[#0a0a0a] border-l border-[#222] z-50 flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#222] shrink-0">
+        <div className="flex items-start justify-between px-6 py-4 border-b border-[#222] shrink-0">
           <div className="min-w-0 flex-1">
             <h3 className="text-white font-bold text-base truncate">{resource.name}</h3>
             <p className="text-[var(--text-muted)] text-xs font-mono mt-0.5 truncate">{resource.path}</p>
+            {resource.description && (
+              <div className="mt-3 p-3 bg-lime-400/5 border border-lime-400/10 rounded-xl">
+                <p className="text-label mb-1">O que faz</p>
+                <p className="text-zinc-300 text-sm leading-relaxed">{resource.description}</p>
+              </div>
+            )}
           </div>
-          <button onClick={onClose} className="text-[var(--text-muted)] hover:text-white transition-colors cursor-pointer ml-4">
+          <button onClick={onClose} className="text-[var(--text-muted)] hover:text-white transition-colors cursor-pointer ml-4 mt-1">
             <X className="w-5 h-5" />
           </button>
         </div>

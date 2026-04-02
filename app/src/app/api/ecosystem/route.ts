@@ -31,20 +31,20 @@ const ROOT_CRONS: Record<string, string> = {
 }
 
 // Static cron registry — fallback for serverless environments where filesystem is limited
-const STATIC_CRONS: Record<string, Array<{ name: string; file: string }>> = {
+const STATIC_CRONS: Record<string, Array<{ name: string; file: string; description: string }>> = {
   growth: [
-    { name: 'cron-max-creative-analysis.js', file: 'cron-max-creative-analysis.js' },
-    { name: 'cron-maicon-batch.js', file: 'squads/growth/criativos/cron-maicon-batch.js' },
-    { name: 'cron-thomas-from-max.js', file: 'squads/growth/scripts/thomas/cron-thomas-from-max.js' },
-    { name: 'cron-publicos.js', file: 'squads/growth/meta-ads-engine/cron-publicos.js' },
-    { name: 'cron-criativos.js', file: 'squads/growth/meta-ads-engine/cron-criativos.js' },
+    { name: 'cron-max-creative-analysis.js', file: 'cron-max-creative-analysis.js', description: 'Analisa automaticamente a performance dos criativos ativos no Meta Ads. Puxa metricas (CTR, CPA, ROAS), classifica os criativos e gera recomendacoes de escala ou pausa.' },
+    { name: 'cron-maicon-batch.js', file: 'squads/growth/criativos/cron-maicon-batch.js', description: 'Processa em lote a criacao de videos com o Maicon. Pega briefings aprovados na fila e gera os videos automaticamente usando Remotion.' },
+    { name: 'cron-thomas-from-max.js', file: 'squads/growth/scripts/thomas/cron-thomas-from-max.js', description: 'Pega as copies aprovadas pelo Max e gera automaticamente os briefings visuais pro Thomas criar os estaticos.' },
+    { name: 'cron-publicos.js', file: 'squads/growth/meta-ads-engine/cron-publicos.js', description: 'Gerencia os publicos do Meta Ads automaticamente. Cria, atualiza e organiza audiencias baseado nas regras de segmentacao configuradas.' },
+    { name: 'cron-criativos.js', file: 'squads/growth/meta-ads-engine/cron-criativos.js', description: 'Sobe criativos aprovados direto no Meta Ads. Cria os ads dentro das campanhas seguindo as regras de nomenclatura e configuracao padrao.' },
   ],
   gestao: [
-    { name: 'cron-rafa.js', file: 'cron-rafa.js' },
-    { name: 'cron-rafa-audit.js', file: 'cron-rafa-audit.js' },
+    { name: 'cron-rafa.js', file: 'cron-rafa.js', description: 'Puxa automaticamente as calls agendadas do Google Calendar, transcreve e envia pro Rafa analisar a performance dos closers.' },
+    { name: 'cron-rafa-audit.js', file: 'cron-rafa-audit.js', description: 'Roda a auditoria completa das calls do dia. Gera scores de performance, identifica gaps e monta o relatorio consolidado de cada closer.' },
   ],
   cs: [
-    { name: 'cron-joana.js', file: 'squads/cs/cron-joana.js' },
+    { name: 'cron-joana.js', file: 'squads/cs/cron-joana.js', description: 'Monitora as comunidades de WhatsApp dos clientes. Detecta sentimento negativo, alertas de churn e gera relatorios de satisfacao automaticamente.' },
   ],
 }
 
@@ -307,8 +307,8 @@ function collectWorkflows(dir: string): Array<{ name: string; description: strin
 /**
  * Collect cron files recursively.
  */
-function collectCrons(dir: string, basePath: string): Array<{ name: string; file: string }> {
-  const results: Array<{ name: string; file: string }> = []
+function collectCrons(dir: string, basePath: string): Array<{ name: string; file: string; description?: string }> {
+  const results: Array<{ name: string; file: string; description?: string }> = []
   const entries = safeReaddir(dir)
 
   for (const entry of entries) {
@@ -403,7 +403,7 @@ interface AgentInfo {
   tasks: Array<{ name: string; description: string }>
   workflows: Array<{ name: string; description: string }>
   checklists: Array<{ name: string; description: string }>
-  crons: Array<{ name: string; file: string }>
+  crons: Array<{ name: string; file: string; description?: string }>
   kbs: Array<{ name: string; description: string }>
   dna: Array<{ name: string; description: string }>
 }
@@ -419,7 +419,7 @@ interface SquadInfo {
   tasks: Array<{ name: string; description: string }>
   workflows: Array<{ name: string; description: string }>
   checklists: Array<{ name: string; description: string }>
-  crons: Array<{ name: string; file: string }>
+  crons: Array<{ name: string; file: string; description?: string }>
 }
 
 /**

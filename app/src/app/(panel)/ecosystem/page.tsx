@@ -26,6 +26,7 @@ interface EcosystemAgent {
   title: string
   role: string
   squad: string
+  filePath?: string
   commands?: { name: string; description: string }[]
   templates?: { name: string; description: string }[]
   tasks?: { name: string; description: string }[]
@@ -100,11 +101,11 @@ type TabKey = 'agents' | 'templates' | 'tasks' | 'workflows' | 'checklists' | 'c
 
 const TAB_CONFIG: { key: TabKey; label: string; icon: React.ReactNode }[] = [
   { key: 'agents', label: 'Agentes', icon: <Bot className="w-3.5 h-3.5" /> },
-  { key: 'templates', label: 'Templates', icon: <FileText className="w-3.5 h-3.5" /> },
-  { key: 'tasks', label: 'Tasks', icon: <CheckSquare className="w-3.5 h-3.5" /> },
-  { key: 'workflows', label: 'Workflows', icon: <Workflow className="w-3.5 h-3.5" /> },
+  { key: 'templates', label: 'Modelos', icon: <FileText className="w-3.5 h-3.5" /> },
+  { key: 'tasks', label: 'Tarefas', icon: <CheckSquare className="w-3.5 h-3.5" /> },
+  { key: 'workflows', label: 'Fluxos', icon: <Workflow className="w-3.5 h-3.5" /> },
   { key: 'checklists', label: 'Checklists', icon: <CheckSquare className="w-3.5 h-3.5" /> },
-  { key: 'crons', label: 'Crons', icon: <Clock className="w-3.5 h-3.5" /> },
+  { key: 'crons', label: 'Automacoes', icon: <Clock className="w-3.5 h-3.5" /> },
 ]
 
 function getSquadResourceCount(squad: EcosystemSquad, key: TabKey): number {
@@ -232,11 +233,11 @@ export default function EcosystemPage() {
   const statItems = [
     { label: 'Squads', value: stats.squads },
     { label: 'Agentes', value: stats.agents },
-    { label: 'Templates', value: stats.templates },
-    { label: 'Tasks', value: stats.tasks },
-    { label: 'Workflows', value: stats.workflows },
+    { label: 'Modelos', value: stats.templates },
+    { label: 'Tarefas', value: stats.tasks },
+    { label: 'Fluxos', value: stats.workflows },
     { label: 'Checklists', value: stats.checklists },
-    { label: 'Crons', value: stats.crons },
+    { label: 'Automacoes', value: stats.crons },
   ]
 
   return (
@@ -607,6 +608,10 @@ function AgentDetailModal({
   onClose: () => void
   onResourceClick: (name: string, filePath: string, type: string) => void
 }) {
+  const [fileContent, setFileContent] = useState<string | null>(null)
+  const [fileLoading, setFileLoading] = useState(false)
+  const [activeView, setActiveView] = useState<'resumo' | 'arquivo'>('resumo')
+
   // Prevent body scroll
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -615,22 +620,34 @@ function AgentDetailModal({
     }
   }, [])
 
+  // Fetch agent file content
+  useEffect(() => {
+    if (!agent.filePath) return
+    setFileLoading(true)
+    fetch(`/api/ecosystem/file?path=${encodeURIComponent(agent.filePath)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setFileContent(data?.content ?? null))
+      .catch(() => setFileContent(null))
+      .finally(() => setFileLoading(false))
+  }, [agent.filePath])
+
   const sections: {
     key: string
     label: string
     icon: React.ReactNode
     items: { name: string; description?: string; file?: string }[]
-    isMono?: boolean
   }[] = [
-    { key: 'commands', label: 'Commands', icon: <Terminal className="w-4 h-4" />, items: agent.commands ?? [], isMono: true },
+    { key: 'commands', label: 'Comandos', icon: <Terminal className="w-4 h-4" />, items: agent.commands ?? [] },
     { key: 'templates', label: 'Templates', icon: <FileText className="w-4 h-4" />, items: agent.templates ?? [] },
-    { key: 'tasks', label: 'Tasks', icon: <CheckSquare className="w-4 h-4" />, items: agent.tasks ?? [] },
-    { key: 'workflows', label: 'Workflows', icon: <Workflow className="w-4 h-4" />, items: agent.workflows ?? [] },
+    { key: 'tasks', label: 'Tarefas', icon: <CheckSquare className="w-4 h-4" />, items: agent.tasks ?? [] },
+    { key: 'workflows', label: 'Fluxos de Trabalho', icon: <Workflow className="w-4 h-4" />, items: agent.workflows ?? [] },
     { key: 'checklists', label: 'Checklists', icon: <CheckSquare className="w-4 h-4" />, items: agent.checklists ?? [] },
-    { key: 'crons', label: 'Crons', icon: <Clock className="w-4 h-4" />, items: agent.crons ?? [] },
-    { key: 'kbs', label: 'KBs', icon: <BookOpen className="w-4 h-4" />, items: agent.kbs ?? [] },
+    { key: 'crons', label: 'Automacoes (Crons)', icon: <Clock className="w-4 h-4" />, items: agent.crons ?? [] },
+    { key: 'kbs', label: 'Base de Conhecimento', icon: <BookOpen className="w-4 h-4" />, items: agent.kbs ?? [] },
     { key: 'dna', label: 'DNA', icon: <Dna className="w-4 h-4" />, items: agent.dna ?? [] },
   ]
+
+  const totalResources = sections.reduce((sum, s) => sum + s.items.length, 0)
 
   return (
     <>
@@ -643,7 +660,7 @@ function AgentDetailModal({
       />
       {/* Panel */}
       <div
-        className={`fixed right-0 top-0 h-full w-full max-w-lg bg-[#0a0a0a] border-l border-[#222] overflow-y-auto z-50 transform transition-transform duration-300 ${
+        className={`fixed right-0 top-0 h-full w-full max-w-2xl bg-[#0a0a0a] border-l border-[#222] overflow-y-auto z-50 transform transition-transform duration-300 ${
           visible ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -657,82 +674,163 @@ function AgentDetailModal({
 
         <div className="p-6 pt-8">
           {/* Agent Header */}
-          <div className="flex items-start gap-4 mb-6">
+          <div className="flex items-start gap-4 mb-4">
             <Avatar name={agent.name} size="xl" />
             <div>
               <h2 className="text-xl font-bold text-white">{agent.name}</h2>
               {agent.title && <p className="text-zinc-400 text-sm mt-0.5">{agent.title}</p>}
-              {agent.squad && (
-                <span className="inline-block mt-2 text-[10px] text-lime-400 bg-lime-400/10 font-bold px-2 py-0.5 rounded-full">
-                  {agent.squad}
-                </span>
-              )}
+              <div className="flex items-center gap-2 mt-2">
+                {agent.squad && (
+                  <span className="text-[10px] text-lime-400 bg-lime-400/10 font-bold px-2 py-0.5 rounded-full">
+                    {agent.squad}
+                  </span>
+                )}
+                {agent.filePath && (
+                  <span className="text-[10px] text-[var(--text-muted)] font-mono">
+                    {agent.filePath}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Role */}
+          {/* Funcao / Role */}
           {agent.role && (
-            <p className="text-zinc-400 text-sm leading-relaxed mb-6">{agent.role}</p>
+            <div className="mb-5">
+              <h3 className="text-label mb-2">Funcao</h3>
+              <p className="text-zinc-400 text-sm leading-relaxed">{agent.role}</p>
+            </div>
           )}
 
-          {/* Sections */}
-          {sections.map((section) => {
-            if (section.items.length === 0) return null
-            return (
-              <div key={section.key} className="mb-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-[var(--text-muted)]">{section.icon}</span>
-                  <h3 className="text-label">{section.label}</h3>
-                </div>
-
-                {section.key === 'commands' ? (
-                  <div className="border border-[var(--border-color)] rounded-xl overflow-hidden">
-                    {section.items.map((item, i) => (
-                      <div
-                        key={i}
-                        className={`flex items-start gap-4 px-4 py-3 ${
-                          i > 0 ? 'border-t border-[var(--border-color)]' : ''
-                        }`}
-                      >
-                        <span className="text-lime-400 font-mono text-sm whitespace-nowrap">
-                          {item.name}
-                        </span>
-                        <span className="text-zinc-500 text-sm">
-                          {item.description || ''}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    {section.items.map((item, i) => (
-                      <button
-                        key={i}
-                        onClick={() => {
-                          const filePath = section.key === 'crons' && item.file
-                            ? item.file
-                            : `squads/${agent.squad}/${section.key}/${item.name}`
-                          onResourceClick(item.name, filePath, section.key)
-                        }}
-                        className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-left hover:border-lime-400/20 transition-all cursor-pointer w-full"
-                      >
-                        <span className="text-[var(--text-muted)] mt-0.5">{section.icon}</span>
-                        <div className="min-w-0">
-                          <span className="text-sm text-white">{item.name}</span>
-                          {item.description && (
-                            <p className="text-zinc-500 text-xs mt-0.5">{item.description}</p>
-                          )}
-                          {item.file && (
-                            <p className="text-zinc-600 text-xs font-mono mt-0.5">{item.file}</p>
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
+          {/* Stats rápidos */}
+          <div className="grid grid-cols-4 gap-2 mb-5">
+            {[
+              { label: 'Comandos', value: (agent.commands ?? []).length },
+              { label: 'Templates', value: (agent.templates ?? []).length },
+              { label: 'Tarefas', value: (agent.tasks ?? []).length },
+              { label: 'Recursos', value: totalResources },
+            ].map((s) => (
+              <div key={s.label} className="bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl p-3 text-center">
+                <div className="text-lg font-bold text-lime-400">{s.value}</div>
+                <div className="text-[10px] text-[var(--text-muted)] font-semibold uppercase tracking-wider">{s.label}</div>
               </div>
-            )
-          })}
+            ))}
+          </div>
+
+          {/* View toggle: Resumo / Arquivo Completo */}
+          <div className="flex gap-1 mb-5 border-b border-[var(--border-color)]">
+            <button
+              onClick={() => setActiveView('resumo')}
+              className={`px-4 py-2.5 text-sm font-semibold transition-colors cursor-pointer ${
+                activeView === 'resumo'
+                  ? 'text-lime-400 border-b-2 border-lime-400'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+              }`}
+            >
+              Resumo
+            </button>
+            <button
+              onClick={() => setActiveView('arquivo')}
+              className={`px-4 py-2.5 text-sm font-semibold transition-colors cursor-pointer ${
+                activeView === 'arquivo'
+                  ? 'text-lime-400 border-b-2 border-lime-400'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+              }`}
+            >
+              Arquivo Completo
+            </button>
+          </div>
+
+          {activeView === 'resumo' ? (
+            <>
+              {/* Sections */}
+              {sections.map((section) => {
+                if (section.items.length === 0) return null
+                return (
+                  <div key={section.key} className="mb-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-[var(--text-muted)]">{section.icon}</span>
+                      <h3 className="text-label">{section.label}</h3>
+                      <span className="text-[10px] text-[var(--text-muted)] bg-[var(--bg-secondary)] px-1.5 py-0.5 rounded-full">
+                        {section.items.length}
+                      </span>
+                    </div>
+
+                    {section.key === 'commands' ? (
+                      <div className="border border-[var(--border-color)] rounded-xl overflow-hidden">
+                        {section.items.map((item, i) => (
+                          <div
+                            key={i}
+                            className={`flex items-start gap-4 px-4 py-3 ${
+                              i > 0 ? 'border-t border-[var(--border-color)]' : ''
+                            }`}
+                          >
+                            <span className="text-lime-400 font-mono text-sm whitespace-nowrap">
+                              {item.name}
+                            </span>
+                            <span className="text-zinc-500 text-sm">
+                              {item.description || ''}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {section.items.map((item, i) => (
+                          <button
+                            key={i}
+                            onClick={() => {
+                              const filePath = section.key === 'crons' && item.file
+                                ? item.file
+                                : `squads/${agent.squad}/${section.key}/${item.name}`
+                              onResourceClick(item.name, filePath, section.key)
+                            }}
+                            className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-left hover:border-lime-400/20 transition-all cursor-pointer w-full"
+                          >
+                            <span className="text-[var(--text-muted)] mt-0.5">{section.icon}</span>
+                            <div className="min-w-0">
+                              <span className="text-sm text-white">{item.name}</span>
+                              {item.description && (
+                                <p className="text-zinc-500 text-xs mt-0.5">{item.description}</p>
+                              )}
+                              {item.file && (
+                                <p className="text-zinc-600 text-xs font-mono mt-0.5">{item.file}</p>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+              {totalResources === 0 && (
+                <p className="text-[var(--text-muted)] text-sm text-center py-8">
+                  Nenhum recurso vinculado a este agente
+                </p>
+              )}
+            </>
+          ) : (
+            /* Arquivo Completo */
+            <div>
+              {fileLoading ? (
+                <div className="flex items-center gap-2 text-[var(--text-muted)] py-8">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm">Carregando definicao do agente...</span>
+                </div>
+              ) : fileContent ? (
+                <div className="bg-[#080808] rounded-xl p-4 border border-[#1a1a1a]">
+                  <pre className="text-sm text-zinc-300 font-mono whitespace-pre-wrap break-words leading-relaxed">
+                    {fileContent}
+                  </pre>
+                </div>
+              ) : (
+                <p className="text-[var(--text-muted)] text-sm text-center py-8">
+                  Arquivo do agente nao disponivel
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </>
@@ -859,11 +957,11 @@ function getSearchResults(data: EcosystemData | null, query: string): SearchResu
 const TYPE_LABELS: Record<string, string> = {
   squad: 'Squad',
   agent: 'Agente',
-  template: 'Template',
-  task: 'Task',
-  workflow: 'Workflow',
+  template: 'Modelo',
+  task: 'Tarefa',
+  workflow: 'Fluxo',
   checklist: 'Checklist',
-  cron: 'Cron',
+  cron: 'Automacao',
 }
 
 const TYPE_COLORS: Record<string, string> = {

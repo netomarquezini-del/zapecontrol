@@ -129,6 +129,37 @@ export default function EcosystemPage() {
   const [selectedResource, setSelectedResource] = useState<{ name: string; path: string; type: string; description?: string } | null>(null)
   const [resourceContent, setResourceContent] = useState<string | null>(null)
   const [resourceLoading, setResourceLoading] = useState(false)
+  const [cronStatus, setCronStatus] = useState<Record<string, { status: string; scheduleLabel: string }>>({})
+
+  const VPS_URL = process.env.NEXT_PUBLIC_VPS_URL || 'http://187.77.240.222:8889'
+
+  const fetchCronStatus = useCallback(async () => {
+    try {
+      const res = await fetch(`${VPS_URL}/api/cron-status`, { signal: AbortSignal.timeout(5000) })
+      if (!res.ok) return
+      const d = await res.json()
+      const map: Record<string, { status: string; scheduleLabel: string }> = {}
+      for (const c of d.crons) {
+        const baseName = c.file.split(' ')[0]
+        const existing = map[baseName]
+        if (!existing) {
+          map[baseName] = { status: c.status, scheduleLabel: c.scheduleLabel }
+        } else {
+          // If any entry is active, mark as active
+          if (c.status === 'ativo') existing.status = 'ativo'
+          // Aggregate schedules
+          if (c.scheduleLabel && c.scheduleLabel !== existing.scheduleLabel) {
+            existing.scheduleLabel = existing.scheduleLabel
+              ? `${existing.scheduleLabel} | ${c.scheduleLabel}`
+              : c.scheduleLabel
+          }
+        }
+      }
+      setCronStatus(map)
+    } catch {
+      // VPS indisponivel — status fica vazio
+    }
+  }, [VPS_URL])
 
   const fetchData = useCallback(async () => {
     try {
@@ -147,7 +178,8 @@ export default function EcosystemPage() {
 
   useEffect(() => {
     fetchData()
-  }, [fetchData])
+    fetchCronStatus()
+  }, [fetchData, fetchCronStatus])
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -355,6 +387,7 @@ export default function EcosystemPage() {
               onBack={() => setSelectedSquad(null)}
               onAgentClick={openAgentModal}
               onResourceClick={openResource}
+              cronStatus={cronStatus}
             />
           ) : (
             /* Squad Cards Grid */
@@ -412,6 +445,7 @@ export default function EcosystemPage() {
           visible={modalVisible}
           onClose={closeAgentModal}
           onResourceClick={openResource}
+          cronStatus={cronStatus}
         />
       )}
 
@@ -436,6 +470,7 @@ function SquadDetailView({
   onBack,
   onAgentClick,
   onResourceClick,
+  cronStatus,
 }: {
   squad: EcosystemSquad
   activeTab: TabKey
@@ -443,6 +478,7 @@ function SquadDetailView({
   onBack: () => void
   onAgentClick: (agent: EcosystemAgent) => void
   onResourceClick: (name: string, filePath: string, type: string, description?: string) => void
+  cronStatus: Record<string, { status: string; scheduleLabel: string }>
 }) {
   const availableTabs = TAB_CONFIG.filter((t) => getSquadResourceCount(squad, t.key) > 0)
 
@@ -569,16 +605,28 @@ function SquadDetailView({
                 {activeTab === 'crons' && <Clock className="w-4 h-4" />}
               </span>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm text-white font-medium">{item.name}</span>
                   {item._agent && (
                     <span className="text-[10px] text-[var(--text-muted)] bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-full px-1.5 py-0.5">
                       {item._agent}
                     </span>
                   )}
+                  {activeTab === 'crons' && cronStatus[item.name] && (
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      cronStatus[item.name].status === 'ativo'
+                        ? 'bg-lime-400/10 text-lime-400 border border-lime-400/20'
+                        : 'bg-zinc-400/10 text-zinc-500 border border-zinc-500/20'
+                    }`}>
+                      {cronStatus[item.name].status === 'ativo' ? 'Ativo' : 'Pausado'}
+                    </span>
+                  )}
                 </div>
                 {item.description && (
                   <p className="text-zinc-500 text-xs mt-0.5">{item.description}</p>
+                )}
+                {activeTab === 'crons' && cronStatus[item.name]?.scheduleLabel && cronStatus[item.name].status === 'ativo' && (
+                  <p className="text-lime-400/70 text-xs mt-0.5">{cronStatus[item.name].scheduleLabel}</p>
                 )}
                 {item.file && (
                   <p className="text-zinc-600 text-xs font-mono mt-0.5">{item.file}</p>
@@ -602,11 +650,13 @@ function AgentDetailModal({
   visible,
   onClose,
   onResourceClick,
+  cronStatus,
 }: {
   agent: EcosystemAgent
   visible: boolean
   onClose: () => void
   onResourceClick: (name: string, filePath: string, type: string, description?: string) => void
+  cronStatus: Record<string, { status: string; scheduleLabel: string }>
 }) {
   const [fileContent, setFileContent] = useState<string | null>(null)
   const [fileLoading, setFileLoading] = useState(false)
@@ -788,10 +838,24 @@ function AgentDetailModal({
                             className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-left hover:border-lime-400/20 transition-all cursor-pointer w-full"
                           >
                             <span className="text-[var(--text-muted)] mt-0.5">{section.icon}</span>
-                            <div className="min-w-0">
-                              <span className="text-sm text-white">{item.name}</span>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-sm text-white">{item.name}</span>
+                                {section.key === 'crons' && cronStatus[item.name] && (
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                    cronStatus[item.name].status === 'ativo'
+                                      ? 'bg-lime-400/10 text-lime-400 border border-lime-400/20'
+                                      : 'bg-zinc-400/10 text-zinc-500 border border-zinc-500/20'
+                                  }`}>
+                                    {cronStatus[item.name].status === 'ativo' ? 'Ativo' : 'Pausado'}
+                                  </span>
+                                )}
+                              </div>
                               {item.description && (
                                 <p className="text-zinc-500 text-xs mt-0.5">{item.description}</p>
+                              )}
+                              {section.key === 'crons' && cronStatus[item.name]?.scheduleLabel && cronStatus[item.name].status === 'ativo' && (
+                                <p className="text-lime-400/70 text-xs mt-0.5">{cronStatus[item.name].scheduleLabel}</p>
                               )}
                               {item.file && (
                                 <p className="text-zinc-600 text-xs font-mono mt-0.5">{item.file}</p>

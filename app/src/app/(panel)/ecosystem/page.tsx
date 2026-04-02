@@ -131,35 +131,29 @@ export default function EcosystemPage() {
   const [resourceLoading, setResourceLoading] = useState(false)
   const [cronStatus, setCronStatus] = useState<Record<string, { status: string; scheduleLabel: string }>>({})
 
-  const VPS_URL = process.env.NEXT_PUBLIC_VPS_URL || 'http://187.77.240.222:8889'
+  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://mrchphqqgbssndijichd.supabase.co'
+  const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1yY2hwaHFxZ2Jzc25kaWppY2hkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5MTM3NzQsImV4cCI6MjA4ODQ4OTc3NH0.27BBzargnQ1jLuZNdlrohOxl8VqNtZLiwZqJcT4xpoA'
 
   const fetchCronStatus = useCallback(async () => {
     try {
-      const res = await fetch(`${VPS_URL}/api/cron-status`, { signal: AbortSignal.timeout(5000) })
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/cron_status?select=*`, {
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+        signal: AbortSignal.timeout(5000),
+      })
       if (!res.ok) return
-      const d = await res.json()
+      const rows: Array<{ name: string; status: string; schedule_label: string }> = await res.json()
       const map: Record<string, { status: string; scheduleLabel: string }> = {}
-      for (const c of d.crons) {
-        const baseName = c.file.split(' ')[0]
-        const existing = map[baseName]
-        if (!existing) {
-          map[baseName] = { status: c.status, scheduleLabel: c.scheduleLabel }
-        } else {
-          // If any entry is active, mark as active
-          if (c.status === 'ativo') existing.status = 'ativo'
-          // Aggregate schedules
-          if (c.scheduleLabel && c.scheduleLabel !== existing.scheduleLabel) {
-            existing.scheduleLabel = existing.scheduleLabel
-              ? `${existing.scheduleLabel} | ${c.scheduleLabel}`
-              : c.scheduleLabel
-          }
-        }
+      for (const row of rows) {
+        map[row.name] = { status: row.status, scheduleLabel: row.schedule_label }
       }
       setCronStatus(map)
     } catch {
-      // VPS indisponivel — status fica vazio
+      // Supabase indisponivel
     }
-  }, [VPS_URL])
+  }, [])
 
   const fetchData = useCallback(async () => {
     try {

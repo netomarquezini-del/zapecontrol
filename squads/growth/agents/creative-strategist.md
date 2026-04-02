@@ -813,14 +813,41 @@ integracao_zapecontrol:
               NUNCA usar: "ficar rico rapido", "dinheiro facil", "esquema".
               NUNCA usar 'anuncio' — sempre 'ADS'.
             roteiro: |
-              Se formato video:
-              Cena 1: Hook (primeiros 3s) — P do PRSA — DEVE conter 'Shopee'
-              Cena 2: Problema/Identificacao — P do PRSA
-              Cena 3: Mecanismo/Solucao (4 configuracoes) — S do PRSA
-              Cena 4: Prova (ROAS de 25, resultados) — R do PRSA
-              Cena 5: CTA — A do PRSA
-              Respeitar duracao_min e duracao_max do formato.
-              NUNCA usar 'anuncio' — sempre 'ADS'.
+              Se formato video_talking_head:
+              DURACAO ALVO: ~60 segundos (150-200 palavras). NUNCA resumir em 25s.
+              O roteiro e uma CONVERSA do Neto olhando pra camera. Precisa ter:
+              - CONTEXTO real (historia, situacao, exemplo concreto)
+              - ARGUMENTO que convence (logica, nao so promessa)
+              - PROFUNDIDADE que vende pelo criativo (quem assiste ja quer comprar)
+
+              ESTRUTURA PRSA EXPANDIDA (5 blocos, ~60s total):
+              [P — 0-5s] HOOK: Ruminacao mental com 'Shopee'. Para o scroll.
+              [P — 5-15s] PROBLEMA EXPANDIDO: Aprofundar a dor com contexto real.
+                Descrever a situacao que o seller vive. Dar exemplos concretos.
+                Mostrar que voce entende o dia a dia dele. "Todo mundo fala X,
+                voce faz X, e o resultado nao vem."
+              [R — 15-25s] RESULTADO com prova concreta: Nao so falar "ROAS de 25".
+                Contar historia de aluno real com numeros. Antes/depois.
+                "Aluno saiu de X pra Y fazendo Z."
+              [S — 25-40s] SOLUCAO com mecanismo detalhado: Explicar as 4 configuracoes
+                de forma que o seller entenda o conceito sem entregar o como.
+                Gerar curiosidade sobre o metodo. Conectar logicamente com o problema.
+              [A — 40-50s] CTA natural, como se estivesse falando com um amigo:
+                "Se fizer sentido pra ti, clica no botao abaixo que na proxima
+                pagina eu te explico tudo." Nunca CTA agressivo.
+
+              REFERENCIA DE QUALIDADE (AD193):
+              O roteiro deve ter o NIVEL DE PROFUNDIDADE do AD193 — contexto,
+              historia, argumento, transicao natural entre blocos, e um CTA
+              que nao parece CTA. Se o roteiro cabe em 25 segundos, esta RASO
+              demais. REFAZER ate ter corpo de 60 segundos.
+
+              REGRAS:
+              - NUNCA usar 'anuncio' — sempre 'ADS'
+              - Tom de conversa (como o Neto fala)
+              - Transicoes naturais entre blocos (sem saltos)
+              - Cada bloco deve fluir pro proximo como uma conversa
+              - DEVE conter 'Shopee' no hook
             nome: "[Angulo] [Emocao] [Formato] - V{n}"
             referencias_usadas: "{ ruminacao_ref, conceito_ref, pattern_ref }"
       5_apresentar:

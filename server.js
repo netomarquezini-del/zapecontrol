@@ -766,6 +766,32 @@ app.use('/squad/gestao', express.static(path.join(__dirname, 'squads/gestao/dash
 
 
 // ============================================================
+// PM2 STATUS — Live process status for Ecosystem Dashboard
+// ============================================================
+app.get('/api/pm2-status', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  const { execSync } = require('child_process');
+  try {
+    const raw = execSync('pm2 jlist 2>/dev/null', { encoding: 'utf-8' });
+    const processes = JSON.parse(raw);
+    const result = processes
+      .filter(p => p.name !== 'zapecontrol') // skip the server itself
+      .map(p => ({
+        name: p.name,
+        status: p.pm2_env?.status || 'unknown',
+        uptime: p.pm2_env?.pm_uptime || 0,
+        restarts: p.pm2_env?.restart_time || 0,
+        memory: p.monit?.memory || 0,
+        cpu: p.monit?.cpu || 0,
+        pid: p.pid || null,
+      }));
+    res.json({ processes: result, updatedAt: new Date().toISOString() });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao ler pm2', details: err.message });
+  }
+});
+
+// ============================================================
 // CRON STATUS — Live crontab reader for Ecosystem Dashboard
 // ============================================================
 app.get('/api/cron-status', (req, res) => {

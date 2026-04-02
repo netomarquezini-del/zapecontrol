@@ -159,18 +159,70 @@ async function upsertToSupabase(rows) {
   return response.status;
 }
 
+function parsePm2() {
+  try {
+    const raw = execSync('pm2 jlist 2>/dev/null', { encoding: 'utf-8' });
+    const processes = JSON.parse(raw);
+    return processes
+      .filter(p => p.name !== 'zapecontrol')
+      .map(p => ({
+        name: p.name,
+        status: p.pm2_env?.status || 'unknown',
+        uptime: p.pm2_env?.pm_uptime || 0,
+        restarts: p.pm2_env?.restart_time || 0,
+        memory: p.monit?.memory || 0,
+        cpu: p.monit?.cpu || 0,
+        pid: p.pid || null,
+        updated_at: new Date().toISOString(),
+      }));
+  } catch {
+    return [];
+  }
+}
+
+async function upsertPm2ToSupabase(rows) {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/pm2_status`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates',
+    },
+    body: JSON.stringify(rows),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Supabase pm2 upsert failed (${response.status}): ${text}`);
+  }
+
+  return response.status;
+}
+
 async function main() {
   try {
-    const rows = parseCrontab();
-    console.log(`[sync-cron-status] Parsed ${rows.length} cron entries`);
-    for (const row of rows) {
+    // Sync cron status
+    const cronRows = parseCrontab();
+    console.log(`[sync] Parsed ${cronRows.length} cron entries`);
+    for (const row of cronRows) {
       console.log(`  - ${row.name}: ${row.status} (${row.schedule_label})`);
     }
+    const cronStatus = await upsertToSupabase(cronRows);
+    console.log(`[sync] Crons → Supabase (HTTP ${cronStatus})`);
 
-    const status = await upsertToSupabase(rows);
-    console.log(`[sync-cron-status] Upserted to Supabase (HTTP ${status})`);
+    // Sync pm2 status
+    const pm2Rows = parsePm2();
+    console.log(`[sync] Parsed ${pm2Rows.length} pm2 processes`);
+    for (const row of pm2Rows) {
+      console.log(`  - ${row.name}: ${row.status} (mem: ${Math.round(row.memory / 1024 / 1024)}MB, restarts: ${row.restarts})`);
+    }
+    if (pm2Rows.length > 0) {
+      const pm2Status = await upsertPm2ToSupabase(pm2Rows);
+      console.log(`[sync] PM2 → Supabase (HTTP ${pm2Status})`);
+    }
   } catch (err) {
-    console.error(`[sync-cron-status] Error: ${err.message}`);
+    console.error(`[sync] Error: ${err.message}`);
     process.exit(1);
   }
 }

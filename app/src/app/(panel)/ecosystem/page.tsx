@@ -16,6 +16,7 @@ import {
   Terminal,
   Loader2,
   Sparkles,
+  Server,
 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -37,6 +38,7 @@ interface EcosystemAgent {
   kbs?: { name: string; description: string }[]
   dna?: { name: string; description: string }[]
   skills?: { name: string; description: string }[]
+  services?: { name: string; status: string; memory: number; uptime: number; restarts: number }[]
 }
 
 interface EcosystemSquad {
@@ -158,6 +160,42 @@ export default function EcosystemPage() {
     }
   }, [])
 
+  // pm2 process → agent mapping
+  const PM2_TO_AGENT: Record<string, string> = {
+    'rafa-bot': 'head-comercial',
+    'rafa-audit': 'head-comercial',
+    'joana-bot': 'joana-cs',
+    'joana-cs-cron': 'joana-cs',
+    'leo-engine': 'gestor-trafego',
+    'leo-telegram': 'gestor-trafego',
+  }
+
+  const fetchPm2Status = useCallback(async () => {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/pm2_status?select=*`, {
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
+        signal: AbortSignal.timeout(5000),
+      })
+      if (!res.ok) return
+      const rows: Array<{ name: string; status: string; memory: number; uptime: number; restarts: number }> = await res.json()
+
+      // Attach services to agents when data loads
+      setData(prev => {
+        if (!prev) return prev
+        const updated = { ...prev, squads: prev.squads.map(squad => ({
+          ...squad,
+          agents: squad.agents.map(agent => {
+            const agentServices = rows.filter(p => PM2_TO_AGENT[p.name] === agent.id)
+            return agentServices.length > 0 ? { ...agent, services: agentServices } : agent
+          })
+        }))}
+        return updated
+      })
+    } catch {
+      // Supabase indisponivel
+    }
+  }, [SUPABASE_URL, SUPABASE_ANON_KEY]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true)
@@ -174,9 +212,9 @@ export default function EcosystemPage() {
   }, [])
 
   useEffect(() => {
-    fetchData()
+    fetchData().then(() => fetchPm2Status())
     fetchCronStatus()
-  }, [fetchData, fetchCronStatus])
+  }, [fetchData, fetchCronStatus, fetchPm2Status])
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -681,7 +719,7 @@ function SquadDetailView({
 
 /* ─── Agent Detail Modal ─── */
 
-type AgentTab = 'resumo' | 'arquivo' | 'yaml' | 'commands' | 'templates' | 'tasks' | 'workflows' | 'checklists' | 'crons' | 'kbs' | 'dna' | 'skills'
+type AgentTab = 'resumo' | 'arquivo' | 'yaml' | 'commands' | 'templates' | 'tasks' | 'workflows' | 'checklists' | 'crons' | 'kbs' | 'dna' | 'skills' | 'services'
 
 function AgentDetailModal({
   agent,
@@ -733,6 +771,7 @@ function AgentDetailModal({
     { key: 'kbs', label: 'KBs', icon: <BookOpen className="w-3.5 h-3.5" />, items: agent.kbs ?? [] },
     { key: 'dna', label: 'DNA', icon: <Dna className="w-3.5 h-3.5" />, items: agent.dna ?? [] },
     { key: 'skills', label: 'Skills', icon: <Sparkles className="w-3.5 h-3.5" />, items: agent.skills ?? [] },
+    { key: 'services', label: 'Services', icon: <Server className="w-3.5 h-3.5" />, items: (agent.services ?? []).map(s => ({ name: s.name, description: `${s.status} | ${Math.round(s.memory / 1024 / 1024)}MB | ${s.restarts} restarts` })) },
   ]
 
   const allTabs: { key: AgentTab; label: string; icon?: React.ReactNode; count?: number }[] = [
@@ -901,8 +940,51 @@ function AgentDetailModal({
             </div>
           )}
 
+          {/* Services tab — special render */}
+          {activeTab === 'services' && agent.services && (
+            <div className="flex flex-col gap-3">
+              {agent.services.map((svc, i) => {
+                const memMB = Math.round(svc.memory / 1024 / 1024)
+                const uptimeMs = Date.now() - svc.uptime
+                const uptimeDays = Math.floor(uptimeMs / 86400000)
+                const uptimeHours = Math.floor((uptimeMs % 86400000) / 3600000)
+                return (
+                  <div key={i} className="card p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <Server className="w-4 h-4 text-[var(--text-muted)]" />
+                        <span className="text-white font-bold text-sm">{svc.name}</span>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                        svc.status === 'online'
+                          ? 'bg-lime-400/10 text-lime-400 border border-lime-400/20'
+                          : 'bg-red-400/10 text-red-400 border border-red-400/20'
+                      }`}>
+                        {svc.status === 'online' ? 'Online' : svc.status}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-[var(--bg-secondary)] rounded-lg p-2 text-center">
+                        <div className="text-xs text-white font-bold">{memMB}MB</div>
+                        <div className="text-[10px] text-[var(--text-muted)]">Memoria</div>
+                      </div>
+                      <div className="bg-[var(--bg-secondary)] rounded-lg p-2 text-center">
+                        <div className="text-xs text-white font-bold">{uptimeDays}d {uptimeHours}h</div>
+                        <div className="text-[10px] text-[var(--text-muted)]">Uptime</div>
+                      </div>
+                      <div className="bg-[var(--bg-secondary)] rounded-lg p-2 text-center">
+                        <div className="text-xs text-white font-bold">{svc.restarts}</div>
+                        <div className="text-[10px] text-[var(--text-muted)]">Restarts</div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
           {/* Other resource tabs */}
-          {activeResource && activeTab !== 'commands' && (() => {
+          {activeResource && activeTab !== 'commands' && activeTab !== 'services' && (() => {
             const filteredItems = activeTab === 'crons' && cronFilter !== 'todos'
               ? activeResource.items.filter(item => cronStatus[item.name]?.status === cronFilter)
               : activeResource.items

@@ -744,6 +744,11 @@ integracao_zapecontrol:
       6_salvar:
         action: "POST /api/criativos/bulk-insert"
         condicao: "SOMENTE copies aprovadas pela Ale (score >= 70)"
+        regra_integridade_critica: |
+          NUNCA resumir, encurtar ou simplificar os roteiros ao salvar no pipeline.
+          O roteiro salvo DEVE ser IDENTICO ao que foi apresentado e aprovado pelo usuario.
+          Cada bloco PRSA deve conter o texto COMPLETO com todas as frases, transicoes
+          e detalhes. ZERO perda de conteudo. Isso e INEGOCIAVEL.
         payload:
           tipo: "variacao_winner"
           winner_origem_id: "UUID do winner"
@@ -851,6 +856,13 @@ integracao_zapecontrol:
       6_salvar:
         action: "POST /api/criativos/bulk-insert"
         condicao: "SOMENTE copies aprovadas pela Ale (score >= 70)"
+        regra_integridade_critica: |
+          NUNCA resumir, encurtar ou simplificar os roteiros ao salvar no pipeline.
+          O roteiro salvo DEVE ser IDENTICO ao que foi apresentado e aprovado pelo usuario.
+          Cada bloco PRSA deve conter o texto COMPLETO com todas as frases, transicoes
+          e detalhes. Se o roteiro apresentado tem 4 paragrafos, salvar 4 paragrafos.
+          Se tem 200 palavras, salvar 200 palavras. ZERO perda de conteudo entre
+          o que foi mostrado e o que foi salvo. Isso e INEGOCIAVEL.
         payload:
           tipo: "criativo_novo"
           input_persona: "persona"

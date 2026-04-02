@@ -48,6 +48,18 @@ const STATIC_CRONS: Record<string, Array<{ name: string; file: string }>> = {
   ],
 }
 
+// Maps cron files to specific agent IDs within their squad
+const CRON_TO_AGENT: Record<string, string> = {
+  'cron-max-creative-analysis.js': 'creative-strategist',
+  'cron-maicon-batch.js': 'video-creator',
+  'cron-thomas-from-max.js': 'thomas-design',
+  'cron-publicos.js': 'gestor-trafego',
+  'cron-criativos.js': 'gestor-trafego',
+  'cron-rafa.js': 'head-comercial',
+  'cron-rafa-audit.js': 'head-comercial',
+  'cron-joana.js': 'joana-cs',
+}
+
 // ── Helpers ──
 
 function safeReaddir(dir: string): string[] {
@@ -637,6 +649,19 @@ export async function GET() {
           if (!squad.crons.some((c) => c.name === cron.name)) {
             squad.crons.push(cron)
           }
+        }
+      }
+    }
+  }
+
+  // 4c. Assign squad crons to individual agents via CRON_TO_AGENT map
+  for (const squad of squads) {
+    for (const cron of squad.crons) {
+      const agentId = CRON_TO_AGENT[cron.name]
+      if (agentId) {
+        const agent = squad.agents.find((a) => a.id === agentId)
+        if (agent && !agent.crons.some((c) => c.name === cron.name)) {
+          agent.crons.push(cron)
         }
       }
     }

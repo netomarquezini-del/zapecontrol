@@ -675,9 +675,14 @@ integracao_zapecontrol:
             muda: "hook de abertura"
             mantem: "angulo, persona, copy_primario, formato"
             regras:
+              - "Hook = ruminacao mental real do seller (pensamento de chuveiro, de 23h na cama, de grupo de WhatsApp)"
+              - "SHOPEE obrigatorio no hook — filtra o publico nos primeiros 3 segundos"
+              - "ADS nunca anuncio — na Shopee sao coisas diferentes"
               - "Inspirar nas melhores ruminacoes por CTR"
-              - "Priorizar triggers: gancho_numerico > pergunta > afirmacao_choque"
+              - "Priorizar triggers: gancho_numerico > pergunta_espelho > afirmacao_choque > confissao"
               - "NAO repetir hooks existentes na base"
+              - "NUNCA comecar com: Imagina, E se, Descubra, Conheca, Aprenda"
+              - "Teste: se parece desabafo de grupo de WhatsApp = OK. Se parece anuncio = REFAZER"
           ANGULO:
             quantidade: 2
             muda: "angulo (abordagem diferente)"
@@ -781,8 +786,19 @@ integracao_zapecontrol:
         para_cada_formato:
           gerar: "{quantidade} variacoes (default 3)"
           cada_variacao:
-            hook: "Inspirado nas ruminacoes do angulo. Priorizar gancho_numerico. UNICO."
-            copy_titulo: "Max 40 chars. Impactante, direto."
+            hook: |
+              REGRAS OBRIGATORIAS DO HOOK:
+              1. RUMINACAO MENTAL — O hook e a voz que ja esta na cabeca do seller.
+                 Pensamento de chuveiro, de 23h na cama, de quando abre o painel.
+                 Se parece anuncio/propaganda = REFAZER. Se parece desabafo de WhatsApp = OK.
+              2. SHOPEE NO HOOK — A palavra 'Shopee' DEVE aparecer nos primeiros 3 segundos.
+                 Filtra o publico: quem nao vende na Shopee pula, quem vende se identifica.
+              3. ADS NUNCA ANUNCIO — Sempre 'ADS', nunca 'anuncio'. Na Shopee sao coisas diferentes.
+              4. UNICO — NAO repetir hooks existentes na base.
+              5. GATILHO — Priorizar: gancho_numerico > pergunta_espelho > afirmacao_choque > confissao.
+              6. REACAO — O hook deve gerar "oxi, falou comigo" ou "opa, quero ver isso".
+              NUNCA comecar com: 'Imagina', 'E se', 'Descubra', 'Conheca', 'Aprenda'.
+            copy_titulo: "Max 40 chars. Impactante, direto. Deve conter 'Shopee' ou 'ADS'."
             copy_descricao: "Max 30 chars. Complementa titulo."
             copy_primario: |
               Max 250 chars.
@@ -790,14 +806,16 @@ integracao_zapecontrol:
               Estrutura: problema → mecanismo → resultado → prova → CTA.
               Adaptar tom a emocao selecionada.
               NUNCA usar: "ficar rico rapido", "dinheiro facil", "esquema".
+              NUNCA usar 'anuncio' — sempre 'ADS'.
             roteiro: |
               Se formato video:
-              Cena 1: Hook (primeiros 3s) — P do PRSA
+              Cena 1: Hook (primeiros 3s) — P do PRSA — DEVE conter 'Shopee'
               Cena 2: Problema/Identificacao — P do PRSA
               Cena 3: Mecanismo/Solucao (4 configuracoes) — S do PRSA
               Cena 4: Prova (ROAS de 25, resultados) — R do PRSA
               Cena 5: CTA — A do PRSA
               Respeitar duracao_min e duracao_max do formato.
+              NUNCA usar 'anuncio' — sempre 'ADS'.
             nome: "[Angulo] [Emocao] [Formato] - V{n}"
             referencias_usadas: "{ ruminacao_ref, conceito_ref, pattern_ref }"
       5_apresentar:

@@ -130,6 +130,7 @@ export default function EcosystemPage() {
   const [resourceContent, setResourceContent] = useState<string | null>(null)
   const [resourceLoading, setResourceLoading] = useState(false)
   const [cronStatus, setCronStatus] = useState<Record<string, { status: string; scheduleLabel: string }>>({})
+  const [cronFilter, setCronFilter] = useState<'todos' | 'ativo' | 'pausado'>('todos')
 
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://mrchphqqgbssndijichd.supabase.co'
   const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1yY2hwaHFxZ2Jzc25kaWppY2hkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5MTM3NzQsImV4cCI6MjA4ODQ4OTc3NH0.27BBzargnQ1jLuZNdlrohOxl8VqNtZLiwZqJcT4xpoA'
@@ -382,6 +383,8 @@ export default function EcosystemPage() {
               onAgentClick={openAgentModal}
               onResourceClick={openResource}
               cronStatus={cronStatus}
+              cronFilter={cronFilter}
+              onCronFilterChange={setCronFilter}
             />
           ) : (
             /* Squad Cards Grid */
@@ -440,6 +443,8 @@ export default function EcosystemPage() {
           onClose={closeAgentModal}
           onResourceClick={openResource}
           cronStatus={cronStatus}
+          cronFilter={cronFilter}
+          onCronFilterChange={setCronFilter}
         />
       )}
 
@@ -473,6 +478,8 @@ function SquadDetailView({
   onAgentClick: (agent: EcosystemAgent) => void
   onResourceClick: (name: string, filePath: string, type: string, description?: string) => void
   cronStatus: Record<string, { status: string; scheduleLabel: string }>
+  cronFilter: 'todos' | 'ativo' | 'pausado'
+  onCronFilterChange: (filter: 'todos' | 'ativo' | 'pausado') => void
 }) {
   const availableTabs = TAB_CONFIG.filter((t) => getSquadResourceCount(squad, t.key) > 0)
 
@@ -496,7 +503,15 @@ function SquadDetailView({
 
   const resources = getResources(activeTab)
   const isAgentTab = activeTab === 'agents'
-  const resourceItems = isAgentTab ? [] : (resources as ResourceItem[])
+  const allResourceItems = isAgentTab ? [] : (resources as ResourceItem[])
+
+  // Filter crons by status
+  const resourceItems = activeTab === 'crons' && cronFilter !== 'todos'
+    ? allResourceItems.filter(item => {
+        const status = cronStatus[item.name]?.status
+        return status === cronFilter
+      })
+    : allResourceItems
 
   return (
     <div className="flex flex-col gap-5">
@@ -580,6 +595,31 @@ function SquadDetailView({
         </div>
       ) : (
         <div className="flex flex-col gap-2">
+          {/* Cron filter bar */}
+          {activeTab === 'crons' && Object.keys(cronStatus).length > 0 && (
+            <div className="flex gap-2 mb-2">
+              {(['todos', 'ativo', 'pausado'] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => onCronFilterChange(f)}
+                  className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                    cronFilter === f
+                      ? f === 'ativo' ? 'bg-lime-400/10 text-lime-400 border border-lime-400/20'
+                        : f === 'pausado' ? 'bg-zinc-400/10 text-zinc-400 border border-zinc-400/20'
+                        : 'bg-white/5 text-white border border-[var(--border-color)]'
+                      : 'text-[var(--text-muted)] border border-transparent hover:text-white'
+                  }`}
+                >
+                  {f === 'todos' ? 'Todos' : f === 'ativo' ? 'Ativos' : 'Pausados'}
+                  {f !== 'todos' && (
+                    <span className="ml-1 opacity-60">
+                      {allResourceItems.filter(item => cronStatus[item.name]?.status === f).length}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
           {resourceItems.map((item, i) => (
             <button
               key={i}
@@ -647,12 +687,16 @@ function AgentDetailModal({
   onClose,
   onResourceClick,
   cronStatus,
+  cronFilter,
+  onCronFilterChange,
 }: {
   agent: EcosystemAgent
   visible: boolean
   onClose: () => void
   onResourceClick: (name: string, filePath: string, type: string, description?: string) => void
   cronStatus: Record<string, { status: string; scheduleLabel: string }>
+  cronFilter: 'todos' | 'ativo' | 'pausado'
+  onCronFilterChange: (filter: 'todos' | 'ativo' | 'pausado') => void
 }) {
   const [fileContent, setFileContent] = useState<string | null>(null)
   const [fileLoading, setFileLoading] = useState(false)
@@ -855,9 +899,38 @@ function AgentDetailModal({
           )}
 
           {/* Other resource tabs */}
-          {activeResource && activeTab !== 'commands' && (
+          {activeResource && activeTab !== 'commands' && (() => {
+            const filteredItems = activeTab === 'crons' && cronFilter !== 'todos'
+              ? activeResource.items.filter(item => cronStatus[item.name]?.status === cronFilter)
+              : activeResource.items
+            return (
             <div className="flex flex-col gap-2">
-              {activeResource.items.map((item, i) => (
+              {/* Cron filter */}
+              {activeTab === 'crons' && Object.keys(cronStatus).length > 0 && (
+                <div className="flex gap-2 mb-2">
+                  {(['todos', 'ativo', 'pausado'] as const).map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => onCronFilterChange(f)}
+                      className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                        cronFilter === f
+                          ? f === 'ativo' ? 'bg-lime-400/10 text-lime-400 border border-lime-400/20'
+                            : f === 'pausado' ? 'bg-zinc-400/10 text-zinc-400 border border-zinc-400/20'
+                            : 'bg-white/5 text-white border border-[var(--border-color)]'
+                          : 'text-[var(--text-muted)] border border-transparent hover:text-white'
+                      }`}
+                    >
+                      {f === 'todos' ? 'Todos' : f === 'ativo' ? 'Ativos' : 'Pausados'}
+                      {f !== 'todos' && (
+                        <span className="ml-1 opacity-60">
+                          {activeResource.items.filter(item => cronStatus[item.name]?.status === f).length}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {filteredItems.map((item, i) => (
                 <button
                   key={i}
                   onClick={() => {
@@ -894,11 +967,12 @@ function AgentDetailModal({
                   </div>
                 </button>
               ))}
-              {activeResource.items.length === 0 && (
+              {filteredItems.length === 0 && (
                 <p className="text-[var(--text-muted)] text-sm text-center py-8">Nenhum item nesta aba</p>
               )}
             </div>
-          )}
+            )
+          })()}
         </div>
       </div>
     </>

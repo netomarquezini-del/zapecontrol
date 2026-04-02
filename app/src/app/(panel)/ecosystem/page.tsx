@@ -41,6 +41,7 @@ interface EcosystemSquad {
   name: string
   icon: string
   description: string
+  path: string
   agents: EcosystemAgent[]
   templates?: { name: string; description: string }[]
   tasks?: { name: string; description: string }[]
@@ -124,6 +125,9 @@ export default function EcosystemPage() {
   const [selectedAgent, setSelectedAgent] = useState<EcosystemAgent | null>(null)
   const [modalVisible, setModalVisible] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
+  const [selectedResource, setSelectedResource] = useState<{ name: string; path: string; type: string } | null>(null)
+  const [resourceContent, setResourceContent] = useState<string | null>(null)
+  const [resourceLoading, setResourceLoading] = useState(false)
 
   const fetchData = useCallback(async () => {
     try {
@@ -151,6 +155,10 @@ export default function EcosystemPage() {
         searchRef.current?.focus()
       }
       if (e.key === 'Escape') {
+        if (selectedResource) {
+          closeResource()
+          return
+        }
         if (selectedAgent) {
           closeAgentModal()
           return
@@ -168,7 +176,7 @@ export default function EcosystemPage() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedAgent, selectedSquad, query]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedResource, selectedAgent, selectedSquad, query]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -189,6 +197,30 @@ export default function EcosystemPage() {
   const closeAgentModal = () => {
     setModalVisible(false)
     setTimeout(() => setSelectedAgent(null), 300)
+  }
+
+  const openResource = async (name: string, filePath: string, type: string) => {
+    setSelectedResource({ name, path: filePath, type })
+    setResourceContent(null)
+    setResourceLoading(true)
+    try {
+      const res = await fetch(`/api/ecosystem/file?path=${encodeURIComponent(filePath)}`)
+      if (res.ok) {
+        const d = await res.json()
+        setResourceContent(d.content)
+      } else {
+        setResourceContent('// Arquivo nao encontrado ou indisponivel')
+      }
+    } catch {
+      setResourceContent('// Erro ao carregar arquivo')
+    } finally {
+      setResourceLoading(false)
+    }
+  }
+
+  const closeResource = () => {
+    setSelectedResource(null)
+    setResourceContent(null)
   }
 
   // Search logic
@@ -321,6 +353,7 @@ export default function EcosystemPage() {
               onTabChange={setActiveTab}
               onBack={() => setSelectedSquad(null)}
               onAgentClick={openAgentModal}
+              onResourceClick={openResource}
             />
           ) : (
             /* Squad Cards Grid */
@@ -377,6 +410,16 @@ export default function EcosystemPage() {
           agent={selectedAgent}
           visible={modalVisible}
           onClose={closeAgentModal}
+          onResourceClick={openResource}
+        />
+      )}
+
+      {selectedResource && (
+        <ResourceDetailModal
+          resource={selectedResource}
+          content={resourceContent}
+          loading={resourceLoading}
+          onClose={closeResource}
         />
       )}
     </div>
@@ -391,12 +434,14 @@ function SquadDetailView({
   onTabChange,
   onBack,
   onAgentClick,
+  onResourceClick,
 }: {
   squad: EcosystemSquad
   activeTab: TabKey
   onTabChange: (tab: TabKey) => void
   onBack: () => void
   onAgentClick: (agent: EcosystemAgent) => void
+  onResourceClick: (name: string, filePath: string, type: string) => void
 }) {
   const availableTabs = TAB_CONFIG.filter((t) => getSquadResourceCount(squad, t.key) > 0)
 
@@ -505,7 +550,16 @@ function SquadDetailView({
       ) : (
         <div className="flex flex-col gap-2">
           {resourceItems.map((item, i) => (
-            <div key={i} className="card p-4 flex items-start gap-3">
+            <button
+              key={i}
+              onClick={() => {
+                const filePath = activeTab === 'crons' && item.file
+                  ? item.file
+                  : `${squad.path}${activeTab}/${item.name}`
+                onResourceClick(item.name, filePath, activeTab)
+              }}
+              className="card p-4 flex items-start gap-3 text-left hover:border-lime-400/20 transition-all cursor-pointer w-full"
+            >
               <span className="text-[var(--text-muted)] mt-0.5">
                 {activeTab === 'templates' && <FileText className="w-4 h-4" />}
                 {activeTab === 'tasks' && <CheckSquare className="w-4 h-4" />}
@@ -529,7 +583,7 @@ function SquadDetailView({
                   <p className="text-zinc-600 text-xs font-mono mt-0.5">{item.file}</p>
                 )}
               </div>
-            </div>
+            </button>
           ))}
           {resourceItems.length === 0 && !isAgentTab && (
             <p className="text-[var(--text-muted)] text-sm py-8 text-center">Nenhum item nesta aba</p>
@@ -546,10 +600,12 @@ function AgentDetailModal({
   agent,
   visible,
   onClose,
+  onResourceClick,
 }: {
   agent: EcosystemAgent
   visible: boolean
   onClose: () => void
+  onResourceClick: (name: string, filePath: string, type: string) => void
 }) {
   // Prevent body scroll
   useEffect(() => {
@@ -650,9 +706,15 @@ function AgentDetailModal({
                 ) : (
                   <div className="flex flex-col gap-2">
                     {section.items.map((item, i) => (
-                      <div
+                      <button
                         key={i}
-                        className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)]"
+                        onClick={() => {
+                          const filePath = section.key === 'crons' && item.file
+                            ? item.file
+                            : `squads/${agent.squad}/${section.key}/${item.name}`
+                          onResourceClick(item.name, filePath, section.key)
+                        }}
+                        className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-left hover:border-lime-400/20 transition-all cursor-pointer w-full"
                       >
                         <span className="text-[var(--text-muted)] mt-0.5">{section.icon}</span>
                         <div className="min-w-0">
@@ -664,13 +726,73 @@ function AgentDetailModal({
                             <p className="text-zinc-600 text-xs font-mono mt-0.5">{item.file}</p>
                           )}
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 )}
               </div>
             )
           })}
+        </div>
+      </div>
+    </>
+  )
+}
+
+/* ─── Resource Detail Modal ─── */
+
+function ResourceDetailModal({
+  resource,
+  content,
+  loading,
+  onClose,
+}: {
+  resource: { name: string; path: string; type: string }
+  content: string | null
+  loading: boolean
+  onClose: () => void
+}) {
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
+  return (
+    <>
+      {/* Overlay */}
+      <div
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 transition-opacity duration-300"
+        onClick={onClose}
+      />
+      {/* Panel */}
+      <div className="fixed right-0 top-0 h-full w-full max-w-2xl bg-[#0a0a0a] border-l border-[#222] z-50 flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#222] shrink-0">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-white font-bold text-base truncate">{resource.name}</h3>
+            <p className="text-[var(--text-muted)] text-xs font-mono mt-0.5 truncate">{resource.path}</p>
+          </div>
+          <button onClick={onClose} className="text-[var(--text-muted)] hover:text-white transition-colors cursor-pointer ml-4">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {loading ? (
+            <div className="flex items-center gap-2 text-[var(--text-muted)]">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span className="text-sm">Carregando...</span>
+            </div>
+          ) : content ? (
+            <div className="bg-[#080808] rounded-xl p-4 border border-[#1a1a1a]">
+              <pre className="text-sm text-zinc-300 font-mono whitespace-pre-wrap break-words leading-relaxed">
+                {content}
+              </pre>
+            </div>
+          ) : (
+            <p className="text-[var(--text-muted)] text-sm">Conteudo indisponivel</p>
+          )}
         </div>
       </div>
     </>

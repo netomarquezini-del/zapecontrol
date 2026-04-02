@@ -119,18 +119,28 @@ export default function EcosystemPage() {
         searchRef.current?.focus()
       }
       if (e.key === 'Escape') {
-        setQuery('')
-        searchRef.current?.blur()
+        if (selectedAgent) {
+          closeAgentModal()
+          return
+        }
+        if (selectedSquad) {
+          setSelectedSquad(null)
+          return
+        }
+        if (query) {
+          setQuery('')
+          searchRef.current?.blur()
+          return
+        }
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  }, [selectedAgent, selectedSquad, query]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRefresh = async () => {
     setRefreshing(true)
     try {
-      await fetch('/api/ecosystem', { method: 'POST' })
       await fetchData()
     } catch {
       // silently fail
@@ -171,7 +181,7 @@ export default function EcosystemPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-display text-2xl md:text-3xl text-white flex items-center gap-3">
-            <span className="text-3xl">🧬</span> Ecosystem
+            <Dna className="w-7 h-7 text-lime-400" /> Ecosystem
           </h1>
           <p className="text-[var(--text-secondary)] text-sm mt-1">
             Visao completa de todos os agentes, squads e recursos
@@ -294,7 +304,7 @@ export default function EcosystemPage() {
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <span className="text-3xl">{squad.icon || '📦'}</span>
+                      <span className="text-3xl">{squad.icon || '--'}</span>
                       <div>
                         <h3 className="font-bold text-lg text-white group-hover:text-lime-400 transition-colors">
                           {squad.name}
@@ -394,7 +404,7 @@ function SquadDetailView({
       {/* Squad Header */}
       <div className="card p-6">
         <div className="flex items-center gap-4 mb-3">
-          <span className="text-4xl">{squad.icon || '📦'}</span>
+          <span className="text-4xl">{squad.icon || '--'}</span>
           <div>
             <h2 className="text-headline text-xl text-white">{squad.name}</h2>
             <p className="text-zinc-400 text-sm mt-1">{squad.description || 'Sem descricao'}</p>
@@ -448,7 +458,7 @@ function SquadDetailView({
               className="card p-4 text-left hover:border-lime-400/20 transition-all cursor-pointer group"
             >
               <div className="flex items-start gap-3">
-                <span className="text-2xl">{agent.icon || '🤖'}</span>
+                <span className="text-2xl">{agent.icon || '--'}</span>
                 <div className="min-w-0">
                   <h4 className="font-bold text-white group-hover:text-lime-400 transition-colors truncate">
                     {agent.name}
@@ -509,15 +519,6 @@ function AgentDetailModal({
   visible: boolean
   onClose: () => void
 }) {
-  // Close on escape
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', handleKey)
-    return () => window.removeEventListener('keydown', handleKey)
-  }, [onClose])
-
   // Prevent body scroll
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -569,7 +570,7 @@ function AgentDetailModal({
         <div className="p-6 pt-8">
           {/* Agent Header */}
           <div className="flex items-start gap-4 mb-6">
-            <span className="text-4xl">{agent.icon || '🤖'}</span>
+            <span className="text-4xl">{agent.icon || '--'}</span>
             <div>
               <h2 className="text-xl font-bold text-white">{agent.name}</h2>
               {agent.title && <p className="text-zinc-400 text-sm mt-0.5">{agent.title}</p>}
@@ -662,7 +663,7 @@ function getSearchResults(data: EcosystemData | null, query: string): SearchResu
 
   for (const squad of data.squads) {
     if (squad.name.toLowerCase().includes(q) || squad.description?.toLowerCase().includes(q)) {
-      results.push({ type: 'squad', name: squad.name, icon: squad.icon || '📦', squad })
+      results.push({ type: 'squad', name: squad.name, icon: squad.icon || '--', squad })
     }
     for (const agent of squad.agents ?? []) {
       if (
@@ -670,7 +671,7 @@ function getSearchResults(data: EcosystemData | null, query: string): SearchResu
         agent.title?.toLowerCase().includes(q) ||
         agent.role?.toLowerCase().includes(q)
       ) {
-        results.push({ type: 'agent', name: agent.name, icon: agent.icon || '🤖', squadName: squad.name, agent })
+        results.push({ type: 'agent', name: agent.name, icon: agent.icon || '--', squadName: squad.name, agent })
       }
     }
     const resourceTypes: { key: TabKey; type: SearchResult['type'] }[] = [
@@ -684,14 +685,14 @@ function getSearchResults(data: EcosystemData | null, query: string): SearchResu
       const items = (squad[rt.key] as { name: string }[]) ?? []
       for (const item of items) {
         if (item.name.toLowerCase().includes(q)) {
-          results.push({ type: rt.type, name: item.name, icon: squad.icon || '📦', squadName: squad.name, squad })
+          results.push({ type: rt.type, name: item.name, icon: squad.icon || '--', squadName: squad.name, squad })
         }
       }
       for (const agent of squad.agents ?? []) {
         const agentItems = ((agent as unknown as Record<string, unknown>)[rt.key] as { name: string }[]) ?? []
         for (const item of agentItems) {
           if (item.name.toLowerCase().includes(q)) {
-            results.push({ type: rt.type, name: item.name, icon: agent.icon || '🤖', squadName: squad.name, squad, agent })
+            results.push({ type: rt.type, name: item.name, icon: agent.icon || '--', squadName: squad.name, squad, agent })
           }
         }
       }

@@ -277,8 +277,8 @@ function collectWorkflows(dir: string): Array<{ name: string; description: strin
 /**
  * Collect cron files recursively.
  */
-function collectCrons(dir: string, basePath: string): Array<{ name: string; path: string }> {
-  const results: Array<{ name: string; path: string }> = []
+function collectCrons(dir: string, basePath: string): Array<{ name: string; file: string }> {
+  const results: Array<{ name: string; file: string }> = []
   const entries = safeReaddir(dir)
 
   for (const entry of entries) {
@@ -288,7 +288,7 @@ function collectCrons(dir: string, basePath: string): Array<{ name: string; path
       if (stat.isDirectory()) {
         results.push(...collectCrons(fullPath, path.join(basePath, entry)))
       } else if (entry.startsWith('cron-') && entry.endsWith('.js')) {
-        results.push({ name: entry, path: path.join(basePath, entry) })
+        results.push({ name: entry, file: path.join(basePath, entry) })
       }
     } catch {
       // skip
@@ -301,9 +301,9 @@ function collectCrons(dir: string, basePath: string): Array<{ name: string; path
 /**
  * Collect knowledge base files from kbs/, kb/, or data/ directories.
  */
-function collectKBs(squadDir: string): string[] {
+function collectKBs(squadDir: string): Array<{ name: string; description: string }> {
   const kbDirs = ['kbs', 'kb', 'data']
-  const files: string[] = []
+  const files: Array<{ name: string; description: string }> = []
 
   for (const dir of kbDirs) {
     const fullDir = path.join(squadDir, dir)
@@ -312,7 +312,7 @@ function collectKBs(squadDir: string): string[] {
       try {
         const stat = fs.statSync(path.join(fullDir, entry))
         if (stat.isFile()) {
-          files.push(`${dir}/${entry}`)
+          files.push({ name: `${dir}/${entry}`, description: '' })
         }
       } catch {
         // skip
@@ -328,7 +328,7 @@ function collectKBs(squadDir: string): string[] {
       try {
         const stat = fs.statSync(path.join(fullDir, entry))
         if (stat.isFile()) {
-          files.push(`${sub}/${entry}`)
+          files.push({ name: `${sub}/${entry}`, description: '' })
         }
       } catch {
         // skip
@@ -342,15 +342,15 @@ function collectKBs(squadDir: string): string[] {
 /**
  * Collect DNA files.
  */
-function collectDNA(squadDir: string): string[] {
-  const files: string[] = []
+function collectDNA(squadDir: string): Array<{ name: string; description: string }> {
+  const files: Array<{ name: string; description: string }> = []
   for (const sub of ['dna', 'agents/dna']) {
     const fullDir = path.join(squadDir, sub)
     const entries = safeReaddir(fullDir)
     for (const entry of entries) {
       try {
         const stat = fs.statSync(path.join(fullDir, entry))
-        if (stat.isFile()) files.push(`${sub}/${entry}`)
+        if (stat.isFile()) files.push({ name: `${sub}/${entry}`, description: '' })
       } catch {
         // skip
       }
@@ -373,9 +373,9 @@ interface AgentInfo {
   tasks: Array<{ name: string; description: string }>
   workflows: Array<{ name: string; description: string }>
   checklists: Array<{ name: string; description: string }>
-  crons: Array<{ name: string; path: string }>
-  kbs: string[]
-  dna: string[]
+  crons: Array<{ name: string; file: string }>
+  kbs: Array<{ name: string; description: string }>
+  dna: Array<{ name: string; description: string }>
 }
 
 interface SquadInfo {
@@ -389,7 +389,7 @@ interface SquadInfo {
   tasks: Array<{ name: string; description: string }>
   workflows: Array<{ name: string; description: string }>
   checklists: Array<{ name: string; description: string }>
-  crons: Array<{ name: string; path: string }>
+  crons: Array<{ name: string; file: string }>
 }
 
 /**
@@ -573,7 +573,7 @@ function assignRootCrons(squads: SquadInfo[]): void {
     if (squad) {
       // Avoid duplicates
       if (!squad.crons.some((c) => c.name === cronFile)) {
-        squad.crons.push({ name: cronFile, path: cronFile })
+        squad.crons.push({ name: cronFile, file: cronFile })
       }
     }
   }
@@ -635,11 +635,11 @@ export async function GET() {
   const stats = {
     squads: squads.length,
     agents: squads.reduce((sum, s) => sum + s.agents.length, 0),
-    templates: squads.reduce((sum, s) => sum + s.templates.length, 0),
-    tasks: squads.reduce((sum, s) => sum + s.tasks.length, 0),
-    workflows: squads.reduce((sum, s) => sum + s.workflows.length, 0),
-    checklists: squads.reduce((sum, s) => sum + s.checklists.length, 0),
-    crons: squads.reduce((sum, s) => sum + s.crons.length, 0),
+    templates: squads.reduce((sum, s) => sum + s.templates.length + s.agents.reduce((a, ag) => a + (ag.templates?.length ?? 0), 0), 0),
+    tasks: squads.reduce((sum, s) => sum + s.tasks.length + s.agents.reduce((a, ag) => a + (ag.tasks?.length ?? 0), 0), 0),
+    workflows: squads.reduce((sum, s) => sum + s.workflows.length + s.agents.reduce((a, ag) => a + (ag.workflows?.length ?? 0), 0), 0),
+    checklists: squads.reduce((sum, s) => sum + s.checklists.length + s.agents.reduce((a, ag) => a + (ag.checklists?.length ?? 0), 0), 0),
+    crons: squads.reduce((sum, s) => sum + s.crons.length + s.agents.reduce((a, ag) => a + (ag.crons?.length ?? 0), 0), 0),
   }
 
   return Response.json({

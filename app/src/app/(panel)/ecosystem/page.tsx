@@ -63,6 +63,38 @@ interface EcosystemData {
   }
 }
 
+// Color palette for squad/agent avatars (no emojis)
+const AVATAR_COLORS = [
+  'bg-lime-400/15 text-lime-400 border-lime-400/20',
+  'bg-purple-400/15 text-purple-400 border-purple-400/20',
+  'bg-cyan-400/15 text-cyan-400 border-cyan-400/20',
+  'bg-orange-400/15 text-orange-400 border-orange-400/20',
+  'bg-pink-400/15 text-pink-400 border-pink-400/20',
+  'bg-blue-400/15 text-blue-400 border-blue-400/20',
+  'bg-yellow-400/15 text-yellow-400 border-yellow-400/20',
+  'bg-red-400/15 text-red-400 border-red-400/20',
+]
+
+function getAvatarColor(name: string): string {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
+}
+
+function getInitials(name: string): string {
+  return name.split(/[\s-]+/).map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()
+}
+
+function Avatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' | 'lg' | 'xl' }) {
+  const color = getAvatarColor(name)
+  const sizes = { sm: 'w-8 h-8 text-xs', md: 'w-10 h-10 text-sm', lg: 'w-12 h-12 text-base', xl: 'w-14 h-14 text-lg' }
+  return (
+    <div className={`${sizes[size]} ${color} rounded-xl border flex items-center justify-center font-bold shrink-0`}>
+      {getInitials(name)}
+    </div>
+  )
+}
+
 type TabKey = 'agents' | 'templates' | 'tasks' | 'workflows' | 'checklists' | 'crons'
 
 const TAB_CONFIG: { key: TabKey; label: string; icon: React.ReactNode }[] = [
@@ -304,7 +336,7 @@ export default function EcosystemPage() {
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <span className="text-3xl">{squad.icon || '--'}</span>
+                      <Avatar name={squad.name} size="lg" />
                       <div>
                         <h3 className="font-bold text-lg text-white group-hover:text-lime-400 transition-colors">
                           {squad.name}
@@ -404,7 +436,7 @@ function SquadDetailView({
       {/* Squad Header */}
       <div className="card p-6">
         <div className="flex items-center gap-4 mb-3">
-          <span className="text-4xl">{squad.icon || '--'}</span>
+          <Avatar name={squad.name} size="xl" />
           <div>
             <h2 className="text-headline text-xl text-white">{squad.name}</h2>
             <p className="text-zinc-400 text-sm mt-1">{squad.description || 'Sem descricao'}</p>
@@ -458,7 +490,7 @@ function SquadDetailView({
               className="card p-4 text-left hover:border-lime-400/20 transition-all cursor-pointer group"
             >
               <div className="flex items-start gap-3">
-                <span className="text-2xl">{agent.icon || '--'}</span>
+                <Avatar name={agent.name} size="md" />
                 <div className="min-w-0">
                   <h4 className="font-bold text-white group-hover:text-lime-400 transition-colors truncate">
                     {agent.name}
@@ -570,7 +602,7 @@ function AgentDetailModal({
         <div className="p-6 pt-8">
           {/* Agent Header */}
           <div className="flex items-start gap-4 mb-6">
-            <span className="text-4xl">{agent.icon || '--'}</span>
+            <Avatar name={agent.name} size="xl" />
             <div>
               <h2 className="text-xl font-bold text-white">{agent.name}</h2>
               {agent.title && <p className="text-zinc-400 text-sm mt-0.5">{agent.title}</p>}
@@ -766,7 +798,7 @@ function SearchResultsView({
                 }}
                 className="card p-3 flex items-center gap-3 text-left hover:border-lime-400/20 transition-all cursor-pointer"
               >
-                <span className="text-xl">{item.icon}</span>
+                <Avatar name={item.name} size="sm" />
                 <span className="text-sm text-white flex-1 truncate">{item.name}</span>
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${TYPE_COLORS[item.type] ?? ''}`}>
                   {TYPE_LABELS[item.type] ?? item.type}

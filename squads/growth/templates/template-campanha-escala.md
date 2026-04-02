@@ -8,30 +8,28 @@
 
 Maximizar vendas e ROAS com os criativos winners validados nas campanhas de teste. Esta é a campanha que gera receita — aqui só entra o que já provou que funciona.
 
-**Meta:** Escalar volume de vendas mantendo CPA dentro do target e ROAS acima da meta.
+**Meta:** Escalar volume de vendas mantendo ROAS acima de 1.8x.
+
+**Regra fundamental:** Campanha de escala é **1-1-N**. 1 campanha, 1 ad set (Broad ADV+), N winners. Não testamos público — o Andromeda decide pra quem mostrar com base no criativo.
 
 ---
 
 ## 2. ESTRUTURA DA CAMPANHA
 
 ```
-CAMPANHA ESCALA (CBO)
-  Budget: Escalável (inicia R$X, cresce com performance)
+CAMPANHA ESCALA (CBO) — Estrutura 1-1-N
+  Budget: R$1.000/dia (inicial, escalável ±15%/dia)
   Objetivo: Sales (Purchase)
   │
-  ├── Ad Set 1 — Broad ADV+ (25-44)
-  │   ├── Winner 1 — Vídeo (melhor CPA)
-  │   ├── Winner 2 — Imagem (melhor ROAS)
-  │   ├── Winner 3 — Carrossel (bom volume)
-  │   ├── ...
-  │   └── Máximo 15 winners
-  │
-  ├── Ad Set 2 — Interesse específico (25-44) [opcional]
-  │   └── Top winners (mesmos ou seleção)
-  │
-  └── Ad Set 3 — LAL compradores (25-44) [opcional]
-      └── Top winners (mesmos ou seleção)
+  └── Ad Set 1 — Broad ADV+ (25-44) — ÚNICO ad set
+      ├── Winner 1 — (graduado da teste)
+      ├── Winner 2 — (graduado da teste)
+      ├── Winner 3 — (graduado da teste)
+      ├── ...
+      └── Mínimo 8, Máximo 15 winners
 ```
+
+**REGRA:** Sempre 1-1-N. Nunca criar múltiplos ad sets. O Andromeda é creative-first — criativo é o targeting.
 
 ### Configuração Técnica
 
@@ -39,9 +37,9 @@ CAMPANHA ESCALA (CBO)
 |-----------|-------|------------|
 | **Nome** | `ShopeeADS \| Escala \| DD-MM-YYYY` | 1 campanha permanente |
 | **Objetivo** | OUTCOME_SALES | Otimizar para compra |
-| **Tipo de Budget** | CBO | Andromeda distribui entre ad sets e ads |
-| **Budget Diário** | Escalável (ver seção 5) | Cresce conforme performance |
-| **Bid Strategy** | Highest Volume (Lowest Cost) | Quando estável, considerar Cost Cap |
+| **Tipo de Budget** | CBO | Andromeda distribui entre ads |
+| **Budget Diário** | R$1.000 (inicial) | Escalável ±15%/dia após dia 5 |
+| **Bid Strategy** | Highest Volume (Lowest Cost) | Sem cap — máximo de dados |
 | **Otimização** | Purchase (OFFSITE_CONVERSIONS) | Evento = compra |
 | **Atribuição** | 7-day click, 1-day view | Padrão Meta |
 | **Billing** | IMPRESSIONS | |
@@ -54,12 +52,10 @@ CAMPANHA ESCALA (CBO)
 | **Idade** | 25-44 anos |
 | **Gênero** | Todos |
 | **Localização** | Brasil |
-| **Público (Ad Set 1)** | Broad com Advantage+ Audience |
-| **Público (Ad Set 2)** | Interesse específico (muito diferente do broad) |
-| **Público (Ad Set 3)** | Lookalike 1% de compradores |
+| **Público** | Broad com Advantage+ Audience (ÚNICO) |
 | **Exclusão** | Compradores últimos 60 dias |
 
-**Regra de públicos:** Múltiplos ad sets SOMENTE se os públicos forem MUITO diferentes (sobreposição < 30%). Objetivo: evitar saturação de um único público. Se não tiver públicos diferentes validados, rodar só com Broad.
+**Regra:** Sempre 1 ad set, sempre Broad ADV+. Não testamos público — o Andromeda decide a audiência com base no criativo (Entity ID).
 
 ### Placements (Manual)
 
@@ -72,10 +68,10 @@ CAMPANHA ESCALA (CBO)
 - Facebook Reels
 
 **Excluídos:**
-- Audience Network (Classic e Rewarded)
-- Facebook Instream Video
-- Facebook Reels Overlay
-- Instagram Explore
+- Audience Network (Classic e Rewarded) — cliques acidentais
+- Facebook Instream Video — connect rate baixo
+- Facebook Reels Overlay — connect rate baixo
+- Instagram Explore — connect rate muito baixo
 - Threads, Messenger, Search, Marketplace, Notifications, Profile Feed
 
 ### Schedule
@@ -93,42 +89,41 @@ CAMPANHA ESCALA (CBO)
 
 | Regra | Valor |
 |-------|-------|
-| **Máximo** | 15 criativos |
-| **Mínimo** | 3 criativos |
+| **Máximo** | 15 winners |
+| **Mínimo** | 8 winners |
 | **Quem entra** | SOMENTE winners graduados das campanhas de teste |
-| **Mix** | Vídeo + Imagem + Carrossel (manter diversidade de formatos) |
+| **Mix** | Diversidade de formatos e ângulos (Andromeda suprime Entity IDs similares) |
 | **Prova social** | Todo winner entra com o MESMO Post ID (curtidas e comentários preservados) |
+| **Nomenclatura** | Segue o que estiver na pipeline |
+| **Copy** | Segue o que estiver na pipeline |
 
-### Critério de Entrada (Graduação)
+### Critério de Entrada (Graduação da Teste)
 
 Para entrar na escala, o criativo DEVE ter atingido na campanha de teste:
 
 | Critério | Valor |
 |----------|-------|
-| **CPA** | ≤ CPA target por 3-5 dias consecutivos |
-| **Compras** | 5+ compras |
-| **Impressões** | 1.000+ |
-| **Tendência** | CPA estável ou caindo |
+| **Compras** | **20+ compras** |
+| **ROAS** | **≥ 1.8x** |
 
 ### Processo de Entrada
 
 ```
-WINNER GRADUADO NA CAMPANHA DE TESTE
+WINNER GRADUADO NA CAMPANHA DE TESTE (20+ compras E ROAS ≥ 1.8x)
         │
         ▼
-1. Verificar se campanha de escala tem vaga (< 15 ads)
+Campanha de escala tem vaga? (< 15 winners)
         │
-   SIM → Duplica o criativo usando MESMO Post ID
-   │     (effective_object_story_id do post original)
-   │     Prova social compartilhada entre teste e escala
+   SIM → Duplica usando MESMO Post ID (prova social preservada)
+   │     Nomenclatura e copy seguem a pipeline
         │
-   NÃO → Escala tem 15 ads
+   NÃO → Escala está cheia (15 winners)
               │
               ▼
-         Comparar novo winner vs piores da escala
+         Comparar ROAS do novo winner vs piores da escala
               │
-         Novo tem CPA melhor? → Pausa o pior, entra o novo
-         Novo tem CPA pior?  → Não entra. Mantém no teste apenas
+         Novo tem ROAS melhor? → TROCA pelo pior (pausa o pior, entra o novo)
+         Novo tem ROAS pior?  → Não entra. Mantém no teste apenas
 ```
 
 ### Link de Destino
@@ -140,123 +135,113 @@ WINNER GRADUADO NA CAMPANHA DE TESTE
 
 ---
 
-## 4. KILL RULES — QUANDO PAUSAR NA ESCALA
+## 4. KILL RULES — QUANDO SAIR DA ESCALA
 
-### Regras de Pausa
+### Regra de Saída
 
-| # | Situação | Ação | Observação |
-|---|----------|------|------------|
-| 1 | CPA 50%+ acima do target por 5 dias | **PAUSA** | Na escala somos mais pacientes — o criativo já provou que funciona |
-| 2 | Frequência > 3.5 + CTR caindo | **PAUSA** | Saturação — criativo precisa de descanso |
-| 3 | CTR caiu 30%+ vs média histórica | **PAUSA** | Creative fatigue |
-| 4 | CPA 3x acima do target com 2.000+ imp | **ARQUIVA** | Não tem mais salvação |
+| Situação | Ação |
+|----------|------|
+| **ROAS abaixo de 1.3 por 5 dias SEGUIDOS** | **PAUSA** — sai da escala |
+| Frequência > 3.5 + CTR caindo | **PAUSA** — saturação |
 
-### Diferença das Kill Rules do Teste
+### Por que a tolerância é maior que na teste
 
 Na escala, a tolerância é **maior** porque:
-- O criativo já provou que converte
+- O criativo já provou que converte (20+ compras, ROAS ≥ 1.8x)
 - Pode ser uma flutuação temporária
 - Pausar winner na escala impacta receita diretamente
 
-| Kill Rule | Na Teste | Na Escala |
-|-----------|----------|-----------|
-| 2x CPA sem conversão | Pausa imediato | Monitora 48h (já converteu antes) |
-| CPA acima do target | 3-5 dias | 5 dias |
-| Frequência | > 3.0 | > 3.5 |
-
-### Pausar vs Arquivar na Escala
+### Pausar vs Arquivar
 
 | Ação | Quando |
 |------|--------|
-| **PAUSAR** | Saturação temporária, CPA subiu mas pode voltar, frequência alta |
-| **ARQUIVAR** | CPA 3x target com 2.000+ imp, pausado 2+ semanas, conceito superado |
+| **PAUSAR** | ROAS < 1.3 por 5 dias, saturação, frequência alta |
+| **ARQUIVAR** | Ficou pausado 2+ semanas sem reuso. Conceito superado por novos |
 
 **Nota:** Um winner pausado pode VOLTAR se o público tiver tempo de "esfriar" (2-3 semanas). Não arquive rápido demais.
 
 ---
 
-## 5. REGRAS DE BUDGET — QUANDO ESCALAR
+## 5. REGRAS DE BUDGET
 
-### Regra dos 20-30%
+### Budget Inicial: R$1.000/dia
 
-**Nunca aumentar mais de 30% de uma vez.** Aumentos maiores resetam a fase de aprendizado do Andromeda. O algoritmo precisa reaprender com o novo volume de budget, causando instabilidade de 2-3 dias.
+### Dias 1-5: NÃO MEXER EM NADA
 
-### Dias 1-5: INTOCÁVEL
-Não mexer no budget. Andromeda está aprendendo. Sem exceções.
+Nos primeiros 5 dias da campanha, **não mexer em absolutamente nada**:
+- Não alterar budget
+- Não pausar winners
+- Não adicionar winners
+- Não mudar público
+- Não mudar placements
+- **NADA. Esperar os 5 dias.**
 
-### Dia 6+: Otimização DIÁRIA (±15%)
+### Dia 6+: Ajuste de ±15%/dia
 
-Olhar CPA MÉDIO dos últimos 3 dias para decidir:
+Olhar ROAS MÉDIO dos últimos 3 dias para decidir:
 
-| CPA médio últimos 3 dias | Ação |
-|--------------------------|------|
-| ≤ CPA target | **SOBE +15%** |
-| Pouco acima (+10-20%) | **MANTÉM** |
-| Muito acima (+20-50%) | **DESCE -15%** |
-| Disparou (+50%+) | **DESCE -15%** e investiga causa |
+| ROAS médio últimos 3 dias | Ação |
+|---------------------------|------|
+| ≥ 1.8x (acima do target) | **SOBE +15%** |
+| 1.5x - 1.8x (ok) | **MANTÉM** |
+| 1.3x - 1.5x (abaixo) | **DESCE -15%** |
+| < 1.3x | **DESCE -15%** e investiga causa |
 
 ### Exceções — NÃO mexer no budget se:
+
 | Situação | Ação | Por quê |
 |----------|------|---------|
-| Acabou de subir winners novos | **ESPERA 7 dias** | Andromeda testando novos |
-| Acabou de pausar criativos | **ESPERA 3-5 dias** | CBO recalibrando |
-
-### Janelas de Análise
-
-| Decisão | Janela |
-|---------|--------|
-| **Budget (subir/descer)** | Últimos 3 dias |
-| **Kill rule de criativo** | Últimos 5 dias |
-| **Análise semanal** | Últimos 7 dias |
+| Acabou de subir winners novos | **ESPERA 7 dias** | Andromeda testando novos Entity IDs |
+| Acabou de pausar winners | **ESPERA 3-5 dias** | CBO recalibrando distribuição |
 
 ### Exemplo Prático de Escala
 
 ```
-Dia 1:  R$500/dia — Campanha lançada com winners
-Dia 2-5: INTOCÁVEL (aprendizado)
-Dia 6:  CPA 3d ok → R$575 (+15%)
-Dia 7:  CPA 3d ok → R$661 (+15%)
-Dia 8:  CPA 3d subiu → MANTÉM R$661
-Dia 9:  CPA 3d piorou → R$562 (-15%)
-Dia 10: CPA 3d estabilizou → R$646 (+15%)
+Dia 1:  R$1.000/dia — Campanha lançada com winners
+Dia 2-5: INTOCÁVEL (não mexer em nada)
+Dia 6:  ROAS 3d ≥ 1.8x → R$1.150 (+15%)
+Dia 7:  ROAS 3d ≥ 1.8x → R$1.322 (+15%)
+Dia 8:  ROAS 3d caiu pra 1.6x → MANTÉM R$1.322
+Dia 9:  ROAS 3d caiu pra 1.4x → R$1.124 (-15%)
+Dia 10: ROAS 3d subiu pra 1.9x → R$1.293 (+15%)
 ...e assim por diante
 ```
 
-**Regra: Nunca mais que 15% por dia. Nunca mexer nos dias 1-5.**
+**Regra: Nunca mais que ±15% por dia. Nunca mexer em nada nos dias 1-5.**
 
 ---
 
 ## 6. DISTRIBUIÇÃO DE VERBA — QUANDO 1 CRIATIVO DOMINA
 
-### Cenário 1: Dominando + CPA Bom ✅
+### Cenário 1: Dominando + ROAS Bom
 
-- 1 criativo consome 70%+ da verba
-- CPA dentro do target, ROAS bom
+- 1 winner consome 70%+ da verba
+- ROAS acima de 1.8x
 - **Ação: NÃO MEXE**
-- CBO está funcionando corretamente. Algoritmo coloca dinheiro onde dá resultado
+- CBO está funcionando corretamente. Andromeda coloca dinheiro onde dá resultado
 
-### Cenário 2: Dominando + CPA Subindo ⚠️
+### Cenário 2: Dominando + ROAS Caindo
 
-- 1 criativo consome 80%+ da verba
-- CPA subindo há 3 dias, frequência > 3
-- **Ação: SOBE WINNERS NOVOS da teste**
+- 1 winner consome 80%+ da verba
+- ROAS caindo há 3 dias, frequência > 3
+- **Ação: TRAZ WINNERS NOVOS da teste**
   1. NÃO pausa o dominante (ainda é o melhor)
   2. Traz 2-3 winners novos da campanha de teste
-  3. Andromeda testa automaticamente
+  3. Andromeda testa os novos Entity IDs automaticamente
   4. CBO redistribui se novo ganhar
 
-### Cenário 3: Novos NÃO Pegam Tração 🚨
+### Cenário 3: Novos NÃO Pegam Tração
 
-- 1 criativo consome 85%+ da verba
+- 1 winner consome 85%+ da verba
 - Winners novos recebem quase 0 impressão
 - **Ação ESCALONADA:**
-  1. Verificar se novos são REALMENTE diferentes (ângulo, formato, copy)
-  2. Se sim: sobe budget +20% (mais $$ = mais exploração pelo Andromeda)
-  3. Último recurso: criar 2º ad set com os novos winners
+  1. Verificar se novos são REALMENTE diferentes (Entity ID distinto — ângulo, formato, persona)
+  2. Se são similares: Andromeda está suprimindo. Criar conceitos genuinamente diferentes
+  3. Se são diferentes: sobe budget +15% (mais $$ = mais exploração pelo Andromeda)
 
 ### Regra de Ouro
 
-Um criativo dominando a verba com CPA bom **NÃO é problema** — é o algoritmo funcionando. Só vira problema quando o CPA começa a subir. Aí o sinal é: traz winners novos da teste, não mexe no dominante.
+Um criativo dominando a verba com ROAS bom **NÃO é problema** — é o Andromeda funcionando. Só vira problema quando o ROAS começa a cair. Aí o sinal é: traz winners novos da teste com Entity IDs diferentes, não mexe no dominante.
 
 ---
 
@@ -266,50 +251,31 @@ Um criativo dominando a verba com CPA bom **NÃO é problema** — é o algoritm
 
 | Frequência | Status | Ação |
 |-----------|--------|------|
-| 1.0 - 2.0 | **SAUDÁVEL** | Manter, pode escalar |
-| 2.0 - 3.0 | **ATENÇÃO** | Monitorar, garantir pipeline de novos criativos |
-| 3.0 - 3.5 | **PREPARAR** | Trazer novos winners da teste, começar rotação |
-| 3.5+ | **AÇÃO** | Se CTR caindo → PAUSA o criativo saturado |
+| 1.0 - 2.0 | **SAUDÁVEL** | Manter, pode escalar budget |
+| 2.0 - 3.0 | **ATENÇÃO** | Monitorar, garantir pipeline de novos winners na teste |
+| 3.0 - 3.5 | **PREPARAR** | Trazer winners novos da teste (conceitos diferentes) |
+| 3.5+ | **AÇÃO** | Se CTR caindo → PAUSA o winner saturado |
 
 ### Como Combater Saturação na Escala
 
-1. **Criativos novos** — trazer winners frescos da campanha de teste
-2. **Públicos diferentes** — adicionar ad set com público novo (muito diferente)
-3. **Pausar e descansar** — winner saturado pode voltar após 2-3 semanas
-4. **Nunca:** aumentar budget pra "forçar" um criativo saturado
+1. **Winners novos** — trazer winners frescos da campanha de teste (Entity IDs diferentes)
+2. **Pausar e descansar** — winner saturado pode voltar após 2-3 semanas
+3. **Nunca:** aumentar budget pra "forçar" um criativo saturado
+4. **Nunca:** criar novo ad set com público diferente (somos 1-1-N)
+
+**Lembrete Andromeda:** Saturação acontece quando o Entity ID esgotou o cluster de audiência. A solução é SEMPRE trazer conceitos genuinamente novos (Entity IDs distintos), não mudar público.
 
 ---
 
-## 8. PÚBLICOS NA ESCALA
-
-### Estrutura de Públicos
-
-A campanha de escala pode ter múltiplos ad sets com públicos MUITO diferentes para evitar saturação:
-
-| Ad Set | Público | Quando adicionar |
-|--------|---------|-----------------|
-| **Principal** | Broad ADV+ (25-44) | Sempre ativo |
-| **Interesse** | Interesse específico validado | Quando broad saturar |
-| **LAL** | Lookalike 1% de compradores | Quando tiver base de compradores |
-
-### Regras de Públicos
-
-- **Sobreposição máxima:** 30% entre ad sets. Se passar disso, consolidar
-- **Cada público novo** = teste. Monitorar CPA separado por ad set
-- **Se ad set novo tem CPA 2x do principal** por 7 dias → pausar
-- **CBO distribui** — não forçar budget por ad set. Deixar o algoritmo decidir
-
----
-
-## 9. CICLO DE VIDA DO WINNER NA ESCALA
+## 8. CICLO DE VIDA DO WINNER NA ESCALA
 
 | Fase | Sinais | Ação |
 |------|--------|------|
-| **Entrada** | Winner graduado da teste, prova social preservada | Monitorar primeiros 3-5 dias |
-| **Performance** | CPA estável, ROAS bom, recebendo budget do CBO | Manter. Escalar budget se consistente |
-| **Saturação** | Frequência subindo, CTR caindo | Trazer novos winners da teste |
-| **Declínio** | CPA acima do target por 5 dias | Pausa. Pode voltar após 2-3 semanas |
-| **Morte** | CPA 3x target, sem recuperação | Arquiva |
+| **Entrada** | Winner graduado da teste (20+ compras, ROAS ≥ 1.8x), prova social preservada | Monitorar primeiros 5 dias (não mexer em nada) |
+| **Performance** | ROAS estável ≥ 1.8x, recebendo budget do CBO | Manter. Escalar budget se consistente |
+| **Saturação** | Frequência subindo, CTR caindo, ROAS entre 1.3-1.8x | Trazer novos winners da teste |
+| **Declínio** | ROAS < 1.3 por 5 dias seguidos | **PAUSA** |
+| **Morte** | Pausado 2+ semanas sem reuso | **ARQUIVA** |
 
 ### Pipeline Contínuo
 
@@ -319,49 +285,50 @@ A escala depende de um **fluxo contínuo de winners** da campanha de teste. Se a
 
 ---
 
-## 10. CHECKLIST DIÁRIO — CAMPANHA DE ESCALA
+## 9. CHECKLIST DIÁRIO — CAMPANHA DE ESCALA
 
-### Manhã (10 min)
+### Dias 1-5: APENAS OBSERVAR (não mexer em nada)
 
-1. **CPA geral** — Está no target? Comparar com ontem e média 7 dias
-2. **ROAS geral** — Acima da meta? Tendência subindo ou caindo?
-3. **Budget gastou ontem?** — Se não gastou 90%+, verificar entrega
-4. **Algum winner bateu kill rule?** — Verificar CPA individual de cada criativo
-5. **Distribuição de verba** — 1 criativo domina? CPA dele está bom?
+1. **Métricas gerais** — Anotar ROAS, CPA, CTR para referência
+2. **Entrega** — Winners estão recebendo impressões? (só observar)
+3. **NÃO MEXER** — Sem pausas, sem adições, sem alterações
 
-### Tarde (10 min)
+### Dia 6+ Manhã (10 min)
 
-6. **Frequência dos top criativos** — Algum acima de 3.0?
-7. **Winners novos para entrar?** — Algum criativo graduado na teste pronto?
-8. **Decisão de budget** — CPA estável 5+ dias? Considerar +20-30%
-9. **Saúde dos ad sets** — Se múltiplos públicos, comparar CPA entre eles
+1. **ROAS geral** — Está acima de 1.8x? Comparar com ontem e média 3 dias
+2. **Kill rule** — Algum winner com ROAS < 1.3 por 5 dias seguidos? → PAUSA
+3. **Distribuição de verba** — 1 winner domina? ROAS dele está bom?
+4. **Frequência dos top winners** — Algum acima de 3.0?
+
+### Dia 6+ Tarde (10 min)
+
+5. **Winners novos para entrar?** — Algum criativo graduado na teste (20+ compras, ROAS ≥ 1.8x)?
+6. **Decisão de budget** — ROAS médio 3 dias ≥ 1.8x? Considerar +15%
+7. **Pipeline** — Quantos winners prontos na teste para graduar?
 
 ### Checklist Semanal (Segunda-feira, 30 min)
 
-- **Performance 7 dias:** CPA, ROAS, volume vs semana anterior
-- **Saúde dos criativos:** Quantos winners ativos? Quantos saturando? Quantos novos entraram?
-- **Frequência:** Tendência de saturação?
+- **Performance 7 dias:** ROAS, CPA, volume vs semana anterior
+- **Saúde dos winners:** Quantos ativos? Quantos saturando? Quantos novos entraram?
+- **Frequência:** Tendência de saturação? Algum Entity ID esgotando?
 - **Budget:** Momento de escalar ou manter?
 - **Pipeline:** Quantos winners prontos na teste para graduar?
 - **Limpeza:** Winners pausados há 2+ semanas → arquivar
 
 ---
 
-## 11. METAS E BENCHMARKS
+## 10. METAS E BENCHMARKS
 
-| Métrica | Target | Aceitável | Alerta | Kill |
-|---------|--------|-----------|--------|------|
-| **CPA** | A definir | +30% target | +50% target (3 dias) | 3x target |
-| **ROAS** | A definir | -20% target | < 1.2x (3 dias) | < 1.0x (5 dias) |
-| **Connect Rate** | > 80% | > 70% | < 70% | < 60% |
-| **Frequência** | < 2.0 | < 3.0 | > 3.0 | > 3.5 + CTR caindo |
-| **CTR** | > 1.2% | > 0.8% | Queda 20% | Queda 30%+ |
-
-**Nota:** CPA e ROAS targets serão calibrados com os dados das primeiras 2 semanas da nova operação.
+| Métrica | Target | Aceitável | Kill |
+|---------|--------|-----------|------|
+| **ROAS** | ≥ 1.8x | ≥ 1.5x | < 1.3x por 5 dias seguidos |
+| **Connect Rate** | > 80% | > 70% | < 60% |
+| **Frequência** | < 2.0 | < 3.0 | > 3.5 + CTR caindo |
+| **CTR** | > 1.2% | > 0.8% | Queda 30%+ |
 
 ---
 
-## 12. NOMENCLATURA
+## 11. NOMENCLATURA
 
 ### Campanha
 `ShopeeADS | Escala | DD-MM-YYYY`
@@ -369,32 +336,26 @@ A escala depende de um **fluxo contínuo de winners** da campanha de teste. Se a
 Exemplo: `ShopeeADS | Escala | 01-04-2026`
 
 ### Ad Set
-`[Tipo Público] | [Detalhe]`
+`Broad ADV+ | 25-44`
 
-Exemplos:
-- `Broad ADV+ | 25-44`
-- `Interesse | E-commerce`
-- `LAL 1% | Compradores`
+Sempre esse. Não muda.
 
 ### Ad
-**Exatamente o nome do criativo original** (mantém o mesmo nome da teste)
-
-Exemplos:
-- `AD170 | Vídeo | Shopee Ads`
-- `AD171 | Imagem | Shopee Ads`
-- `AD172 | Carrossel | Shopee Ads`
+**Seguir exatamente o que estiver na pipeline.** Nome e copy vêm da pipeline — não inventar.
 
 ---
 
-## 13. REGRAS DE SEGURANÇA
+## 12. REGRAS DE SEGURANÇA
 
 ### O que NUNCA fazer na campanha de escala
 
-1. **Nunca subir criativo não testado** — só winners da teste
-2. **Nunca aumentar budget mais de 30%** — reseta aprendizado
-3. **Nunca pausar winner que está vendendo** só porque tem CPA um pouco acima
-4. **Nunca mudar público sem monitorar** — sempre testar em ad set separado
-5. **Nunca mexer em muita coisa ao mesmo tempo** — 1 mudança por vez, esperar resultado
+1. **Nunca subir criativo não testado** — só winners da teste (20+ compras, ROAS ≥ 1.8x)
+2. **Nunca ajustar budget mais de ±15%/dia** — reseta aprendizado do Andromeda
+3. **Nunca mexer em nada nos dias 1-5** — Andromeda calibrando Entity IDs
+4. **Nunca criar múltiplos ad sets** — sempre 1-1-N
+5. **Nunca pausar winner que está vendendo** só porque ROAS caiu um pouco
+6. **Nunca mudar público** — sempre Broad ADV+ 25-44
+7. **Nunca mexer em muita coisa ao mesmo tempo** — 1 mudança por vez, esperar resultado
 
 ### O que SEMPRE fazer
 
@@ -403,14 +364,15 @@ Exemplos:
 3. **Sempre manter pipeline** — sem novos winners a escala morre
 4. **Sempre reportar o que está ruim** com a mesma energia do que está bom
 5. **Sempre comparar com período anterior** — nunca olhar métrica isolada
+6. **Sempre seguir nomenclatura e copy da pipeline**
 
 ---
 
-## 14. CHECKLIST DE COMPLIANCE — OBRIGATÓRIO ANTES DE QUALQUER AÇÃO
+## 13. CHECKLIST DE COMPLIANCE — OBRIGATÓRIO ANTES DE QUALQUER AÇÃO
 
 ### Regra Absoluta
 
-**ANTES de criar campanha de escala, adicionar winner, ajustar budget ou qualquer operação na Meta**, o Léo DEVE consultar internamente a base de conhecimento e validar compliance. NÃO executar sem passar por este checklist.
+**ANTES de adicionar winner, ajustar budget ou qualquer operação na Meta**, o Léo DEVE consultar internamente a base de conhecimento e validar compliance. NÃO executar sem passar por este checklist.
 
 ### Base de Conhecimento (consultar SEMPRE)
 
@@ -418,31 +380,29 @@ Exemplos:
 |-----------|----------------|
 | `meta-policy-kb.md` | Regras gerais de política, copy, personal attributes, claims |
 | `meta-policy-kb-antiban.md` | Limites de escalada, billing, saúde da conta |
-| `meta-policy-kb-tecnico.md` | Learning phase, ad review, Advantage+, CBO/ABO |
+| `meta-policy-kb-tecnico.md` | Learning phase, ad review, Advantage+, CBO |
 | `meta-policy-kb-api-reference.md` | Endpoints, parâmetros, enums, specs, CAPI |
 | `meta-policy-kb-developers-deep.md` | Rate limits, error handling, batch requests |
 | `meta-policy-kb-advanced.md` | Regras avançadas, edge cases |
-| `ANDROMEDA_GEM_GUIDE.md` | Distribuição Andromeda, auction dynamics |
+| `ANDROMEDA_GEM_GUIDE.md` | Distribuição Andromeda, Entity ID, supressão de criativos |
 | `META_ADS_ML_INFRASTRUCTURE.md` | ML pipeline, learning phase internals |
 
-### Checklist Pré-Escala
+### Checklist Pré-Entrada de Winner
 
-- [ ] **Winner validado?** 5+ compras, CPA ≤ target por 3+ dias, 1.000+ imp
+- [ ] **Winner validado?** 20+ compras E ROAS ≥ 1.8x na teste
 - [ ] **Post ID preservado?** Usar effective_object_story_id (prova social)
-- [ ] **Budget não salta > 30%?** Reseta learning (meta-policy-kb-antiban.md seção 2)
-- [ ] **Dias 1-5 intocável?** Não mexer no budget da campanha nova
-- [ ] **Ad set com 50 eventos?** Não escalar antes de sair do learning
+- [ ] **Entity ID diferente?** Conceito genuinamente distinto dos winners atuais (Andromeda suprime similares)
 - [ ] **Copy compliance?** Sem personal attributes, sem claims sem disclaimer
+- [ ] **Nomenclatura e copy da pipeline?** Seguir exatamente o que estiver lá
 - [ ] **Rate limit?** Max 60 escritas/hora, delay entre operações
-- [ ] **Targeting correto?** Advantage+ age 18-65 como hard + 25-44 como sugestão
 
-### Checklist Pré-Ajuste de Budget na Escala
+### Checklist Pré-Ajuste de Budget
 
-- [ ] **Janela de 3 dias?** Decisão baseada em CPA médio últimos 3 dias
-- [ ] **Máx ±15% por dia?** Nunca mais que isso
+- [ ] **Não está nos dias 1-5?** Se sim, NÃO MEXER em nada
+- [ ] **Máx ±15%/dia?** Nunca mais que isso
+- [ ] **ROAS médio 3 dias?** Base pra decisão
 - [ ] **Acabou de subir winner novo?** Esperar 7 dias antes de mexer
-- [ ] **Acabou de pausar criativo?** Esperar 3-5 dias (CBO recalibrando)
-- [ ] **Não está no learning?** Verificar se ad set tem 50+ eventos
+- [ ] **Acabou de pausar winner?** Esperar 3-5 dias (CBO recalibrando)
 
 ### Se em Dúvida
 
@@ -454,4 +414,4 @@ Exemplos:
 ---
 
 *Template criado por Léo — Gestor de Tráfego | Zape Ecomm*
-*Baseado no Manual Operacional Meta Ads 2026 + diretrizes da gerente de conta Meta*
+*Baseado no Manual Operacional Meta Ads 2026 + Andromeda/GEM + diretrizes do Neto*

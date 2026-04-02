@@ -8,30 +8,28 @@
 
 Testar novos criativos (vídeo, imagem e carrossel) com diferentes ângulos e copies para descobrir winners que serão graduados para a campanha de escala.
 
-**Meta:** Encontrar criativos com CPA ≤ target e ROAS ≥ meta em tempo mínimo.
+**Meta:** Encontrar criativos com ROAS ≥ 1.8x e 20+ compras para graduar como winner.
+
+**Regra fundamental:** Campanha de teste testa **CRIATIVOS, não públicos**. Sempre 1 campanha, 1 ad set, N ads.
 
 ---
 
 ## 2. ESTRUTURA DA CAMPANHA
 
 ```
-CAMPANHA TESTE [Nº] (CBO)
-  Budget: R$1.000/dia
+CAMPANHA TESTE [Nº] (CBO) — Estrutura 1-1-N
+  Budget: R$800/dia (FIXO — nunca alterar)
   Objetivo: Sales (Purchase)
   │
-  ├── Ad Set 1 — Broad ADV+ (25-44)
-  │   ├── Ad 1 — Vídeo (ângulo A)
-  │   ├── Ad 2 — Imagem (ângulo B)
-  │   ├── Ad 3 — Carrossel (ângulo C)
-  │   ├── ...
-  │   └── Máximo 15 criativos
-  │
-  ├── Ad Set 2 — Interesse específico (25-44) [opcional]
-  │   └── Top criativos da campanha
-  │
-  └── Ad Set 3 — LAL compradores (25-44) [opcional]
-      └── Top criativos da campanha
+  └── Ad Set 1 — Broad ADV+ (25-44) — ÚNICO ad set
+      ├── Ad 1 — Vídeo (ângulo A)
+      ├── Ad 2 — Imagem (ângulo B)
+      ├── Ad 3 — Carrossel (ângulo C)
+      ├── ...
+      └── Mínimo 8, Máximo 15 criativos
 ```
+
+**REGRA:** Sempre 1-1-N. Nunca criar múltiplos ad sets. Não testamos público — testamos criativo.
 
 ### Configuração Técnica
 
@@ -40,7 +38,7 @@ CAMPANHA TESTE [Nº] (CBO)
 | **Nome** | `ShopeeADS \| Teste [Nº] \| DD-MM-YYYY` | Número sequencial |
 | **Objetivo** | OUTCOME_SALES | Otimizar para compra |
 | **Tipo de Budget** | CBO | Andromeda distribui automaticamente |
-| **Budget Diário** | R$1.000 | Fixo por campanha de teste |
+| **Budget Diário** | R$800 | **FIXO — nunca alterar** |
 | **Bid Strategy** | Highest Volume (Lowest Cost) | Sem cap — máximo de dados |
 | **Otimização** | Purchase (OFFSITE_CONVERSIONS) | Evento = compra |
 | **Atribuição** | 7-day click, 1-day view | Padrão Meta |
@@ -54,12 +52,10 @@ CAMPANHA TESTE [Nº] (CBO)
 | **Idade** | 25-44 anos |
 | **Gênero** | Todos |
 | **Localização** | Brasil |
-| **Público (Ad Set 1)** | Broad com Advantage+ Audience |
-| **Público (Ad Set 2)** | Interesse específico (muito diferente do broad) |
-| **Público (Ad Set 3)** | Lookalike 1% de compradores |
+| **Público** | Broad com Advantage+ Audience (ÚNICO) |
 | **Exclusão** | Compradores últimos 60 dias |
 
-**Regra de públicos:** Só criar múltiplos ad sets se os públicos forem MUITO diferentes entre si (sobreposição < 30%). Se não tiver LAL ou interesse validado, rodar só com Broad.
+**Regra:** Sempre 1 ad set, sempre Broad ADV+. Não testamos público — testamos criativo.
 
 ### Placements (Manual)
 
@@ -80,6 +76,11 @@ CAMPANHA TESTE [Nº] (CBO)
 
 ### Schedule
 
+| Tipo | Início |
+|------|--------|
+| **Campanha NOVA** | Dia seguinte às **00:03** |
+| **Criativos novos** (em campanha existente) | **Imediato** |
+
 | Horário | Status |
 |---------|--------|
 | 00h-07h | **OFF** — CPA 2-3x maior na madrugada |
@@ -94,7 +95,7 @@ CAMPANHA TESTE [Nº] (CBO)
 | Regra | Valor |
 |-------|-------|
 | **Máximo por campanha** | 15 criativos |
-| **Mínimo por campanha** | 3 criativos |
+| **Mínimo por campanha** | 8 criativos |
 | **Mix obrigatório** | Vídeo + Imagem + Carrossel |
 | **Variação de ângulo** | Cada criativo DEVE ter ângulo diferente |
 | **Variação de texto** | Copies diferentes — texto primário, headline, descrição |
@@ -134,25 +135,31 @@ O texto (copy primário, headline, descrição) faz tanta diferença quanto o vi
 ### Fluxo de Upload
 
 ```
-Criativo pronto para subir
+Criativos prontos para subir (ex: 8 novos)
         │
         ▼
-Campanha de teste atual tem vaga? (< 15 ads)
+Campanha de teste atual tem vagas? (< 15 ads)
         │
-   SIM → Sobe o criativo como novo ad na campanha atual
+   SIM → Quantas vagas? (ex: campanha tem 14 ads → 1 vaga)
         │
-   NÃO → Tem criativo ruim para pausar? (kill rule batida)
-              │
-         SIM → Pausa o pior, abre vaga, sobe o novo
-              │
-         NÃO → Todos performando, não dá para pausar
-                    │
-                    ▼
-              CRIA NOVA CAMPANHA DE TESTE
+        ├── Vagas suficientes pra todos? → Sobe todos
+        │
+        └── Vagas INSUFICIENTES? (ex: 1 vaga pra 8 criativos)
+                │
+                ▼
+           Sobe apenas o que CABE na campanha atual (ex: 1)
+           Os restantes (ex: 7) → CRIA NOVA CAMPANHA DE TESTE
+           Nome: ShopeeADS | Teste [Nº+1] | DD-MM-YYYY
+           Mesma config (CBO, R$800, 25-44, placements)
+           Nova campanha inicia no DIA SEGUINTE às 00:03
+        │
+   NÃO (0 vagas) → CRIA NOVA CAMPANHA DE TESTE
               Nome: ShopeeADS | Teste [Nº+1] | DD-MM-YYYY
-              Mesma config (CBO, R$1.000, 25-44, placements)
-              Sobe o criativo nela
+              Mesma config (CBO, R$800, 25-44, placements)
+              Nova campanha inicia no DIA SEGUINTE às 00:03
 ```
+
+**REGRA CRÍTICA:** Nunca pausar criativo ativo para abrir vaga. Se não tem vaga, cria nova campanha. Novos criativos adicionados em campanha EXISTENTE iniciam **imediatamente**. Campanha NOVA inicia no **dia seguinte às 00:03**.
 
 ### Regras de Upload
 
@@ -193,29 +200,23 @@ Campanha de teste atual tem vaga? (< 15 ads)
 
 ### Critérios para Graduação
 
-O criativo se torna winner quando atinge TODOS os critérios:
+O criativo se torna winner quando atinge **TODOS** os critérios:
 
 | Critério | Valor |
 |----------|-------|
-| **CPA** | ≤ CPA target por 3-5 dias consecutivos |
-| **Compras mínimas** | 5+ compras |
-| **Impressões** | 1.000+ impressões |
-| **Tendência** | CPA estável ou caindo (não subindo) |
+| **Compras** | **20+ compras** |
+| **ROAS** | **≥ 1.8x** |
 
 ### Processo de Graduação
 
 ```
-WINNER IDENTIFICADO NA CAMPANHA TESTE
+WINNER IDENTIFICADO NA CAMPANHA TESTE (20+ compras E ROAS ≥ 1.8x)
         │
         ▼
-1. NÃO pausa no teste → mantém rodando
-2. Duplica para campanha de escala usando MESMO Post ID
-   → Prova social (curtidas, comentários) compartilhada
-3. Criativo roda nas duas campanhas simultaneamente
-4. Winner SÓ sai do teste SE:
-   - Campanha teste atingiu 15 ads e precisa de vaga
-   - E esse winner é o de MENOR performance entre os ativos
-   - Aí pausa o pior, não necessariamente o winner
+1. Usa o MESMO Post ID (effective_object_story_id)
+   → Mantém prova social (curtidas, comentários)
+2. Move para a PIPELINE WINNER (campanha de escala)
+3. Nomenclatura e copy seguem o que estiver na pipeline
 ```
 
 ### Duplicar com Prova Social
@@ -223,27 +224,26 @@ WINNER IDENTIFICADO NA CAMPANHA TESTE
 Para manter curtidas e comentários ao levar para a escala:
 - Usar o **mesmo Post ID** (`effective_object_story_id`)
 - NÃO criar creative novo do zero
-- Referencia o post original — prova social aparece nas duas campanhas
+- Referencia o post original — prova social aparece na campanha de escala
 
 ---
 
 ## 7. QUANDO CRIAR NOVA CAMPANHA DE TESTE
 
 ### Criar quando:
-- Campanha atual tem 15 criativos ativos
-- Não tem nenhum criativo ruim para pausar (todos performando)
-- Tem novos criativos prontos para subir
+- Campanha atual não tem vagas suficientes para os criativos novos
+- Tem novos criativos prontos para subir e campanha atual está cheia (15 ads)
 
 ### NÃO criar quando:
-- Dá para abrir vaga pausando criativo que bateu kill rule
+- Ainda tem vagas na campanha atual
 - Não tem criativos novos prontos
-- Já tem 3+ campanhas de teste (avaliar se pipeline está muito acima da capacidade)
 
 ### Config da nova campanha
 - Exatamente a mesma configuração da anterior
 - Nome: `ShopeeADS | Teste [próximo número] | DD-MM-YYYY`
-- Budget: R$1.000/dia
-- Mesmos públicos, placements, schedule
+- Budget: R$800/dia (FIXO — nunca alterar)
+- Mesmo público (Broad ADV+ 25-44), placements, schedule
+- **Início:** Dia seguinte às 00:03
 
 ---
 
@@ -280,45 +280,53 @@ Para manter curtidas e comentários ao levar para a escala:
 
 ## 10. CHECKLIST DIÁRIO — CAMPANHA DE TESTE
 
-### Manhã (10 min)
+### Dias 1-5: APENAS OBSERVAR (não mexer em nada)
 
-1. **CPA geral da campanha** — Está no target? Comparar com ontem e média 7 dias
-2. **Kill rules** — Algum criativo bateu kill rule? → PAUSA
-3. **Criativos novos pegaram tração?** — Se subiu conceitos novos, verificar se estão recebendo impressões
-4. **Frequência** — Algum criativo acima de 3.0? Atenção
+1. **Métricas gerais** — Anotar CPA, ROAS, CTR para referência
+2. **Entrega** — Criativos estão recebendo impressões? (só observar)
+3. **NÃO MEXER** — Sem pausas, sem adições, sem alterações
 
-### Tarde (10 min)
+### Dia 6+ Manhã (10 min)
 
-5. **Budget gastando?** — Se não gastou 80% até 18h, verificar entrega
-6. **Winners para graduar?** — Algum criativo atingiu critérios de graduação? → Duplicar para escala
-7. **Pipeline** — Tem conceitos novos prontos? Se não, acionar Max/Maicon/Thomas
-8. **Vaga disponível?** — Se tem criativos novos prontos e campanha lotou, decidir: pausar pior ou criar nova teste
+1. **Kill rules** — Algum criativo bateu kill rule? → PAUSA
+2. **Criativos novos pegaram tração?** — Se subiu conceitos novos, verificar se estão recebendo impressões
+3. **Frequência** — Algum criativo acima de 3.0? Atenção
+
+### Dia 6+ Tarde (10 min)
+
+4. **Winners para graduar?** — Algum criativo atingiu 20+ compras E ROAS ≥ 1.8x? → Graduar para pipeline winner
+5. **Pipeline** — Tem conceitos novos prontos? Se não, acionar Max/Maicon/Thomas
+6. **Vaga disponível?** — Se tem criativos novos e campanha lotou → criar nova campanha de teste
 
 ---
 
 ## 11. REGRAS DE BUDGET — CAMPANHA DE TESTE
 
-### Dias 1-5: INTOCÁVEL
-Não mexer no budget. Andromeda está aprendendo. Sem exceções.
+### Budget: R$800/dia — FIXO, NUNCA ALTERAR
 
-### Dia 6+: Otimização DIÁRIA (±15%)
+O budget da campanha de teste é **R$800/dia** e **nunca muda**. Não existe otimização de budget em campanha de teste. O objetivo é testar criativos, não otimizar gasto.
 
-| CPA médio últimos 3 dias | Ação |
-|--------------------------|------|
-| ≤ CPA target | **SOBE +15%** |
-| Pouco acima (+10-20%) | **MANTÉM** |
-| Muito acima (+20-50%) | **DESCE -15%** |
-| Disparou (+50%+) | **DESCE -15%** e investiga causa |
+### Dias 1-5: NÃO MEXER EM NADA
 
-### Janelas de Análise
+Nos primeiros 5 dias da campanha, **não mexer em absolutamente nada**:
+- Não alterar budget
+- Não pausar criativos
+- Não adicionar criativos
+- Não mudar público
+- Não mudar placements
+- **NADA. Esperar os 5 dias.**
+
+### Dia 6+: Análise de Criativos
+
+A partir do dia 6, analisar performance dos **criativos** (não do budget):
 
 | Decisão | Janela |
 |---------|--------|
-| **Budget (subir/descer)** | Últimos 3 dias |
 | **Kill rule de criativo** | Últimos 5 dias |
 | **Análise semanal** | Últimos 7 dias |
+| **Graduação** | Acumulado (20+ compras, ROAS ≥ 1.8x) |
 
-### Regra: Nunca mais que 15% por dia. Nunca mexer nos dias 1-5.
+### Regra: Budget é FIXO em R$800. Nunca mexer em nada nos dias 1-5.
 
 ---
 
@@ -327,7 +335,7 @@ Não mexer no budget. Andromeda está aprendendo. Sem exceções.
 | Métrica | Target | Aceitável | Kill |
 |---------|--------|-----------|------|
 | **CPA** | A definir com dados novos | +30% do target | 2x target sem conversão |
-| **ROAS** | A definir com dados novos | -20% do target | < 1.0x por 5 dias |
+| **ROAS** | ≥ 1.8x (graduação) | ≥ 1.5x | < 1.0x por 5 dias |
 | **Connect Rate** | > 80% | > 70% | < 60% |
 | **Frequência** | < 2.0 | < 3.0 | > 3.5 + CTR caindo |
 | **CTR** | > 1.2% | > 0.8% | Queda de 30%+ |
@@ -352,9 +360,9 @@ Exemplos:
 - `LAL 1% | Compradores`
 
 ### Ad
-**Exatamente o nome do arquivo/conceito**
+**Seguir exatamente o que estiver na pipeline.** Nome e copy vêm da pipeline — não inventar.
 
-Exemplos:
+Exemplos (referência, o real vem da pipeline):
 - `AD170 | Vídeo | Shopee Ads`
 - `AD171 | Imagem | Shopee Ads`
 - `AD172 | Carrossel | Shopee Ads`
@@ -399,11 +407,9 @@ Exemplos:
 - [ ] **Vídeo processado?** Aguardar video_status = ready antes de criar creative (meta-policy-kb-api-reference.md)
 - [ ] **Rate limit respeitado?** Max 60 escritas/hora, delay 15-30s entre uploads (meta-policy-kb-developers-deep.md)
 
-### Checklist Pré-Ajuste de Budget
+### Budget — Campanha de Teste
 
-- [ ] **Dias 1-5?** NÃO MEXER — aprendizado Andromeda (meta-policy-kb-tecnico.md seção 2)
-- [ ] **Mudança > 20%?** Reseta learning phase — limitar a ±15% (meta-policy-kb-tecnico.md seção 2)
-- [ ] **Ad set com 50 eventos?** Não escalar antes de sair do learning (meta-policy-kb-tecnico.md seção 2)
+**NÃO EXISTE ajuste de budget em campanha de teste.** Budget é FIXO em R$800/dia. Sempre.
 
 ### Se em Dúvida
 

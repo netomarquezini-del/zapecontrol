@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase';
-import { CPA_TARGET, WINNER_MIN_DAYS, WINNER_MIN_PURCHASES, STATUS_TO_GERACAO_RESULTADO } from '@/lib/types-criativos';
+import { WINNER_MIN_PURCHASES, WINNER_MIN_ROAS, MIN_IMPRESSIONS_FOR_KILL, BUDGET_FREEZE_DAYS, ESCALA_MIN_WINNERS, ESCALA_MAX_WINNERS, STATUS_TO_GERACAO_RESULTADO } from '@/lib/types-criativos';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,10 +19,14 @@ async function notifyTelegram(message: string) {
   }
 }
 
-// POST /api/criativos/winner-check — detect winners among em_teste criativos
+// POST /api/criativos/winner-check
+// v3 — Graduação: 20+ compras E ROAS ≥ 1.8x (regras Neto 02/04/2026)
+// Se existe campanha de escala → sobe na hora
+// Se não existe → acumula até 8 winners, aí cria
 export async function POST() {
   const sb = getServiceSupabase();
 
+  // 1. Buscar criativos em teste com meta_ad_id
   const { data: criativos, error } = await sb
     .from('criativos')
     .select('*')
@@ -31,73 +35,43 @@ export async function POST() {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!criativos || criativos.length === 0) {
-    return NextResponse.json({ checked: 0, winners: 0 });
+    return NextResponse.json({ checked: 0, winners: 0, graduated: 0 });
   }
 
   let winnersDetected = 0;
+  let graduated = 0;
 
   for (const c of criativos) {
-    // Check consecutive good CPA days
-    const { data: metrics } = await sb
-      .from('metricas_criativos')
-      .select('*')
-      .eq('criativo_id', c.id)
-      .order('date', { ascending: false });
+    // Dias 1-5: não analisar (campanha nova, Andromeda aprendendo)
+    if ((c.dias_ativo || 0) < BUDGET_FREEZE_DAYS) continue;
 
-    if (!metrics || metrics.length < WINNER_MIN_DAYS) continue;
+    // Nunca julgar antes de 1.000 impressões
+    if ((c.total_impressions || 0) < MIN_IMPRESSIONS_FOR_KILL) continue;
 
-    let consecutiveDays = 0;
-    let totalPurchases = 0;
-    let totalSpend = 0;
-    let totalRevenue = 0;
+    const totalPurchases = c.total_purchases || 0;
+    const totalSpend = parseFloat(String(c.total_spend || 0));
+    const totalRevenue = parseFloat(String(c.total_revenue || 0));
+    const roas = totalSpend > 0 ? totalRevenue / totalSpend : 0;
+    const cpa = totalPurchases > 0 ? totalSpend / totalPurchases : 0;
 
-    for (const m of metrics) {
-      totalPurchases += m.purchases || 0;
-      totalSpend += parseFloat(String(m.spend || 0));
-      totalRevenue += parseFloat(String(m.revenue || 0));
-
-      if (m.purchases > 0 && parseFloat(String(m.cost_per_purchase)) <= CPA_TARGET) {
-        consecutiveDays++;
-      } else {
-        break;
-      }
-    }
-
-    // v2: 5+ compras + CPA ≤ target por 3-5 dias + 1.000 impressões + tendência estável
-    const totalImpressions = c.total_impressions || 0;
-    if (consecutiveDays >= WINNER_MIN_DAYS && totalPurchases >= WINNER_MIN_PURCHASES && totalImpressions >= 1000) {
+    // GRADUAÇÃO: 20+ compras E ROAS ≥ 1.8x
+    if (totalPurchases >= WINNER_MIN_PURCHASES && roas >= WINNER_MIN_ROAS) {
       await sb.from('criativos').update({
         status: 'winner',
         is_winner: true,
         winner_at: new Date().toISOString(),
-        dias_consecutivos_bom: consecutiveDays,
-        updated_by: 'winner-check-v2',
+        updated_by: 'winner-check-v3',
       }).eq('id', c.id);
 
       winnersDetected++;
 
-      const cpa = totalPurchases > 0 ? totalSpend / totalPurchases : 0;
-      const roas = totalSpend > 0 ? totalRevenue / totalSpend : 0;
-
       await notifyTelegram(
-        `🏅 WINNER DETECTADO: ${c.nome}\n` +
-        `CPA: R$${cpa.toFixed(2)} | ROAS: ${roas.toFixed(2)} | Compras: ${totalPurchases}\n` +
-        `Dias consecutivos bom: ${consecutiveDays}\n` +
-        `Duplicar pra escala com MESMO Post ID!`,
+        `🏅 <b>WINNER DETECTADO:</b> ${c.nome}\n` +
+        `Compras: ${totalPurchases} | ROAS: ${roas.toFixed(2)}x | CPA: R$${cpa.toFixed(2)}\n` +
+        `Critério: ${WINNER_MIN_PURCHASES}+ compras E ROAS ≥ ${WINNER_MIN_ROAS}x ✅`,
       );
 
-      // Trigger variation generation
-      try {
-        await fetch(new URL('/api/sugestoes/generate', process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3333').toString(), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ criativo_id: c.id }),
-        });
-      } catch {
-        // Non-blocking
-      }
-
-      // Retroalimentação: update geracoes_ia_itens if this criativo was AI-generated
+      // Retroalimentação: update geracoes_ia_itens
       try {
         const resultado = STATUS_TO_GERACAO_RESULTADO['winner'];
         if (resultado) {
@@ -110,10 +84,127 @@ export async function POST() {
           }).eq('criativo_id', c.id);
         }
       } catch {
-        // Non-blocking — don't break winner detection
+        // Non-blocking
       }
     }
   }
 
-  return NextResponse.json({ checked: criativos.length, winners: winnersDetected });
+  // 2. Tentar graduar winners para escala
+  if (winnersDetected > 0) {
+    graduated = await tryGraduateToEscala(sb);
+  }
+
+  return NextResponse.json({ checked: criativos.length, winners: winnersDetected, graduated });
+}
+
+// Graduar winners para campanha de escala
+async function tryGraduateToEscala(sb: ReturnType<typeof getServiceSupabase>): Promise<number> {
+  // Buscar todos os winners pendentes (não estão em escala ainda)
+  const { data: winners } = await sb
+    .from('criativos')
+    .select('*')
+    .eq('status', 'winner')
+    .not('meta_ad_id', 'is', null);
+
+  if (!winners || winners.length === 0) return 0;
+
+  // Verificar se existe campanha de escala ativa
+  const { data: escalaCreatives } = await sb
+    .from('criativos')
+    .select('id, meta_campaign_id')
+    .eq('status', 'escala');
+
+  const hasEscalaCampaign = escalaCreatives && escalaCreatives.length > 0;
+  let graduated = 0;
+
+  if (hasEscalaCampaign) {
+    // Campanha de escala existe — verificar vagas (max 15)
+    const currentCount = escalaCreatives.length;
+    const slotsAvailable = ESCALA_MAX_WINNERS - currentCount;
+
+    if (slotsAvailable > 0) {
+      // Tem vagas — graduar os melhores winners por ROAS
+      const sortedWinners = winners
+        .sort((a, b) => (b.roas_atual || 0) - (a.roas_atual || 0))
+        .slice(0, slotsAvailable);
+
+      for (const w of sortedWinners) {
+        await sb.from('criativos').update({
+          status: 'escala',
+          updated_by: 'winner-check-v3-graduation',
+        }).eq('id', w.id);
+
+        graduated++;
+
+        const roas = w.roas_atual || 0;
+        await notifyTelegram(
+          `⬆️ <b>GRADUADO PRA ESCALA:</b> ${w.nome}\n` +
+          `ROAS: ${roas.toFixed(2)}x | Compras: ${w.total_purchases}\n` +
+          `Usando mesmo Post ID (prova social preservada)`,
+        );
+      }
+    } else if (slotsAvailable <= 0) {
+      // Escala cheia (15) — trocar pelo pior se novo winner tem ROAS melhor
+      const worstEscala = escalaCreatives.length > 0
+        ? await sb.from('criativos').select('*').eq('status', 'escala').order('roas_atual', { ascending: true }).limit(1)
+        : null;
+
+      const worst = worstEscala?.data?.[0];
+      if (worst) {
+        for (const w of winners) {
+          if ((w.roas_atual || 0) > (worst.roas_atual || 0)) {
+            // Novo winner é melhor que o pior da escala — troca
+            await sb.from('criativos').update({
+              status: 'pausado',
+              updated_by: 'winner-check-v3-swap',
+            }).eq('id', worst.id);
+
+            await sb.from('criativos').update({
+              status: 'escala',
+              updated_by: 'winner-check-v3-graduation',
+            }).eq('id', w.id);
+
+            graduated++;
+
+            await notifyTelegram(
+              `🔄 <b>TROCA NA ESCALA:</b>\n` +
+              `⬆️ Entra: ${w.nome} (ROAS ${(w.roas_atual || 0).toFixed(2)}x)\n` +
+              `⬇️ Sai: ${worst.nome} (ROAS ${(worst.roas_atual || 0).toFixed(2)}x)`,
+            );
+            break; // 1 troca por ciclo
+          }
+        }
+      }
+    }
+  } else {
+    // Não existe campanha de escala — precisa acumular 8 winners mínimo
+    if (winners.length >= ESCALA_MIN_WINNERS) {
+      // Tem 8+ winners! Hora de criar campanha de escala
+      await notifyTelegram(
+        `🚀 <b>${winners.length} WINNERS ACUMULADOS!</b>\n` +
+        `Mínimo de ${ESCALA_MIN_WINNERS} atingido.\n` +
+        `Pronto pra criar campanha de escala!\n` +
+        `Winners: ${winners.map(w => w.nome).join(', ')}`,
+      );
+      // Marcar como escala (a criação da campanha na Meta será manual ou via outro endpoint)
+      const toGraduate = winners
+        .sort((a, b) => (b.roas_atual || 0) - (a.roas_atual || 0))
+        .slice(0, ESCALA_MAX_WINNERS);
+
+      for (const w of toGraduate) {
+        await sb.from('criativos').update({
+          status: 'escala',
+          updated_by: 'winner-check-v3-graduation',
+        }).eq('id', w.id);
+        graduated++;
+      }
+    } else {
+      await notifyTelegram(
+        `📊 <b>WINNERS ACUMULANDO:</b> ${winners.length}/${ESCALA_MIN_WINNERS}\n` +
+        `Faltam ${ESCALA_MIN_WINNERS - winners.length} winners pra criar campanha de escala.`,
+      );
+    }
+  }
+
+  return graduated;
 }

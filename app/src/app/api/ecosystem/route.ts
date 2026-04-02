@@ -30,6 +30,24 @@ const ROOT_CRONS: Record<string, string> = {
   'cron-rafa-audit.js': 'gestao',
 }
 
+// Static cron registry — fallback for serverless environments where filesystem is limited
+const STATIC_CRONS: Record<string, Array<{ name: string; file: string }>> = {
+  growth: [
+    { name: 'cron-max-creative-analysis.js', file: 'cron-max-creative-analysis.js' },
+    { name: 'cron-maicon-batch.js', file: 'squads/growth/criativos/cron-maicon-batch.js' },
+    { name: 'cron-thomas-from-max.js', file: 'squads/growth/scripts/thomas/cron-thomas-from-max.js' },
+    { name: 'cron-publicos.js', file: 'squads/growth/meta-ads-engine/cron-publicos.js' },
+    { name: 'cron-criativos.js', file: 'squads/growth/meta-ads-engine/cron-criativos.js' },
+  ],
+  gestao: [
+    { name: 'cron-rafa.js', file: 'cron-rafa.js' },
+    { name: 'cron-rafa-audit.js', file: 'cron-rafa-audit.js' },
+  ],
+  cs: [
+    { name: 'cron-joana.js', file: 'squads/cs/cron-joana.js' },
+  ],
+}
+
 // ── Helpers ──
 
 function safeReaddir(dir: string): string[] {
@@ -608,6 +626,21 @@ export async function GET() {
 
   // 4. Assign root-level crons
   assignRootCrons(squads)
+
+  // 4b. Fallback: if no crons found (serverless env), use static registry
+  const totalCronsFound = squads.reduce((sum, s) => sum + s.crons.length, 0)
+  if (totalCronsFound === 0) {
+    for (const [squadId, crons] of Object.entries(STATIC_CRONS)) {
+      const squad = squads.find((s) => s.id === squadId || s.id.toLowerCase() === squadId)
+      if (squad) {
+        for (const cron of crons) {
+          if (!squad.crons.some((c) => c.name === cron.name)) {
+            squad.crons.push(cron)
+          }
+        }
+      }
+    }
+  }
 
   // 5. Collect KB and DNA data for each squad that has agents
   for (const squad of squads) {

@@ -11,6 +11,10 @@
     {
       "path": "/api/sdr/transcriptions/batch",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/criativos/otimizar-teste",
+      "schedule": "3 7 * * *"
     }
   ]
 }

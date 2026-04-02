@@ -457,36 +457,47 @@ export const STATUS_TO_GERACAO_RESULTADO: Partial<Record<CreativeStatus, Geracao
   saturado: 'saturado',
 };
 
-// ── Business constants (v2 — Andromeda+CBO 31/03/2026) ──────
-// Ref: regras-operacionais-meta-ads.md + template-campanha-teste.md + template-campanha-escala.md
+// ── Business constants (v3 — Andromeda+CBO 02/04/2026) ──────
+// Ref: template-campanha-teste.md + template-campanha-escala.md (corrigidos 02/04)
+// Regras Neto: 1-1-N, budget teste R$800 fixo, graduação 20 compras + ROAS 1.8x
 
-export const CPA_TARGET = 60; // A recalibrar com dados novos (placeholder)
+export const CPA_TARGET = 60; // R$60 CPA target (Shopee ADS 2.0)
 export const TICKET = 97;
 export const FREQUENCY_SATURATION = 3.5;
 export const MIN_IMPRESSIONS_FOR_KILL = 1000; // Nunca julgar antes de 1.000 impressões
 
-// Kill rules (teste)
+// Kill rules (teste) — baseado em CPA
 export const CPA_KILL_MULTIPLIER = 2.0; // 2x CPA target + ZERO conversão = pausa imediata
 export const CPA_MONITOR_MULTIPLIER = 1.5; // 1.5x CPA target + 1 conversão = monitora 48h
 export const CPA_HIGH_DAYS = 5; // CPA 50%+ acima por 5 dias = pausa
 export const CTR_DROP_PCT = 0.30; // CTR caiu 30% = pausa
 
-// Kill rules (escala — mais tolerante)
-export const ESCALA_CPA_KILL_MULTIPLIER = 3.0; // 3x CPA target com 2.000+ imp = arquiva
+// Kill rules (escala) — baseado em ROAS
+export const ESCALA_ROAS_KILL = 1.3; // ROAS < 1.3 por 5 dias seguidos = pausa
+export const ESCALA_ROAS_KILL_DAYS = 5; // 5 dias seguidos abaixo de 1.3
+// Legacy (manter pra não quebrar imports)
+export const ESCALA_CPA_KILL_MULTIPLIER = 3.0;
 export const ESCALA_MIN_KILL_IMPRESSIONS = 2000;
 
-// Graduação
-export const WINNER_MIN_DAYS = 3; // CPA ≤ target por 3-5 dias consecutivos
-export const WINNER_MIN_PURCHASES = 5; // Mínimo 5 compras (era 10)
+// Graduação — winner criteria
+export const WINNER_MIN_PURCHASES = 20; // Mínimo 20 compras (ajuste Neto 02/04)
+export const WINNER_MIN_ROAS = 1.8; // ROAS mínimo 1.8x (ajuste Neto 02/04)
+// Legacy
+export const WINNER_MIN_DAYS = 3;
 
 // Budget
-export const BUDGET_CHANGE_PCT = 0.15; // ±15% diário (era 20%)
-export const BUDGET_FREEZE_DAYS = 5; // Dias 1-5 intocável
-export const BUDGET_TEST_DAILY = 100000; // R$1.000/dia campanha teste (centavos)
+export const BUDGET_CHANGE_PCT = 0.15; // ±15% diário (escala)
+export const BUDGET_FREEZE_DAYS = 5; // Dias 1-5 intocável (não mexer em NADA)
+export const BUDGET_TEST_DAILY = 80000; // R$800/dia campanha teste (centavos) — FIXO, nunca alterar
+export const BUDGET_ESCALA_INITIAL = 100000; // R$1.000/dia campanha escala (centavos) — escalável ±15%
+
+// Escala
+export const ESCALA_MIN_WINNERS = 8; // Mínimo 8 winners pra criar campanha de escala
+export const ESCALA_MAX_WINNERS = 15; // Máximo 15 winners por campanha
 
 // Legacy (manter pra não quebrar imports existentes)
-export const ROAS_KILL_THRESHOLD = 1.4;
-export const DAILY_BUDGET = 100000; // centavos = R$1.000 CBO campanha teste
+export const ROAS_KILL_THRESHOLD = 1.3;
+export const DAILY_BUDGET = 80000; // centavos = R$800 CBO campanha teste
 export const CURSO_URL = 'https://netomarquezini.com.br/curso-ads/';
 
 // ── Copy validation ──────────────────────────────────────────

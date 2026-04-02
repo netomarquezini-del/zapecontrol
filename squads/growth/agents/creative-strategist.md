@@ -713,8 +713,30 @@ integracao_zapecontrol:
         action: "Mostrar tabela resumida de todos os criativos gerados"
         format: "| # | Tipo | Angulo | Emocao | Hook (preview) | Formato |"
         pergunta: "Salvar todos no pipeline ou quer ajustar algum?"
+      5.5_qa_copy:
+        action: "Enviar TODAS as copies para validacao da Ale (qa-copy)"
+        descricao: >
+          OBRIGATORIO antes de salvar. Rodar as 4 camadas de validacao da Ale
+          (compliance, linguagem, coesao, estrategia) em cada copy gerada.
+        agent: "qa-copy (Ale)"
+        agent_file: "squads/growth/agents/qa-copy.md"
+        processo:
+          - "Carregar regras de validacao da Ale"
+          - "Para CADA copy gerada, rodar 4 camadas de validacao"
+          - "Gerar score ponderado (compliance 30%, linguagem 25%, coesao 25%, estrategia 20%)"
+          - "Copies com score >= 85: aprovadas (seguem pro save)"
+          - "Copies com score 70-84: aprovadas com ressalvas (sinalizar pontos a corrigir)"
+          - "Copies com score < 70: REPROVADAS — Max deve corrigir antes de salvar"
+        se_reprovado: |
+          1. Mostrar falhas especificas com ID do check (ex: L1 — palavra em ingles)
+          2. Mostrar sugestao de correcao da Ale
+          3. Max corrige automaticamente seguindo a sugestao
+          4. Revalidar a copy corrigida
+          5. Repetir ate aprovar
+        output: "Tabela com status de QA por copy: | # | Copy | Score | Status | Falhas |"
       6_salvar:
         action: "POST /api/criativos/bulk-insert"
+        condicao: "SOMENTE copies aprovadas pela Ale (score >= 70)"
         payload:
           tipo: "variacao_winner"
           winner_origem_id: "UUID do winner"
@@ -785,8 +807,30 @@ integracao_zapecontrol:
           **Copy:** "..."
           **Roteiro:** (se video)
         pergunta: "Salvar todos? Ajustar algum? Gerar mais?"
+      5.5_qa_copy:
+        action: "Enviar TODAS as copies para validacao da Ale (qa-copy)"
+        descricao: >
+          OBRIGATORIO antes de salvar. Rodar as 4 camadas de validacao da Ale
+          (compliance, linguagem, coesao, estrategia) em cada copy gerada.
+        agent: "qa-copy (Ale)"
+        agent_file: "squads/growth/agents/qa-copy.md"
+        processo:
+          - "Carregar regras de validacao da Ale"
+          - "Para CADA copy gerada, rodar 4 camadas de validacao"
+          - "Gerar score ponderado (compliance 30%, linguagem 25%, coesao 25%, estrategia 20%)"
+          - "Copies com score >= 85: aprovadas (seguem pro save)"
+          - "Copies com score 70-84: aprovadas com ressalvas (sinalizar pontos a corrigir)"
+          - "Copies com score < 70: REPROVADAS — Max deve corrigir antes de salvar"
+        se_reprovado: |
+          1. Mostrar falhas especificas com ID do check (ex: L1 — palavra em ingles)
+          2. Mostrar sugestao de correcao da Ale
+          3. Max corrige automaticamente seguindo a sugestao
+          4. Revalidar a copy corrigida
+          5. Repetir ate aprovar
+        output: "Tabela com status de QA por copy: | # | Copy | Score | Status | Falhas |"
       6_salvar:
         action: "POST /api/criativos/bulk-insert"
+        condicao: "SOMENTE copies aprovadas pela Ale (score >= 70)"
         payload:
           tipo: "criativo_novo"
           input_persona: "persona"
@@ -1000,6 +1044,6 @@ mission-control:
       purpose: Envia briefings prontos e alertas de winners/losers para o time
     - name: Meta API
       purpose: Puxa metricas reais de campanhas ativas para alimentar as analises
-  dataFlowTo: [video-creator, thomas-design]
+  dataFlowTo: [qa-copy, video-creator, thomas-design]
   dataFlowFrom: [gestor-trafego]
 ```

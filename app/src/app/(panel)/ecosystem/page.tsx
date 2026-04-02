@@ -21,6 +21,28 @@ import {
 
 export const dynamic = 'force-dynamic'
 
+// Module-level constants for agent enrichment
+const PM2_AGENT_MAP: Record<string, string> = {
+  'rafa-bot': 'head-comercial',
+  'rafa-audit': 'head-comercial',
+  'joana-bot': 'joana-cs',
+  'joana-cs-cron': 'joana-cs',
+  'leo-engine': 'gestor-trafego',
+  'leo-telegram': 'gestor-trafego',
+}
+
+const SKILLS_FALLBACK: Record<string, string[]> = {
+  'head-comercial': ['squads/gestao/agents/skills/head-comercial-skills.md'],
+  'gestor-trafego': ['squads/growth/agents/skills/gestor-trafego-skills.md', 'squads/growth/agents/skills/mapa-completo-skills-meta-ads.md', 'squads/growth/agents/skills/contingencia-meta-ads.md'],
+  'creative-strategist': ['squads/growth/agents/skills/creative-strategist-skills.md', 'squads/growth/agents/skills/brazilian-market-creative-kb.md', 'squads/growth/agents/skills/ad-lp-alignment-kb.md'],
+  'thomas-design': ['squads/growth/agents/skills/thomas-design-skills.md', 'squads/growth/agents/skills/thomas-copy-to-briefing.md'],
+  'video-creator': ['squads/growth/agents/skills/video-creator-skills.md'],
+  'copywriter-estatico': ['squads/criativoset/agents/skills/copywriter-estatico-skills.md'],
+  'qa-estatico': ['squads/criativoset/agents/skills/qa-estatico-skills.md'],
+  'copywriter-video': ['squads/criativovid/agents/skills/copywriter-video-skills.md'],
+  'qa-video': ['squads/criativovid/agents/skills/qa-video-skills.md'],
+}
+
 interface EcosystemAgent {
   id: string
   name: string
@@ -160,28 +182,7 @@ export default function EcosystemPage() {
     }
   }, [])
 
-  // pm2 process → agent mapping
-  const PM2_TO_AGENT: Record<string, string> = {
-    'rafa-bot': 'head-comercial',
-    'rafa-audit': 'head-comercial',
-    'joana-bot': 'joana-cs',
-    'joana-cs-cron': 'joana-cs',
-    'leo-engine': 'gestor-trafego',
-    'leo-telegram': 'gestor-trafego',
-  }
-
-  // Static skills mapping (fallback when scanner doesn't find them)
-  const STATIC_SKILLS: Record<string, string[]> = {
-    'head-comercial': ['squads/gestao/agents/skills/head-comercial-skills.md'],
-    'gestor-trafego': ['squads/growth/agents/skills/gestor-trafego-skills.md', 'squads/growth/agents/skills/mapa-completo-skills-meta-ads.md', 'squads/growth/agents/skills/contingencia-meta-ads.md'],
-    'creative-strategist': ['squads/growth/agents/skills/creative-strategist-skills.md', 'squads/growth/agents/skills/brazilian-market-creative-kb.md', 'squads/growth/agents/skills/ad-lp-alignment-kb.md'],
-    'thomas-design': ['squads/growth/agents/skills/thomas-design-skills.md', 'squads/growth/agents/skills/thomas-copy-to-briefing.md'],
-    'video-creator': ['squads/growth/agents/skills/video-creator-skills.md'],
-    'copywriter-estatico': ['squads/criativoset/agents/skills/copywriter-estatico-skills.md'],
-    'qa-estatico': ['squads/criativoset/agents/skills/qa-estatico-skills.md'],
-    'copywriter-video': ['squads/criativovid/agents/skills/copywriter-video-skills.md'],
-    'qa-video': ['squads/criativovid/agents/skills/qa-video-skills.md'],
-  }
+  // Mappings are module-level constants (see PM2_AGENT_MAP and SKILLS_FALLBACK above)
 
   const enrichAgentData = useCallback((ecosystemData: EcosystemData, pm2Rows: Array<{ name: string; status: string; memory: number; uptime: number; restarts: number }>) => {
     return {
@@ -190,10 +191,10 @@ export default function EcosystemPage() {
         ...squad,
         agents: squad.agents.map(agent => {
           // Inject pm2 services
-          const agentServices = pm2Rows.filter(p => PM2_TO_AGENT[p.name] === agent.id)
+          const agentServices = pm2Rows.filter(p => PM2_AGENT_MAP[p.name] === agent.id)
           // Inject skills fallback if empty
           const skills = (agent.skills && agent.skills.length > 0) ? agent.skills
-            : (STATIC_SKILLS[agent.id] ?? []).map(path => ({ name: path.split('/').pop() || path, description: '' }))
+            : (SKILLS_FALLBACK[agent.id] ?? []).map(path => ({ name: path.split('/').pop() || path, description: '' }))
           return {
             ...agent,
             services: agentServices.length > 0 ? agentServices : agent.services,

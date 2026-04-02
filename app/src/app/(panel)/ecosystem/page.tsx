@@ -688,7 +688,9 @@ function SquadDetailView({
               onClick={() => {
                 const filePath = activeTab === 'crons' && item.file
                   ? item.file
-                  : `${squad.path}${activeTab}/${item.name}`
+                  : item.name.includes('/')
+                    ? `${squad.path}${item.name}`
+                    : `${squad.path}${activeTab}/${item.name}`
                 onResourceClick(item.name, filePath, activeTab, item.description)
               }}
               className="card p-4 flex items-start gap-3 text-left hover:border-lime-400/20 transition-all cursor-pointer w-full"
@@ -1043,7 +1045,9 @@ function AgentDetailModal({
                   onClick={() => {
                     const filePath = activeTab === 'crons' && item.file
                       ? item.file
-                      : `squads/${agent.squad}/${activeTab}/${item.name}`
+                      : item.name.includes('/')
+                        ? `squads/${agent.squad}/${item.name}`
+                        : `squads/${agent.squad}/${activeTab}/${item.name}`
                     onResourceClick(item.name, filePath, activeTab, item.description)
                   }}
                   className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-left hover:border-lime-400/20 transition-all cursor-pointer w-full"

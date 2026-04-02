@@ -389,6 +389,32 @@ function collectDNA(squadDir: string): Array<{ name: string; description: string
   return files
 }
 
+/**
+ * Collect skill files from agents/skills/.
+ */
+function collectSkills(squadDir: string): Array<{ name: string; description: string; agentId?: string }> {
+  const files: Array<{ name: string; description: string; agentId?: string }> = []
+  for (const sub of ['skills', 'agents/skills']) {
+    const fullDir = path.join(squadDir, sub)
+    const entries = safeReaddir(fullDir)
+    for (const entry of entries) {
+      if (!entry.endsWith('.md')) continue
+      try {
+        const stat = fs.statSync(path.join(fullDir, entry))
+        if (!stat.isFile()) continue
+        const desc = getFileDescription(path.join(fullDir, entry))
+        // Try to match skill to agent by name pattern: {agent-id}-skills.md
+        const agentMatch = entry.match(/^(.+?)(?:-skills)?\.md$/)
+        const agentId = agentMatch ? agentMatch[1] : undefined
+        files.push({ name: `${sub}/${entry}`, description: desc, agentId })
+      } catch {
+        // skip
+      }
+    }
+  }
+  return files
+}
+
 interface AgentInfo {
   id: string
   name: string
@@ -406,6 +432,7 @@ interface AgentInfo {
   crons: Array<{ name: string; file: string; description?: string }>
   kbs: Array<{ name: string; description: string }>
   dna: Array<{ name: string; description: string }>
+  skills: Array<{ name: string; description: string }>
 }
 
 interface SquadInfo {
@@ -448,6 +475,7 @@ function scanSquad(squadId: string, squadDir: string, relativePath: string): Squ
       crons: [],
       kbs: [],
       dna: [],
+      skills: [],
     }
   })
 
@@ -498,6 +526,7 @@ function scanAIOSSquad(): SquadInfo {
       crons: [],
       kbs: [],
       dna: [],
+      skills: [],
     }
   })
 
@@ -690,11 +719,16 @@ export async function GET() {
     if (squadDir) {
       const kbs = collectKBs(squadDir)
       const dna = collectDNA(squadDir)
+      const skills = collectSkills(squadDir)
 
-      // Attach to first agent if any, or keep at squad level via agents
       for (const agent of squad.agents) {
         agent.kbs = kbs
         agent.dna = dna
+        // Assign skills to matching agents, or all if no match
+        const agentSkills = skills.filter(s => s.agentId === agent.id)
+        agent.skills = agentSkills.length > 0
+          ? agentSkills.map(s => ({ name: s.name, description: s.description }))
+          : skills.filter(s => !s.agentId).map(s => ({ name: s.name, description: s.description }))
       }
     }
   }

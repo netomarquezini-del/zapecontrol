@@ -15,6 +15,7 @@ import {
   Dna,
   Terminal,
   Loader2,
+  Sparkles,
 } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
@@ -35,6 +36,7 @@ interface EcosystemAgent {
   crons?: { name: string; file: string; description?: string }[]
   kbs?: { name: string; description: string }[]
   dna?: { name: string; description: string }[]
+  skills?: { name: string; description: string }[]
 }
 
 interface EcosystemSquad {
@@ -679,7 +681,7 @@ function SquadDetailView({
 
 /* ─── Agent Detail Modal ─── */
 
-type AgentTab = 'resumo' | 'arquivo' | 'yaml' | 'commands' | 'templates' | 'tasks' | 'workflows' | 'checklists' | 'crons' | 'kbs' | 'dna'
+type AgentTab = 'resumo' | 'arquivo' | 'yaml' | 'commands' | 'templates' | 'tasks' | 'workflows' | 'checklists' | 'crons' | 'kbs' | 'dna' | 'skills'
 
 function AgentDetailModal({
   agent,
@@ -730,6 +732,7 @@ function AgentDetailModal({
     { key: 'crons', label: 'Crons', icon: <Clock className="w-3.5 h-3.5" />, items: agent.crons ?? [] },
     { key: 'kbs', label: 'KBs', icon: <BookOpen className="w-3.5 h-3.5" />, items: agent.kbs ?? [] },
     { key: 'dna', label: 'DNA', icon: <Dna className="w-3.5 h-3.5" />, items: agent.dna ?? [] },
+    { key: 'skills', label: 'Skills', icon: <Sparkles className="w-3.5 h-3.5" />, items: agent.skills ?? [] },
   ]
 
   const allTabs: { key: AgentTab; label: string; icon?: React.ReactNode; count?: number }[] = [

@@ -308,3 +308,22 @@ document.querySelectorAll('script[src*="fbevents"]').length
 | Eventos duplicados | Pixel instalado em 2 lugares | Buscar `fbq('init')` no codigo fonte (Ctrl+U) |
 | Checkout nao redireciona | `e.preventDefault()` sem fallback | Verificar se CHECKOUT_DOMAINS bate com a URL real |
 | Purchase nao chega na CAPI | Token invalido no webhook | Verificar TICTO_WEBHOOK_TOKEN no .env |
+| Vendas nao atribuidas ao anuncio | CAPI nativo da plataforma (Ticto) dispara eventos mas sem dados de matching (fbc/fbp) | Manter nosso CAPI ativo no webhook — envia email, telefone, CPF, fbc, fbp hasheados. Deduplicacao via event_id impede contagem dupla |
+| Tracking mostra "Nao Informado" nos UTMs | Plataforma nao repassa UTMs automaticamente | Verificar se cookie forwarding injeta fbp/fbc nos links. Checar campo `query_params` no raw_payload do webhook |
+| CAPI dispara mas Meta nao atribui | fbc/fbp nao chegam no server-side | Consultar raw_payload no Supabase (tabela ticto_sales) → campo query_params deve conter fbc e fbp |
+
+---
+
+## 7. LICOES APRENDIDAS
+
+### Nunca confiar apenas no CAPI nativo da plataforma de pagamento
+
+**Contexto (2026-04-03):** Desativamos nosso CAPI do webhook porque a Ticto passou a oferecer Pixel + CAPI nativo. Resultado: eventos de Purchase chegavam no Events Manager, mas a Meta nao conseguia atribuir as vendas aos anuncios. O CAPI nativo da Ticto disparava sem os dados de matching corretos (fbc/fbp).
+
+**Regra:** Sempre manter nosso CAPI ativo no webhook, mesmo que a plataforma tenha CAPI nativo. A deduplicacao via `event_id` (formato `Purchase_{order_id}`) garante que a Meta descarta duplicados automaticamente — zero risco de contagem dupla.
+
+**Diagnostico rapido quando vendas nao atribuem:**
+1. Verificar Events Manager → os eventos estao chegando? Se sim, o problema e de matching
+2. Consultar `raw_payload` no Supabase → campo `query_params` tem `fbc` e `fbp`?
+3. Inspecionar link de checkout no navegador → URL tem `?fbp=...&fbc=...`?
+4. Se tudo OK no client mas matching falha → nosso CAPI esta ativo no webhook?

@@ -33,8 +33,13 @@
   CHANGELOG:
   - v1.0: PageView, ViewContent, InitiateCheckout, ScrollDepth
   - v2.0: Cookie forwarding (_fbp/_fbc), evento Lead, Advanced Matching
+  - v2.1: Ticto Echo (UTMs), mousedown pro InitiateCheckout (compatibilidade Ticto Echo),
+          removido preventDefault/redirect (Ticto Echo faz o redirect), removido agent do init
   ==========================================================
 -->
+
+<!-- Ticto Echo — Repasse de UTMs -->
+<script src="https://echo.ticto.app/ticto-echo.min.js"></script>
 
 <!-- Meta Pixel Code -->
 <script>
@@ -47,9 +52,7 @@ t.src=v;s=b.getElementsByTagName(e)[0];
 s.parentNode.insertBefore(t,s)}(window, document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
 
-fbq('init', '9457207547700143', {}, {
-  agent: 'zapeecomm-pixel-v2'
-});
+fbq('init', '9457207547700143');
 fbq('track', 'PageView');
 </script>
 <noscript><img height="1" width="1" style="display:none"
@@ -65,7 +68,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // ============================================================
   // Config
   // ============================================================
-  var PIXEL_ID = '9457207547700143';
   var PRODUCT_NAME = 'Shopee ADS 2.0';
   var PRODUCT_VALUE = 97.00;
   var CURRENCY = 'BRL';
@@ -177,10 +179,11 @@ document.addEventListener('DOMContentLoaded', function() {
   // Envia o evento e redireciona com cookies injetados
 
   var icFired = false;
-  document.addEventListener('click', function(e) {
+  document.addEventListener('mousedown', function(e) {
     var target = e.target;
 
     // Sobe ate 5 niveis pra achar o <a> com href
+    // Usa mousedown em vez de click pra disparar antes do Ticto Echo interceptar
     for (var i = 0; i < 5 && target; i++) {
       var href = (target.tagName === 'A' && target.href) ? target.href : '';
 
@@ -191,17 +194,7 @@ document.addEventListener('DOMContentLoaded', function() {
           if (href.indexOf(CHECKOUT_DOMAINS[j]) > -1) { isCheckout = true; break; }
         }
         if (isCheckout) {
-          e.preventDefault();
           icFired = true;
-
-          // Garantir que cookies estao no link (mesmo se enrichCheckoutLinks nao pegou)
-          var destino = href;
-          try {
-            var url = new URL(href);
-            if (fbp && !url.searchParams.get('fbp')) url.searchParams.set('fbp', fbp);
-            if (fbc && !url.searchParams.get('fbc')) url.searchParams.set('fbc', fbc);
-            destino = url.toString();
-          } catch (err) { /* usa href original */ }
 
           var icId = generateEventId('InitiateCheckout');
           fbq('track', 'InitiateCheckout', {
@@ -210,10 +203,6 @@ document.addEventListener('DOMContentLoaded', function() {
             value: PRODUCT_VALUE,
             currency: CURRENCY
           }, { eventID: icId });
-
-          // Usar sendBeacon como fallback pra garantir envio antes de sair
-          setTimeout(function() { window.location.href = destino; }, 350);
-          return;
         }
       }
 

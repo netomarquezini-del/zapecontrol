@@ -149,11 +149,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing order_id' }, { status: 400 })
     }
 
-    // Salvar no Supabase
+    // Separar campos de CAPI (não existem como colunas no Supabase)
+    const { _fbc, _fbp, ...saleForDb } = sale
+
+    // Salvar no Supabase (sem _fbc/_fbp que são só pro CAPI)
     const supabase = getServiceSupabase()
     const { error } = await supabase
       .from('ticto_sales')
-      .upsert(sale, { onConflict: 'order_id,status,product_name,is_bump' })
+      .upsert(saleForDb, { onConflict: 'order_id,status,product_name,is_bump' })
 
     if (error) {
       console.error('[Ticto Webhook] Supabase error:', error.message)

@@ -279,16 +279,21 @@ function getFileDescription(filePath: string): string {
 }
 
 /**
- * Collect .md files from a directory as named items.
+ * Collect .md files from a directory as named items, optionally extracting agent metadata.
  */
-function collectMdFiles(dir: string): Array<{ name: string; description: string }> {
+function collectMdFiles(dir: string): Array<{ name: string; description: string; agentId?: string }> {
   const entries = safeReaddir(dir)
   return entries
     .filter((f) => f.endsWith('.md'))
-    .map((f) => ({
-      name: f,
-      description: getFileDescription(path.join(dir, f)),
-    }))
+    .map((f) => {
+      const filePath = path.join(dir, f)
+      const content = safeReadFile(filePath)
+      const description = getFileDescription(filePath)
+      // Extract "agent:" from metadata section
+      const agentMatch = content.match(/^-\s*agent\s*:\s*(.+)$/m)
+      const agentId = agentMatch ? agentMatch[1].trim() : undefined
+      return { name: f, description, agentId }
+    })
 }
 
 /**
@@ -442,10 +447,10 @@ interface SquadInfo {
   description: string
   path: string
   agents: AgentInfo[]
-  templates: Array<{ name: string; description: string }>
-  tasks: Array<{ name: string; description: string }>
+  templates: Array<{ name: string; description: string; agentId?: string }>
+  tasks: Array<{ name: string; description: string; agentId?: string }>
   workflows: Array<{ name: string; description: string }>
-  checklists: Array<{ name: string; description: string }>
+  checklists: Array<{ name: string; description: string; agentId?: string }>
   crons: Array<{ name: string; file: string; description?: string }>
 }
 
@@ -702,6 +707,34 @@ export async function GET() {
         const agent = squad.agents.find((a) => a.id === agentId)
         if (agent && !agent.crons.some((c) => c.name === cron.name)) {
           agent.crons.push(cron)
+        }
+      }
+    }
+  }
+
+  // 4d. Assign squad tasks/templates/checklists to individual agents via "agent:" metadata
+  for (const squad of squads) {
+    for (const task of squad.tasks) {
+      if (task.agentId) {
+        const agent = squad.agents.find((a) => a.id === task.agentId)
+        if (agent && !agent.tasks.some((t) => t.name === task.name)) {
+          agent.tasks.push({ name: task.name, description: task.description })
+        }
+      }
+    }
+    for (const tmpl of squad.templates) {
+      if (tmpl.agentId) {
+        const agent = squad.agents.find((a) => a.id === tmpl.agentId)
+        if (agent && !agent.templates.some((t) => t.name === tmpl.name)) {
+          agent.templates.push({ name: tmpl.name, description: tmpl.description })
+        }
+      }
+    }
+    for (const cl of squad.checklists) {
+      if (cl.agentId) {
+        const agent = squad.agents.find((a) => a.id === cl.agentId)
+        if (agent && !agent.checklists.some((c) => c.name === cl.name)) {
+          agent.checklists.push({ name: cl.name, description: cl.description })
         }
       }
     }

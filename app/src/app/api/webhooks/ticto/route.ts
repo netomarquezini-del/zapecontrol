@@ -150,7 +150,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Separar campos de CAPI (não existem como colunas no Supabase)
-    const { _fbc, _fbp, ...saleForDb } = sale
+    const { _fbc, _fbp, ...saleForDb } = sale as ReturnType<typeof parseV2>
 
     // Salvar no Supabase (sem _fbc/_fbp que são só pro CAPI)
     const supabase = getServiceSupabase()

@@ -219,26 +219,25 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. Meta CAPI — DESATIVADO (Ticto agora envia Pixel + CAPI nativamente)
-    // A função sendCAPIEvent continua disponível caso precise reativar.
-    // Para reativar: descomentar o bloco abaixo.
-    const capiResult = 'disabled:ticto-native'
-    // const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || ''
-    // const ua = req.headers.get('user-agent') || ''
-    //
-    // try {
-    //   if (sale.status === 'authorized') {
-    //     const r = await sendCAPIEvent('Purchase', sale, ip, ua)
-    //     capiResult = 'events_received' in r ? `ok:${r.events_received}` : 'skipped'
-    //   } else if (sale.status === 'refunded' || sale.status === 'chargeback') {
-    //     const r = await sendCAPIEvent('Refund', sale, ip, ua)
-    //     capiResult = 'events_received' in r ? `ok:${r.events_received}` : 'skipped'
-    //   }
-    // } catch (err) {
-    //   const msg = err instanceof Error ? err.message : String(err)
-    //   capiResult = `error:${msg}`
-    //   console.error(`[Ticto Webhook] CAPI error: ${msg}`)
-    // }
+    // 2. Meta CAPI — Envia Purchase/Refund server-side
+    // Deduplicação via event_id: mesmo ID que a Ticto envia = Meta descarta duplicado
+    let capiResult = 'pending'
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || ''
+    const ua = req.headers.get('user-agent') || ''
+
+    try {
+      if (sale.status === 'authorized') {
+        const r = await sendCAPIEvent('Purchase', sale, ip, ua)
+        capiResult = 'events_received' in r ? `ok:${r.events_received}` : 'skipped'
+      } else if (sale.status === 'refunded' || sale.status === 'chargeback') {
+        const r = await sendCAPIEvent('Refund', sale, ip, ua)
+        capiResult = 'events_received' in r ? `ok:${r.events_received}` : 'skipped'
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      capiResult = `error:${msg}`
+      console.error(`[Ticto Webhook] CAPI error: ${msg}`)
+    }
 
     return NextResponse.json({ ok: true, status: sale.status, order_id: sale.order_id, bumps: bumpsInserted, capi: capiResult })
   } catch (e) {

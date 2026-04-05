@@ -49,16 +49,22 @@ export async function POST() {
   let winnersDetected = 0;
   let killsExecuted = 0;
   const errors: string[] = [];
+  const unmatchedAds: string[] = [];
 
   try {
-    // 2. Fetch insights from Meta API
+    // 2. Fetch insights from Meta API (explicit time_range to avoid timezone issues)
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const since = sevenDaysAgo.toISOString().split('T')[0];
+    const until = now.toISOString().split('T')[0];
+
     const url = `https://graph.facebook.com/${META_API_VERSION}/${META_AD_ACCOUNT}/insights?` +
       new URLSearchParams({
         level: 'ad',
         filtering: JSON.stringify([{ field: 'ad.id', operator: 'IN', value: adIds }]),
         fields: 'ad_id,spend,impressions,clicks,ctr,cpc,cpm,frequency,actions,cost_per_action_type,action_values,reach,video_avg_time_watched_actions',
         time_increment: '1',
-        date_preset: 'last_7d',
+        time_range: JSON.stringify({ since, until }),
         access_token: META_ACCESS_TOKEN,
       });
 
@@ -75,8 +81,14 @@ export async function POST() {
 
     // 3. Upsert metrics
     for (const row of insights) {
+      if (!row.date_start || !row.ad_id) continue;
+      if (parseFloat(row.spend || '0') === 0 && parseInt(row.impressions || '0', 10) === 0) continue;
+
       const criativo = criativos.find((c) => c.meta_ad_id === row.ad_id);
-      if (!criativo) continue;
+      if (!criativo) {
+        if (!unmatchedAds.includes(row.ad_id)) unmatchedAds.push(row.ad_id);
+        continue;
+      }
 
       const purchases = (row.actions || []).find((a: { action_type: string }) => a.action_type === 'purchase')?.value || 0;
       const revenue = (row.action_values || []).find((a: { action_type: string }) => a.action_type === 'purchase')?.value || 0;
@@ -285,5 +297,6 @@ export async function POST() {
     winners_detected: winnersDetected,
     kills_executed: killsExecuted,
     errors: errors.length > 0 ? errors : undefined,
+    unmatched_ads: unmatchedAds.length > 0 ? unmatchedAds : undefined,
   });
 }

@@ -69,7 +69,8 @@ export async function POST() {
       });
 
     // Fetch all pages (Meta API paginates results)
-    const insights: Record<string, unknown>[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const insights: any[] = [];
     let nextUrl: string | null = url;
 
     while (nextUrl) {

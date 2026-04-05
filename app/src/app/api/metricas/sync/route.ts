@@ -74,8 +74,8 @@ export async function POST() {
     let nextUrl: string | null = url;
 
     while (nextUrl) {
-      const resp = await fetch(nextUrl);
-      const result = await resp.json();
+      const resp: Response = await fetch(nextUrl);
+      const result: { data?: any[]; error?: { message: string }; paging?: { next?: string } } = await resp.json();
 
       if (result.error) {
         const msg = `Meta API error during sync: ${result.error.message}`;

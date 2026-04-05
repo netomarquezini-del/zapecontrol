@@ -293,6 +293,7 @@ export async function POST() {
   }
 
   return NextResponse.json({
+    version: 'v2-time-range',
     synced,
     winners_detected: winnersDetected,
     kills_executed: killsExecuted,

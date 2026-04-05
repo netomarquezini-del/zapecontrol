@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/lib/supabase';
-import { CPA_TARGET, WINNER_MIN_DAYS, WINNER_MIN_PURCHASES, FREQUENCY_SATURATION, MIN_IMPRESSIONS_FOR_KILL, CPA_KILL_MULTIPLIER, CPA_HIGH_DAYS, CTR_DROP_PCT, ESCALA_CPA_KILL_MULTIPLIER, ESCALA_MIN_KILL_IMPRESSIONS } from '@/lib/types-criativos';
+import { CPA_TARGET, WINNER_MIN_DAYS, WINNER_MIN_PURCHASES, FREQUENCY_SATURATION, MIN_IMPRESSIONS_FOR_KILL, CPA_KILL_MULTIPLIER, CPA_HIGH_DAYS, ESCALA_CPA_KILL_MULTIPLIER, ESCALA_MIN_KILL_IMPRESSIONS } from '@/lib/types-criativos';
 
 export const dynamic = 'force-dynamic';
 
@@ -265,27 +265,13 @@ export async function POST() {
           }
         }
 
-        // ── Kill #4 (ambas): Frequência > 3.5 + CTR caindo → saturado ──
-        if (frequency > FREQUENCY_SATURATION && metrics.length >= 3) {
-          const ctrTrend = metrics.slice(0, 3).map((m) => parseFloat(String(m.ctr)));
-          const declining = ctrTrend[0] < ctrTrend[1] && ctrTrend[1] < ctrTrend[2];
-          if (declining) {
+        // ── Kill #4 (ambas): Frequência > 3.5 (últimos 7 dias) → saturado ──
+        if (metrics.length >= 7) {
+          const last7 = metrics.slice(0, 7);
+          const avgFreq7d = last7.reduce((sum, m) => sum + parseFloat(String(m.frequency || 0)), 0) / last7.length;
+          if (avgFreq7d > FREQUENCY_SATURATION) {
             await sb.from('criativos').update({ status: 'saturado', updated_by: 'sync-v2' }).eq('id', criativo.id);
-            await notifyTelegram(`🟠 SATURAÇÃO: ${criativo.nome} — freq ${frequency.toFixed(1)}, CTR caindo há 3 dias`);
-            killsExecuted++;
-          }
-        }
-
-        // ── Kill #5 (teste): CTR caiu 30%+ vs primeiros 3 dias ──
-        if (isEmTeste && metrics.length >= 4) {
-          const initialCtrs = metrics.slice(-3); // primeiros 3 dias (metrics ordenado desc)
-          const avgInitialCtr = initialCtrs.reduce((sum, m) => sum + parseFloat(String(m.ctr || 0)), 0) / 3;
-          const currentCtr = parseFloat(String(latest.ctr || 0));
-
-          if (avgInitialCtr > 0 && currentCtr < avgInitialCtr * (1 - CTR_DROP_PCT)) {
-            await sb.from('criativos').update({ status: 'pausado', updated_by: 'sync-v2' }).eq('id', criativo.id);
-            const dropPct = ((1 - currentCtr / avgInitialCtr) * 100).toFixed(0);
-            await notifyTelegram(`🔴 KILL #5: ${criativo.nome} — CTR caiu ${dropPct}% vs primeiros 3 dias`);
+            await notifyTelegram(`SATURAÇÃO: ${criativo.nome} — freq média 7d ${avgFreq7d.toFixed(1)} (> ${FREQUENCY_SATURATION})`);
             killsExecuted++;
           }
         }

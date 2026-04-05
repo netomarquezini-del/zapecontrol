@@ -68,16 +68,23 @@ export async function POST() {
         access_token: META_ACCESS_TOKEN,
       });
 
-    const resp = await fetch(url);
-    const result = await resp.json();
+    // Fetch all pages (Meta API paginates results)
+    const insights: Record<string, unknown>[] = [];
+    let nextUrl: string | null = url;
 
-    if (result.error) {
-      const msg = `Meta API error during sync: ${result.error.message}`;
-      await notifyTelegram(`[ERRO] Sync metricas: ${msg}`);
-      return NextResponse.json({ error: msg }, { status: 500 });
+    while (nextUrl) {
+      const resp = await fetch(nextUrl);
+      const result = await resp.json();
+
+      if (result.error) {
+        const msg = `Meta API error during sync: ${result.error.message}`;
+        await notifyTelegram(`[ERRO] Sync metricas: ${msg}`);
+        return NextResponse.json({ error: msg }, { status: 500 });
+      }
+
+      if (result.data) insights.push(...result.data);
+      nextUrl = result.paging?.next || null;
     }
-
-    const insights = result.data || [];
 
     // 3. Upsert metrics
     for (const row of insights) {
